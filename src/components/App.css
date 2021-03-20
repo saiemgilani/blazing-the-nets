@@ -1,0 +1,14 @@
+
+form {
+  display: flex;
+  flex-direction: column;
+}
+.game-body {
+  display: flex;
+}
+.add-team {
+  flex-grow: 1;
+}
+.display-team {
+  flex-grow: 5;
+}

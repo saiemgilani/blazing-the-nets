@@ -20,29 +20,28 @@ function getPlayers(){
   });
 };
 getPlayers();
-function createUrlString (_url, query) {
-  const urlObj = url.parse(_url);
-  urlObj.query = query;
-  return urlObj.format();
-}
 
-function getJson (_url, query, _options = {}) {
-  const urlStr = createUrlString(_url, query);
-
-  const options = {
-    ..._options,
-    headers: { ..._options.headers, ...HEADERS },
-  };
-
-  return fetch(urlStr, options)
-    .then(resp => {
-      if (resp.ok) return resp.json();
-
-      return resp.text().then(function (text) {
-        throw new Error(`${resp.status} ${resp.statusText} – ${text}`);
-      });
-    });
+let teamsList = []
+function getTeams(){
+  fs.readFile(path.resolve(__dirname, "teams.json"), function (err, data) {
+      if (err) {
+          throw err;
+      }
+      teams = JSON.parse(data);
+      for(const team of teams){
+        console.log(team.teamId)
+        teamsList.push(team.teamId)
+      }
+  });
 };
+getTeams();
+
+async function indexing(){
+  await delay20();
+  const playerIds = playersList;
+  console.log(playerIds.indexOf(203463));
+  console.log('Starting script for players', playerIds);
+}
 
 async function delay20() {
   const durationMs = Math.random() * 800*20 + 300;
@@ -68,8 +67,8 @@ async function fetchPlayerYearOverYear(playerId) {
     "Accept-Encoding": "gzip, deflate",
     "Accept-Language": "en-US",
     Accept: "*/*",
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36",
-    Referer: "https://www.nba.com/",
+    "User-Agent": template.user_agent,
+    Referer: template.referrer,
     Connection: "keep-alive",
     "Cache-Control": "no-cache",
     Origin: "http://stats.nba.com",
@@ -77,24 +76,591 @@ async function fetchPlayerYearOverYear(playerId) {
   console.log(baseUrl)
   const results = await axios.get(
       baseUrl, { headers })
-  console.log(results.data.resultSets)
+
   await fs.promises.writeFile(
-      `..public/data/player_dashboard_year_over_year/${playerId}.json`,
+      `../public/data/player_dashboard_year_over_year/${playerId}.json`,
       JSON.stringify(results.data.resultSets,null, 2)
     );
 }
-
-async function main() {
+async function playerYoyPull() {
   await delay20();
   const playerIds = playersList;
-  console.log(playerIds);
+  // console.log(playerIds);
   console.log('Starting script for players', playerIds);
-
   for (const playerId of playerIds) {
-    await fetchPlayerYearOverYear(playerId);
+    try {
+      await fetchPlayerYearOverYear(playerId);
+    } catch (error) {
+      console.error(error);
+    }
     await delay();
+  }
+  console.log('Done!');
+}
+/*
+(SpeedDistance)|(Rebounding)|(Possessions)|(CatchShoot)|(PullUpShot)|(Defense)|(Drives)|(Passing)|(ElbowTouch)|(PostTouch)|(PaintTouch)|(Efficiency)
+*/
+async function fetchLeagueTracking(playerOrTeam,season,measure) {
+  console.log(`Making API Request for ${playerOrTeam} ${measure} in ${season}...`);
+  const baseUrl = `https://stats.nba.com/stats/leaguedashptstats`
+
+  const headers =  {
+    "Accept-Encoding": "gzip, deflate",
+    "Accept-Language": "en-US",
+    Accept: "*/*",
+    "User-Agent": template.user_agent,
+    Referer: template.referrer,
+    Connection: "keep-alive",
+    "Cache-Control": "no-cache",
+    Origin: "http://stats.nba.com",
+  };
+  parameters = {
+    'DateFrom': '',
+    'DateTo': '',
+    'GameScope': '',
+    'LastNGames': 0,
+    'Location': '',
+    'Month': 0,
+    'OpponentTeamID': 0,
+    'Outcome': '',
+    'PerMode': 'PerGame',
+    'PlayerExperience': '',
+    'PlayerOrTeam': playerOrTeam,
+    'PlayerPosition': '',
+    'PtMeasureType': measure,
+    'Season': season,
+    'SeasonSegment': '',
+    'SeasonType': 'Regular Season',
+    'StarterBench': '',
+    'VsDivision': '',
+    'VsConference': ''
+  }
+  
+  console.log(baseUrl)
+  const results = await axios.get(
+      baseUrl, { 
+        params: parameters,
+        headers: headers 
+      })
+  // console.log(results.data.resultSets)
+  await fs.promises.writeFile(
+      `../public/data/LeagueTracking/${playerOrTeam}/${season}/${measure}.json`,
+      JSON.stringify(results.data.resultSets,null, 2)
+    );
+}
+async function leagueTrackingPull() {
+  await delay20();
+  const cats = ['Player','Team'];
+  // console.log(playerIds);
+  console.log('Starting script for ', cats);
+  let seasons =['2015-16','2016-17','2017-18','2018-19','2019-20','2020-21'];
+  let metrics = [
+    'Defense','Drives','Passing','ElbowTouch','PostTouch','PaintTouch','Efficiency',
+    'SpeedDistance','Rebounding','CatchShoot','PullUpShot','Possessions'
+  ]
+  for (const cat of cats) {
+    for(const season of seasons){
+      for(const metric of metrics){
+        try {
+          await fetchLeagueTracking(cat,season,metric);
+        } catch (error) {
+          console.error(error);
+        }
+        await delay();
+      }
+    }
+  }
+  console.log('Done!');
+}
+
+/**
+ * @param measure (Overall)|(3 Pointers)|(2 Pointers)|(Less Than 6Ft)|(Less Than 10Ft)|(Greater Than 15Ft)
+**/
+async function fetchLeagueTrackingDefense(playerOrTeam,season,measure) {
+  console.log(`Making API Request for ${measure} in ${season}...`);
+  const baseUrl = `https://stats.nba.com/stats/leaguedashptdefend`
+
+  const headers =  {
+    "Accept-Encoding": "gzip, deflate",
+    "Accept-Language": "en-US",
+    Accept: "*/*",
+    "User-Agent": template.user_agent,
+    Referer: template.referrer,
+    Connection: "keep-alive",
+    "Cache-Control": "no-cache",
+    Origin: "http://stats.nba.com",
+  };
+  parameters = {
+    'DateFrom': '',
+    'DateTo': '',
+    'DefenseCategory': measure,
+    'LastNGames': 0,
+    'LeagueID': '00',
+    'Location': '',
+    'Month': 0,
+    'OpponentTeamID': 0,
+    'Outcome': '',
+    'PerMode': 'PerGame',
+    'PlayerExperience': '',
+    'PlayerPosition': '',
+    'Season': season,
+    'SeasonSegment': '',
+    'SeasonType': 'Regular Season',
+    'StarterBench': '',
+    'VsDivision': '',
+    'VsConference': ''
+  }
+  
+  console.log(baseUrl)
+  const results = await axios.get(
+      baseUrl, { 
+        params: parameters,
+        headers: headers 
+      })
+  // console.log(results.data.resultSets)
+  await fs.promises.writeFile(
+      `../public/data/LeagueTracking/${playerOrTeam}/${season}/Defense_${measure}.json`,
+      JSON.stringify(results.data.resultSets,null, 2)
+    );
+}
+async function leagueTrackingDefensePull() {
+  await delay20();
+  const cats = ['Player'];
+  // console.log(playerIds);
+  console.log('Starting script for ', cats);
+  let seasons =['2015-16','2016-17','2017-18','2018-19','2019-20','2020-21'];
+  let metrics = [ 
+    'Overall', '3 Pointers','2 Pointers','Less Than 6Ft', 
+    'Less Than 10Ft','Greater Than 15Ft'
+  ]
+  for (const cat of cats) {
+    for(const season of seasons){
+      for(const metric of metrics){
+        try {
+          await fetchLeagueTrackingDefense(cat,season,metric);
+        } catch (error) {
+          console.error(error);
+        }
+        await delay();
+      }
+    }
+  }
+  console.log('Done!');
+}
+/**
+ * @param measure (Overall)|(3 Pointers)|(2 Pointers)|(Less Than 6Ft)|(Less Than 10Ft)|(Greater Than 15Ft)
+**/
+async function fetchLeagueTrackingTeamDefense(playerOrTeam,season,measure) {
+  console.log(`Making API Request for ${measure} in ${season}...`);
+  const baseUrl = `https://stats.nba.com/stats/leaguedashptteamdefend`
+
+  const headers =  {
+    "Accept-Encoding": "gzip, deflate",
+    "Accept-Language": "en-US",
+    Accept: "*/*",
+    "User-Agent": template.user_agent,
+    Referer: template.referrer,
+    Connection: "keep-alive",
+    "Cache-Control": "no-cache",
+    Origin: "http://stats.nba.com",
+  };
+  parameters = {
+    'DateFrom': '',
+    'DateTo': '',
+    'DefenseCategory': measure,
+    'LastNGames': 0,
+    'LeagueID': '00',
+    'Location': '',
+    'Month': 0,
+    'OpponentTeamID': 0,
+    'Outcome': '',
+    'PerMode': 'PerGame',
+    'PlayerExperience': '',
+    'PlayerPosition': '',
+    'Season': season,
+    'SeasonSegment': '',
+    'SeasonType': 'Regular Season',
+    'StarterBench': '',
+    'VsDivision': '',
+    'VsConference': ''
+  }
+  
+  console.log(baseUrl)
+  const results = await axios.get(
+      baseUrl, { 
+        params: parameters,
+        headers: headers 
+      })
+  // console.log(results.data.resultSets)
+  await fs.promises.writeFile(
+      `../public/data/LeagueTracking/${playerOrTeam}/${season}/Defense_${measure}.json`,
+      JSON.stringify(results.data.resultSets,null, 2)
+    );
+}
+async function leagueTrackingTeamDefensePull() {
+  await delay20();
+  const cats = ['Team'];
+  // console.log(playerIds);
+  console.log('Starting script for ', cats);
+  let seasons =['2015-16','2016-17','2017-18','2018-19','2019-20','2020-21'];
+  let metrics = [ 
+    'Overall', '3 Pointers','2 Pointers','Less Than 6Ft', 
+    'Less Than 10Ft','Greater Than 15Ft'
+  ]
+  for (const cat of cats) {
+    for(const season of seasons){
+      for(const metric of metrics){
+        try {
+          await fetchLeagueTrackingTeamDefense(cat,season,metric);
+        } catch (error) {
+          console.error(error);
+        }
+        await delay();
+      }
+    }
+  }
+  console.log('Done!');
+}
+async function fetchPlayerShotDetail(playerId,season) {
+  console.log(`Making API Request for ${playerId} in ${season}...`);
+  const baseUrl = `https://stats.nba.com/stats/shotchartdetail`
+
+  const headers =  {
+    "Accept-Encoding": "gzip, deflate",
+    "Accept-Language": "en-US",
+    Accept: "*/*",
+    "User-Agent": template.user_agent,
+    Referer: template.referrer,
+    Connection: "keep-alive",
+    "Cache-Control": "no-cache",
+    Origin: "http://stats.nba.com",
+  };
+  parameters = {
+    'ContextMeasure': 'FGA',
+    'LastNGames': 0,
+    'LeagueID': '00',
+    'Month': 0,
+    'OpponentTeamID': 0,
+    'Period': 0,
+    'PlayerID': playerId,
+    'SeasonType': 'Regular Season',
+    'TeamID': 0,
+    'VsDivision': '',
+    'VsConference': '',
+    'SeasonSegment': '',
+    'Season': season,
+    'RookieYear': '',
+    'PlayerPosition': '',
+    'Outcome': '',
+    'Location': '',
+    'GameSegment': '',
+    'GameId': '',
+    'DateTo': '',
+    'DateFrom': ''
+  }
+  
+  console.log(baseUrl)
+  const results = await axios.get(
+      baseUrl, { 
+        params: parameters,
+        headers: headers 
+      })
+  // console.log(results.data.resultSets)
+  await fs.promises.writeFile(
+      `../public/data/shotchartdetail/${season}/${playerId}.json`,
+      JSON.stringify(results.data.resultSets,null, 2)
+    );
+}
+async function playerShotDetailPull() {
+  await delay20();
+  const playerIds = playersList;
+  // console.log(playerIds);
+  console.log('Starting script for players', playerIds);
+  let seasons =['2015-16','2016-17','2017-18','2018-19','2019-20','2020-21']
+  for (const playerId of playerIds) {
+    for(const season of seasons){
+      try {
+        await fetchPlayerShotDetail(playerId,season);
+      } catch (error) {
+        console.error(error);
+      }
+      await delay();
+    
+    }
+  }
+  console.log('Done!');
+}
+
+async function fetchLeagueTrackingTeamShots(season) {
+  console.log(`Making API Request for ${season}...`);
+  const baseUrl = `https://stats.nba.com/stats/leaguedashteamptshot`
+
+  const headers =  {
+    "Accept-Encoding": "gzip, deflate",
+    "Accept-Language": "en-US",
+    Accept: "*/*",
+    "User-Agent": template.user_agent,
+    Referer: template.referrer,
+    Connection: "keep-alive",
+    "Cache-Control": "no-cache",
+    Origin: "http://stats.nba.com",
+  };
+  parameters = {
+    'DateFrom': '',
+    'DateTo': '',
+    'GameScope': '',
+    'LastNGames': 0,
+    'LeagueID': '00',
+    'Location': '',
+    'Month': 0,
+    'OpponentTeamID': 0,
+    'Outcome': '',
+    'PerMode': 'PerGame',
+    'PlayerExperience': '',
+    'PlayerPosition': '',
+    'Season': season,
+    'SeasonSegment': '',
+    'SeasonType': 'Regular Season',
+    'StarterBench': '',
+    'VsDivision': '',
+    'VsConference': ''
+  }
+  
+  console.log(baseUrl)
+  const results = await axios.get(
+      baseUrl, { 
+        params: parameters,
+        headers: headers 
+      })
+  // console.log(results.data.resultSets)
+  await fs.promises.writeFile(
+      `../public/data/LeagueTracking/Team/${season}/Team_Shots.json`,
+      JSON.stringify(results.data.resultSets,null, 2)
+    );
+}
+async function leagueTrackingTeamShotsPull() {
+  await delay20();
+  // console.log(playerIds);
+  
+  let seasons =['2015-16','2016-17','2017-18','2018-19','2019-20','2020-21'];
+  for(const season of seasons){
+    try {
+      await fetchLeagueTrackingTeamShots(season);
+    } catch (error) {
+      console.error(error);
+    }
+    await delay();
+  }
+    
+  
+  console.log('Done!');
+}
+
+async function fetchLeagueTrackingPlayerShots(season) {
+  console.log(`Making API Request for ${season}...`);
+  const baseUrl = `https://stats.nba.com/stats/leaguedashplayerptshot`
+
+  const headers =  {
+    "Accept-Encoding": "gzip, deflate",
+    "Accept-Language": "en-US",
+    Accept: "*/*",
+    "User-Agent": template.user_agent,
+    Referer: template.referrer,
+    Connection: "keep-alive",
+    "Cache-Control": "no-cache",
+    Origin: "http://stats.nba.com",
+  };
+  parameters = {
+    'DateFrom': '',
+    'DateTo': '',
+    'GameScope': '',
+    'LastNGames': 0,
+    'LeagueID': '00',
+    'Location': '',
+    'Month': 0,
+    'OpponentTeamID': 0,
+    'Outcome': '',
+    'PerMode': 'PerGame',
+    'PlayerExperience': '',
+    'PlayerPosition': '',
+    'Season': season,
+    'SeasonSegment': '',
+    'SeasonType': 'Regular Season',
+    'StarterBench': '',
+    'VsDivision': '',
+    'VsConference': ''
+  }
+  
+  console.log(baseUrl)
+  const results = await axios.get(
+      baseUrl, { 
+        params: parameters,
+        headers: headers 
+      })
+  // console.log(results.data.resultSets)
+  await fs.promises.writeFile(
+      `../public/data/LeagueTracking/Player/${season}/Player_Shots.json`,
+      JSON.stringify(results.data.resultSets,null, 2)
+    );
+}
+async function leagueTrackingPlayerShotsPull() {
+  await delay20();
+  // console.log(playerIds);
+  let seasons =['2015-16','2016-17','2017-18','2018-19','2019-20','2020-21'];
+  for(const season of seasons){
+    try {
+      await fetchLeagueTrackingPlayerShots(season);
+    } catch (error) {
+      console.error(error);
+    }
+    await delay();
+  }
+  console.log('Done!');
+}
+
+async function fetchTrackingPlayerShots(playerId,season) {
+  console.log(`Making API Request for ${season}: ${playerId}...`);
+  const baseUrl = `https://stats.nba.com/stats/playerdashptshots`
+
+  const headers =  {
+    "Accept-Encoding": "gzip, deflate",
+    "Accept-Language": "en-US",
+    Accept: "*/*",
+    "User-Agent": template.user_agent,
+    Referer: template.referrer,
+    Connection: "keep-alive",
+    "Cache-Control": "no-cache",
+    Origin: "http://stats.nba.com",
+  };
+  parameters = {
+    'DateFrom': '',
+    'DateTo': '',
+    'GameSegment': '',
+    'LastNGames': 0,
+    'LeagueID': '00',
+    'Location': '',
+    'Month': 0,
+    'OpponentTeamID': 0,
+    'Outcome': '',
+    'PerMode': 'PerGame',
+    'Period': 0,
+    'PlayerID': playerId,
+    'Season': season,
+    'SeasonSegment': '',
+    'SeasonType': 'Regular Season',
+    'TeamID': 0,
+    'VsConference': '',
+    'VsDivision': ''
+  }
+  
+  console.log(baseUrl)
+  const results = await axios.get(
+      baseUrl, { 
+        params: parameters,
+        headers: headers 
+      })
+  // console.log(results.data.resultSets)
+  await fs.promises.writeFile(
+      `../public/data/PlayerDashPtShots/${season}/${playerId}.json`,
+      JSON.stringify(results.data.resultSets,null, 2)
+    );
+}
+async function trackingPlayerShotsPull() {
+  await delay20();
+  const playerIds = playersList;
+  // console.log(playerIds);
+  let seasons =['2015-16','2016-17','2017-18','2018-19','2019-20','2020-21'];
+  for (const playerId of playerIds) {
+    for(const season of seasons){
+      try {
+        await fetchTrackingPlayerShots(playerId, season);
+      } catch (error) {
+        console.error(error);
+      }
+      await delay();
+    }
+  }
+  console.log('Done!');
+}
+
+async function fetchLeagueTrackingPlayerShotLocations(season, measure) {
+  console.log(`Making API Request for ${season}...`);
+  const baseUrl = `https://stats.nba.com/stats/leaguedashplayershotlocations`
+
+  const headers =  {
+    "Accept-Encoding": "gzip, deflate",
+    "Accept-Language": "en-US",
+    Accept: "*/*",
+    "User-Agent": template.user_agent,
+    Referer: template.referrer,
+    Connection: "keep-alive",
+    "Cache-Control": "no-cache",
+    Origin: "http://stats.nba.com",
+  };
+  parameters = {
+    'DateFrom': '',
+    'DateTo': '',
+    'DistanceRange':'By Zone',
+    'GameScope': '',
+    'GameSegment': '',
+    'LastNGames': 0,
+    'Location': '',
+    'Month': 0,
+    'MeasureType': measure,
+    'OpponentTeamID': 0,
+    'Outcome': '',
+    'PaceAdjust':'N',
+    'PerMode': 'PerGame',
+    'Period': 0,
+    'PlayerExperience': '',
+    'PlayerPosition': '',
+    'PlusMinus': 'Y',
+    'Rank': 'N',
+    'Season': season,
+    'SeasonSegment': '',
+    'SeasonType': 'Regular Season',
+    'StarterBench': '',
+    'VsConference': '',
+    'VsDivision': ''
+  }
+  
+  console.log(baseUrl)
+  const results = await axios.get(
+      baseUrl, { 
+        params: parameters,
+        headers: headers 
+      })
+  // console.log(results.data.resultSets)
+  await fs.promises.writeFile(
+      `../public/data/LeagueTracking/Player/${season}/Player_Shot_Locations_${measure}.json`,
+      JSON.stringify(results.data.resultSets,null, 2)
+    );
+}
+async function leagueTrackingPlayerShotLocationsPull() {
+  await delay20();
+  let measures = ['Base','Opponent'];
+  // console.log(playerIds);
+  let seasons =['2015-16','2016-17','2017-18','2018-19','2019-20','2020-21'];
+  for(const measure of measures){
+    for(const season of seasons){
+      try {
+        await fetchLeagueTrackingPlayerShotLocations(season,measure);
+      } catch (error) {
+        console.error(error);
+      }
+      await delay();
+    }
   }
 
   console.log('Done!');
 }
-main();
+
+// playerYoyPull();
+// playerShotDetailPull();
+// leagueTrackingPull();
+// leagueTrackingDefensePull();
+// leagueTrackingTeamDefensePull();
+// leagueTrackingTeamShotsPull();
+// leagueTrackingPlayerShotsPull();
+// trackingPlayerShotsPull();
+leagueTrackingPlayerShotLocationsPull();

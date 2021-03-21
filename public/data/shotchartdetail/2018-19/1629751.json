@@ -1,0 +1,226 @@
+[
+  {
+    "name": "Shot_Chart_Detail",
+    "headers": [
+      "GRID_TYPE",
+      "GAME_ID",
+      "GAME_EVENT_ID",
+      "PLAYER_ID",
+      "PLAYER_NAME",
+      "TEAM_ID",
+      "TEAM_NAME",
+      "PERIOD",
+      "MINUTES_REMAINING",
+      "SECONDS_REMAINING",
+      "EVENT_TYPE",
+      "ACTION_TYPE",
+      "SHOT_TYPE",
+      "SHOT_ZONE_BASIC",
+      "SHOT_ZONE_AREA",
+      "SHOT_ZONE_RANGE",
+      "SHOT_DISTANCE",
+      "LOC_X",
+      "LOC_Y",
+      "SHOT_ATTEMPTED_FLAG",
+      "SHOT_MADE_FLAG",
+      "GAME_DATE",
+      "HTM",
+      "VTM"
+    ],
+    "rowSet": []
+  },
+  {
+    "name": "LeagueAverages",
+    "headers": [
+      "GRID_TYPE",
+      "SHOT_ZONE_BASIC",
+      "SHOT_ZONE_AREA",
+      "SHOT_ZONE_RANGE",
+      "FGA",
+      "FGM",
+      "FG_PCT"
+    ],
+    "rowSet": [
+      [
+        "League Averages",
+        "Above the Break 3",
+        "Back Court(BC)",
+        "Back Court Shot",
+        43,
+        2,
+        0.047
+      ],
+      [
+        "League Averages",
+        "Above the Break 3",
+        "Center(C)",
+        "24+ ft.",
+        15944,
+        5449,
+        0.342
+      ],
+      [
+        "League Averages",
+        "Above the Break 3",
+        "Left Side Center(LC)",
+        "24+ ft.",
+        22539,
+        7944,
+        0.352
+      ],
+      [
+        "League Averages",
+        "Above the Break 3",
+        "Right Side Center(RC)",
+        "24+ ft.",
+        21759,
+        7666,
+        0.352
+      ],
+      [
+        "League Averages",
+        "Backcourt",
+        "Back Court(BC)",
+        "Back Court Shot",
+        466,
+        14,
+        0.03
+      ],
+      [
+        "League Averages",
+        "In The Paint (Non-RA)",
+        "Center(C)",
+        "8-16 ft.",
+        11502,
+        4866,
+        0.423
+      ],
+      [
+        "League Averages",
+        "In The Paint (Non-RA)",
+        "Center(C)",
+        "Less Than 8 ft.",
+        19554,
+        7665,
+        0.392
+      ],
+      [
+        "League Averages",
+        "In The Paint (Non-RA)",
+        "Left Side(L)",
+        "8-16 ft.",
+        1998,
+        796,
+        0.398
+      ],
+      [
+        "League Averages",
+        "In The Paint (Non-RA)",
+        "Right Side(R)",
+        "8-16 ft.",
+        2067,
+        849,
+        0.411
+      ],
+      [
+        "League Averages",
+        "Left Corner 3",
+        "Left Side(L)",
+        "24+ ft.",
+        9112,
+        3519,
+        0.386
+      ],
+      [
+        "League Averages",
+        "Mid-Range",
+        "Center(C)",
+        "8-16 ft.",
+        2271,
+        940,
+        0.414
+      ],
+      [
+        "League Averages",
+        "Mid-Range",
+        "Center(C)",
+        "16-24 ft.",
+        5589,
+        2256,
+        0.404
+      ],
+      [
+        "League Averages",
+        "Mid-Range",
+        "Left Side Center(LC)",
+        "16-24 ft.",
+        5065,
+        2033,
+        0.401
+      ],
+      [
+        "League Averages",
+        "Mid-Range",
+        "Left Side(L)",
+        "16-24 ft.",
+        2152,
+        835,
+        0.388
+      ],
+      [
+        "League Averages",
+        "Mid-Range",
+        "Left Side(L)",
+        "8-16 ft.",
+        5414,
+        2142,
+        0.396
+      ],
+      [
+        "League Averages",
+        "Mid-Range",
+        "Right Side Center(RC)",
+        "16-24 ft.",
+        5422,
+        2198,
+        0.405
+      ],
+      [
+        "League Averages",
+        "Mid-Range",
+        "Right Side(R)",
+        "16-24 ft.",
+        1916,
+        757,
+        0.395
+      ],
+      [
+        "League Averages",
+        "Mid-Range",
+        "Right Side(R)",
+        "8-16 ft.",
+        5447,
+        2244,
+        0.412
+      ],
+      [
+        "League Averages",
+        "Restricted Area",
+        "Center(C)",
+        "Less Than 8 ft.",
+        72427,
+        45574,
+        0.629
+      ],
+      [
+        "League Averages",
+        "Right Corner 3",
+        "Right Side(R)",
+        "24+ ft.",
+        8771,
+        3313,
+        0.378
+      ]
+    ]
+  }
+]

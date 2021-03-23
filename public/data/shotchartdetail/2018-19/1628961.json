@@ -1,305 +1,264 @@
 [
-  {
-    "name": "Shot_Chart_Detail",
-    "headers": [
-      "GRID_TYPE",
-      "GAME_ID",
-      "GAME_EVENT_ID",
-      "PLAYER_ID",
-      "PLAYER_NAME",
-      "TEAM_ID",
-      "TEAM_NAME",
-      "PERIOD",
-      "MINUTES_REMAINING",
-      "SECONDS_REMAINING",
-      "EVENT_TYPE",
-      "ACTION_TYPE",
-      "SHOT_TYPE",
-      "SHOT_ZONE_BASIC",
-      "SHOT_ZONE_AREA",
-      "SHOT_ZONE_RANGE",
-      "SHOT_DISTANCE",
-      "LOC_X",
-      "LOC_Y",
-      "SHOT_ATTEMPTED_FLAG",
-      "SHOT_MADE_FLAG",
-      "GAME_DATE",
-      "HTM",
-      "VTM"
-    ],
-    "rowSet": [
-      [
-        "Shot Chart Detail",
-        "0021801073",
-        568,
-        1628961,
-        "Kostas Antetokounmpo",
-        1610612742,
-        "Dallas Mavericks",
-        4,
-        4,
-        58,
-        "Missed Shot",
-        "Driving Hook Shot",
-        "2PT Field Goal",
-        "In The Paint (Non-RA)",
-        "Center(C)",
-        "Less Than 8 ft.",
-        5,
-        -8,
-        55,
-        1,
-        0,
-        "20190320",
-        "POR",
-        "DAL"
-      ],
-      [
-        "Shot Chart Detail",
-        "0021801073",
-        615,
-        1628961,
-        "Kostas Antetokounmpo",
-        1610612742,
-        "Dallas Mavericks",
-        4,
-        0,
-        48,
-        "Missed Shot",
-        "Layup Shot",
-        "2PT Field Goal",
-        "Restricted Area",
-        "Center(C)",
-        "Less Than 8 ft.",
-        1,
-        -9,
-        13,
-        1,
-        0,
-        "20190320",
-        "POR",
-        "DAL"
-      ],
-      [
-        "Shot Chart Detail",
-        "0021801092",
-        657,
-        1628961,
-        "Kostas Antetokounmpo",
-        1610612742,
-        "Dallas Mavericks",
-        4,
-        0,
-        32,
-        "Missed Shot",
-        "Jump Shot",
-        "2PT Field Goal",
-        "In The Paint (Non-RA)",
-        "Center(C)",
-        "Less Than 8 ft.",
-        4,
-        -38,
-        31,
-        1,
-        0,
-        "20190323",
-        "GSW",
-        "DAL"
-      ]
-    ]
-  },
-  {
-    "name": "LeagueAverages",
-    "headers": [
-      "GRID_TYPE",
-      "SHOT_ZONE_BASIC",
-      "SHOT_ZONE_AREA",
-      "SHOT_ZONE_RANGE",
-      "FGA",
-      "FGM",
-      "FG_PCT"
-    ],
-    "rowSet": [
-      [
-        "League Averages",
-        "Above the Break 3",
-        "Back Court(BC)",
-        "Back Court Shot",
-        43,
-        2,
-        0.047
-      ],
-      [
-        "League Averages",
-        "Above the Break 3",
-        "Center(C)",
-        "24+ ft.",
-        15944,
-        5449,
-        0.342
-      ],
-      [
-        "League Averages",
-        "Above the Break 3",
-        "Left Side Center(LC)",
-        "24+ ft.",
-        22539,
-        7944,
-        0.352
-      ],
-      [
-        "League Averages",
-        "Above the Break 3",
-        "Right Side Center(RC)",
-        "24+ ft.",
-        21759,
-        7666,
-        0.352
-      ],
-      [
-        "League Averages",
-        "Backcourt",
-        "Back Court(BC)",
-        "Back Court Shot",
-        466,
-        14,
-        0.03
-      ],
-      [
-        "League Averages",
-        "In The Paint (Non-RA)",
-        "Center(C)",
-        "8-16 ft.",
-        11502,
-        4866,
-        0.423
-      ],
-      [
-        "League Averages",
-        "In The Paint (Non-RA)",
-        "Center(C)",
-        "Less Than 8 ft.",
-        19554,
-        7665,
-        0.392
-      ],
-      [
-        "League Averages",
-        "In The Paint (Non-RA)",
-        "Left Side(L)",
-        "8-16 ft.",
-        1998,
-        796,
-        0.398
-      ],
-      [
-        "League Averages",
-        "In The Paint (Non-RA)",
-        "Right Side(R)",
-        "8-16 ft.",
-        2067,
-        849,
-        0.411
-      ],
-      [
-        "League Averages",
-        "Left Corner 3",
-        "Left Side(L)",
-        "24+ ft.",
-        9112,
-        3519,
-        0.386
-      ],
-      [
-        "League Averages",
-        "Mid-Range",
-        "Center(C)",
-        "8-16 ft.",
-        2271,
-        940,
-        0.414
-      ],
-      [
-        "League Averages",
-        "Mid-Range",
-        "Center(C)",
-        "16-24 ft.",
-        5589,
-        2256,
-        0.404
-      ],
-      [
-        "League Averages",
-        "Mid-Range",
-        "Left Side Center(LC)",
-        "16-24 ft.",
-        5065,
-        2033,
-        0.401
-      ],
-      [
-        "League Averages",
-        "Mid-Range",
-        "Left Side(L)",
-        "16-24 ft.",
-        2152,
-        835,
-        0.388
-      ],
-      [
-        "League Averages",
-        "Mid-Range",
-        "Left Side(L)",
-        "8-16 ft.",
-        5414,
-        2142,
-        0.396
-      ],
-      [
-        "League Averages",
-        "Mid-Range",
-        "Right Side Center(RC)",
-        "16-24 ft.",
-        5422,
-        2198,
-        0.405
-      ],
-      [
-        "League Averages",
-        "Mid-Range",
-        "Right Side(R)",
-        "16-24 ft.",
-        1916,
-        757,
-        0.395
-      ],
-      [
-        "League Averages",
-        "Mid-Range",
-        "Right Side(R)",
-        "8-16 ft.",
-        5447,
-        2244,
-        0.412
-      ],
-      [
-        "League Averages",
-        "Restricted Area",
-        "Center(C)",
-        "Less Than 8 ft.",
-        72427,
-        45574,
-        0.629
-      ],
-      [
-        "League Averages",
-        "Right Corner 3",
-        "Right Side(R)",
-        "24+ ft.",
-        8771,
-        3313,
-        0.378
-      ]
-    ]
-  }
+  [
+    {
+      "GRID_TYPE": "Shot Chart Detail",
+      "GAME_ID": "0021801073",
+      "GAME_EVENT_ID": 568,
+      "PLAYER_ID": 1628961,
+      "PLAYER_NAME": "Kostas Antetokounmpo",
+      "TEAM_ID": 1610612742,
+      "TEAM_NAME": "Dallas Mavericks",
+      "PERIOD": 4,
+      "MINUTES_REMAINING": 4,
+      "SECONDS_REMAINING": 58,
+      "EVENT_TYPE": "Missed Shot",
+      "ACTION_TYPE": "Driving Hook Shot",
+      "SHOT_TYPE": "2PT Field Goal",
+      "SHOT_ZONE_BASIC": "In The Paint (Non-RA)",
+      "SHOT_ZONE_AREA": "Center(C)",
+      "SHOT_ZONE_RANGE": "Less Than 8 ft.",
+      "SHOT_DISTANCE": 5,
+      "LOC_X": -8,
+      "LOC_Y": 55,
+      "SHOT_ATTEMPTED_FLAG": 1,
+      "SHOT_MADE_FLAG": 0,
+      "GAME_DATE": "20190320",
+      "HTM": "POR",
+      "VTM": "DAL"
+    },
+    {
+      "GRID_TYPE": "Shot Chart Detail",
+      "GAME_ID": "0021801073",
+      "GAME_EVENT_ID": 615,
+      "PLAYER_ID": 1628961,
+      "PLAYER_NAME": "Kostas Antetokounmpo",
+      "TEAM_ID": 1610612742,
+      "TEAM_NAME": "Dallas Mavericks",
+      "PERIOD": 4,
+      "MINUTES_REMAINING": 0,
+      "SECONDS_REMAINING": 48,
+      "EVENT_TYPE": "Missed Shot",
+      "ACTION_TYPE": "Layup Shot",
+      "SHOT_TYPE": "2PT Field Goal",
+      "SHOT_ZONE_BASIC": "Restricted Area",
+      "SHOT_ZONE_AREA": "Center(C)",
+      "SHOT_ZONE_RANGE": "Less Than 8 ft.",
+      "SHOT_DISTANCE": 1,
+      "LOC_X": -9,
+      "LOC_Y": 13,
+      "SHOT_ATTEMPTED_FLAG": 1,
+      "SHOT_MADE_FLAG": 0,
+      "GAME_DATE": "20190320",
+      "HTM": "POR",
+      "VTM": "DAL"
+    },
+    {
+      "GRID_TYPE": "Shot Chart Detail",
+      "GAME_ID": "0021801092",
+      "GAME_EVENT_ID": 657,
+      "PLAYER_ID": 1628961,
+      "PLAYER_NAME": "Kostas Antetokounmpo",
+      "TEAM_ID": 1610612742,
+      "TEAM_NAME": "Dallas Mavericks",
+      "PERIOD": 4,
+      "MINUTES_REMAINING": 0,
+      "SECONDS_REMAINING": 32,
+      "EVENT_TYPE": "Missed Shot",
+      "ACTION_TYPE": "Jump Shot",
+      "SHOT_TYPE": "2PT Field Goal",
+      "SHOT_ZONE_BASIC": "In The Paint (Non-RA)",
+      "SHOT_ZONE_AREA": "Center(C)",
+      "SHOT_ZONE_RANGE": "Less Than 8 ft.",
+      "SHOT_DISTANCE": 4,
+      "LOC_X": -38,
+      "LOC_Y": 31,
+      "SHOT_ATTEMPTED_FLAG": 1,
+      "SHOT_MADE_FLAG": 0,
+      "GAME_DATE": "20190323",
+      "HTM": "GSW",
+      "VTM": "DAL"
+    }
+  ],
+  [
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Above the Break 3",
+      "SHOT_ZONE_AREA": "Back Court(BC)",
+      "SHOT_ZONE_RANGE": "Back Court Shot",
+      "FGA": 43,
+      "FGM": 2,
+      "FG_PCT": 0.047
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Above the Break 3",
+      "SHOT_ZONE_AREA": "Center(C)",
+      "SHOT_ZONE_RANGE": "24+ ft.",
+      "FGA": 15944,
+      "FGM": 5449,
+      "FG_PCT": 0.342
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Above the Break 3",
+      "SHOT_ZONE_AREA": "Left Side Center(LC)",
+      "SHOT_ZONE_RANGE": "24+ ft.",
+      "FGA": 22539,
+      "FGM": 7944,
+      "FG_PCT": 0.352
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Above the Break 3",
+      "SHOT_ZONE_AREA": "Right Side Center(RC)",
+      "SHOT_ZONE_RANGE": "24+ ft.",
+      "FGA": 21759,
+      "FGM": 7666,
+      "FG_PCT": 0.352
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Backcourt",
+      "SHOT_ZONE_AREA": "Back Court(BC)",
+      "SHOT_ZONE_RANGE": "Back Court Shot",
+      "FGA": 466,
+      "FGM": 14,
+      "FG_PCT": 0.03
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "In The Paint (Non-RA)",
+      "SHOT_ZONE_AREA": "Center(C)",
+      "SHOT_ZONE_RANGE": "8-16 ft.",
+      "FGA": 11502,
+      "FGM": 4866,
+      "FG_PCT": 0.423
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "In The Paint (Non-RA)",
+      "SHOT_ZONE_AREA": "Center(C)",
+      "SHOT_ZONE_RANGE": "Less Than 8 ft.",
+      "FGA": 19554,
+      "FGM": 7665,
+      "FG_PCT": 0.392
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "In The Paint (Non-RA)",
+      "SHOT_ZONE_AREA": "Left Side(L)",
+      "SHOT_ZONE_RANGE": "8-16 ft.",
+      "FGA": 1998,
+      "FGM": 796,
+      "FG_PCT": 0.398
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "In The Paint (Non-RA)",
+      "SHOT_ZONE_AREA": "Right Side(R)",
+      "SHOT_ZONE_RANGE": "8-16 ft.",
+      "FGA": 2067,
+      "FGM": 849,
+      "FG_PCT": 0.411
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Left Corner 3",
+      "SHOT_ZONE_AREA": "Left Side(L)",
+      "SHOT_ZONE_RANGE": "24+ ft.",
+      "FGA": 9112,
+      "FGM": 3519,
+      "FG_PCT": 0.386
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Mid-Range",
+      "SHOT_ZONE_AREA": "Center(C)",
+      "SHOT_ZONE_RANGE": "8-16 ft.",
+      "FGA": 2271,
+      "FGM": 940,
+      "FG_PCT": 0.414
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Mid-Range",
+      "SHOT_ZONE_AREA": "Center(C)",
+      "SHOT_ZONE_RANGE": "16-24 ft.",
+      "FGA": 5589,
+      "FGM": 2256,
+      "FG_PCT": 0.404
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Mid-Range",
+      "SHOT_ZONE_AREA": "Left Side Center(LC)",
+      "SHOT_ZONE_RANGE": "16-24 ft.",
+      "FGA": 5065,
+      "FGM": 2033,
+      "FG_PCT": 0.401
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Mid-Range",
+      "SHOT_ZONE_AREA": "Left Side(L)",
+      "SHOT_ZONE_RANGE": "16-24 ft.",
+      "FGA": 2152,
+      "FGM": 835,
+      "FG_PCT": 0.388
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Mid-Range",
+      "SHOT_ZONE_AREA": "Left Side(L)",
+      "SHOT_ZONE_RANGE": "8-16 ft.",
+      "FGA": 5414,
+      "FGM": 2142,
+      "FG_PCT": 0.396
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Mid-Range",
+      "SHOT_ZONE_AREA": "Right Side Center(RC)",
+      "SHOT_ZONE_RANGE": "16-24 ft.",
+      "FGA": 5422,
+      "FGM": 2198,
+      "FG_PCT": 0.405
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Mid-Range",
+      "SHOT_ZONE_AREA": "Right Side(R)",
+      "SHOT_ZONE_RANGE": "16-24 ft.",
+      "FGA": 1916,
+      "FGM": 757,
+      "FG_PCT": 0.395
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Mid-Range",
+      "SHOT_ZONE_AREA": "Right Side(R)",
+      "SHOT_ZONE_RANGE": "8-16 ft.",
+      "FGA": 5447,
+      "FGM": 2244,
+      "FG_PCT": 0.412
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Restricted Area",
+      "SHOT_ZONE_AREA": "Center(C)",
+      "SHOT_ZONE_RANGE": "Less Than 8 ft.",
+      "FGA": 72427,
+      "FGM": 45574,
+      "FG_PCT": 0.629
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Right Corner 3",
+      "SHOT_ZONE_AREA": "Right Side(R)",
+      "SHOT_ZONE_RANGE": "24+ ft.",
+      "FGA": 8771,
+      "FGM": 3313,
+      "FG_PCT": 0.378
+    }
+  ]
 ]

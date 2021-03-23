@@ -1,253 +1,212 @@
 [
-  {
-    "name": "Shot_Chart_Detail",
-    "headers": [
-      "GRID_TYPE",
-      "GAME_ID",
-      "GAME_EVENT_ID",
-      "PLAYER_ID",
-      "PLAYER_NAME",
-      "TEAM_ID",
-      "TEAM_NAME",
-      "PERIOD",
-      "MINUTES_REMAINING",
-      "SECONDS_REMAINING",
-      "EVENT_TYPE",
-      "ACTION_TYPE",
-      "SHOT_TYPE",
-      "SHOT_ZONE_BASIC",
-      "SHOT_ZONE_AREA",
-      "SHOT_ZONE_RANGE",
-      "SHOT_DISTANCE",
-      "LOC_X",
-      "LOC_Y",
-      "SHOT_ATTEMPTED_FLAG",
-      "SHOT_MADE_FLAG",
-      "GAME_DATE",
-      "HTM",
-      "VTM"
-    ],
-    "rowSet": [
-      [
-        "Shot Chart Detail",
-        "0021701213",
-        575,
-        1628410,
-        "Edmond Sumner",
-        1610612754,
-        "Indiana Pacers",
-        4,
-        0,
-        40,
-        "Made Shot",
-        "Running Finger Roll Layup Shot",
-        "2PT Field Goal",
-        "Restricted Area",
-        "Center(C)",
-        "Less Than 8 ft.",
-        0,
-        2,
-        8,
-        1,
-        1,
-        "20180410",
-        "IND",
-        "CHA"
-      ]
-    ]
-  },
-  {
-    "name": "LeagueAverages",
-    "headers": [
-      "GRID_TYPE",
-      "SHOT_ZONE_BASIC",
-      "SHOT_ZONE_AREA",
-      "SHOT_ZONE_RANGE",
-      "FGA",
-      "FGM",
-      "FG_PCT"
-    ],
-    "rowSet": [
-      [
-        "League Averages",
-        "Above the Break 3",
-        "Back Court(BC)",
-        "Back Court Shot",
-        54,
-        3,
-        0.056
-      ],
-      [
-        "League Averages",
-        "Above the Break 3",
-        "Center(C)",
-        "24+ ft.",
-        15226,
-        5476,
-        0.36
-      ],
-      [
-        "League Averages",
-        "Above the Break 3",
-        "Left Side Center(LC)",
-        "24+ ft.",
-        20499,
-        7292,
-        0.356
-      ],
-      [
-        "League Averages",
-        "Above the Break 3",
-        "Right Side Center(RC)",
-        "24+ ft.",
-        19341,
-        6859,
-        0.355
-      ],
-      [
-        "League Averages",
-        "Backcourt",
-        "Back Court(BC)",
-        "Back Court Shot",
-        524,
-        5,
-        0.01
-      ],
-      [
-        "League Averages",
-        "In The Paint (Non-RA)",
-        "Center(C)",
-        "8-16 ft.",
-        11317,
-        4719,
-        0.417
-      ],
-      [
-        "League Averages",
-        "In The Paint (Non-RA)",
-        "Center(C)",
-        "Less Than 8 ft.",
-        18036,
-        6921,
-        0.384
-      ],
-      [
-        "League Averages",
-        "In The Paint (Non-RA)",
-        "Left Side(L)",
-        "8-16 ft.",
-        1942,
-        773,
-        0.398
-      ],
-      [
-        "League Averages",
-        "In The Paint (Non-RA)",
-        "Right Side(R)",
-        "8-16 ft.",
-        1948,
-        788,
-        0.405
-      ],
-      [
-        "League Averages",
-        "Left Corner 3",
-        "Left Side(L)",
-        "24+ ft.",
-        8169,
-        3133,
-        0.384
-      ],
-      [
-        "League Averages",
-        "Mid-Range",
-        "Center(C)",
-        "8-16 ft.",
-        2460,
-        1042,
-        0.424
-      ],
-      [
-        "League Averages",
-        "Mid-Range",
-        "Center(C)",
-        "16-24 ft.",
-        7197,
-        3007,
-        0.418
-      ],
-      [
-        "League Averages",
-        "Mid-Range",
-        "Left Side Center(LC)",
-        "16-24 ft.",
-        6596,
-        2612,
-        0.396
-      ],
-      [
-        "League Averages",
-        "Mid-Range",
-        "Left Side(L)",
-        "16-24 ft.",
-        2511,
-        994,
-        0.396
-      ],
-      [
-        "League Averages",
-        "Mid-Range",
-        "Left Side(L)",
-        "8-16 ft.",
-        6400,
-        2575,
-        0.402
-      ],
-      [
-        "League Averages",
-        "Mid-Range",
-        "Right Side Center(RC)",
-        "16-24 ft.",
-        6809,
-        2662,
-        0.391
-      ],
-      [
-        "League Averages",
-        "Mid-Range",
-        "Right Side(R)",
-        "16-24 ft.",
-        2316,
-        903,
-        0.39
-      ],
-      [
-        "League Averages",
-        "Mid-Range",
-        "Right Side(R)",
-        "8-16 ft.",
-        6047,
-        2476,
-        0.409
-      ],
-      [
-        "League Averages",
-        "Restricted Area",
-        "Center(C)",
-        "Less Than 8 ft.",
-        66875,
-        42188,
-        0.631
-      ],
-      [
-        "League Averages",
-        "Right Corner 3",
-        "Right Side(R)",
-        "24+ ft.",
-        7440,
-        3007,
-        0.404
-      ]
-    ]
-  }
+  [
+    {
+      "GRID_TYPE": "Shot Chart Detail",
+      "GAME_ID": "0021701213",
+      "GAME_EVENT_ID": 575,
+      "PLAYER_ID": 1628410,
+      "PLAYER_NAME": "Edmond Sumner",
+      "TEAM_ID": 1610612754,
+      "TEAM_NAME": "Indiana Pacers",
+      "PERIOD": 4,
+      "MINUTES_REMAINING": 0,
+      "SECONDS_REMAINING": 40,
+      "EVENT_TYPE": "Made Shot",
+      "ACTION_TYPE": "Running Finger Roll Layup Shot",
+      "SHOT_TYPE": "2PT Field Goal",
+      "SHOT_ZONE_BASIC": "Restricted Area",
+      "SHOT_ZONE_AREA": "Center(C)",
+      "SHOT_ZONE_RANGE": "Less Than 8 ft.",
+      "SHOT_DISTANCE": 0,
+      "LOC_X": 2,
+      "LOC_Y": 8,
+      "SHOT_ATTEMPTED_FLAG": 1,
+      "SHOT_MADE_FLAG": 1,
+      "GAME_DATE": "20180410",
+      "HTM": "IND",
+      "VTM": "CHA"
+    }
+  ],
+  [
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Above the Break 3",
+      "SHOT_ZONE_AREA": "Back Court(BC)",
+      "SHOT_ZONE_RANGE": "Back Court Shot",
+      "FGA": 54,
+      "FGM": 3,
+      "FG_PCT": 0.056
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Above the Break 3",
+      "SHOT_ZONE_AREA": "Center(C)",
+      "SHOT_ZONE_RANGE": "24+ ft.",
+      "FGA": 15226,
+      "FGM": 5476,
+      "FG_PCT": 0.36
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Above the Break 3",
+      "SHOT_ZONE_AREA": "Left Side Center(LC)",
+      "SHOT_ZONE_RANGE": "24+ ft.",
+      "FGA": 20499,
+      "FGM": 7292,
+      "FG_PCT": 0.356
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Above the Break 3",
+      "SHOT_ZONE_AREA": "Right Side Center(RC)",
+      "SHOT_ZONE_RANGE": "24+ ft.",
+      "FGA": 19341,
+      "FGM": 6859,
+      "FG_PCT": 0.355
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Backcourt",
+      "SHOT_ZONE_AREA": "Back Court(BC)",
+      "SHOT_ZONE_RANGE": "Back Court Shot",
+      "FGA": 524,
+      "FGM": 5,
+      "FG_PCT": 0.01
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "In The Paint (Non-RA)",
+      "SHOT_ZONE_AREA": "Center(C)",
+      "SHOT_ZONE_RANGE": "8-16 ft.",
+      "FGA": 11317,
+      "FGM": 4719,
+      "FG_PCT": 0.417
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "In The Paint (Non-RA)",
+      "SHOT_ZONE_AREA": "Center(C)",
+      "SHOT_ZONE_RANGE": "Less Than 8 ft.",
+      "FGA": 18036,
+      "FGM": 6921,
+      "FG_PCT": 0.384
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "In The Paint (Non-RA)",
+      "SHOT_ZONE_AREA": "Left Side(L)",
+      "SHOT_ZONE_RANGE": "8-16 ft.",
+      "FGA": 1942,
+      "FGM": 773,
+      "FG_PCT": 0.398
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "In The Paint (Non-RA)",
+      "SHOT_ZONE_AREA": "Right Side(R)",
+      "SHOT_ZONE_RANGE": "8-16 ft.",
+      "FGA": 1948,
+      "FGM": 788,
+      "FG_PCT": 0.405
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Left Corner 3",
+      "SHOT_ZONE_AREA": "Left Side(L)",
+      "SHOT_ZONE_RANGE": "24+ ft.",
+      "FGA": 8169,
+      "FGM": 3133,
+      "FG_PCT": 0.384
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Mid-Range",
+      "SHOT_ZONE_AREA": "Center(C)",
+      "SHOT_ZONE_RANGE": "8-16 ft.",
+      "FGA": 2460,
+      "FGM": 1042,
+      "FG_PCT": 0.424
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Mid-Range",
+      "SHOT_ZONE_AREA": "Center(C)",
+      "SHOT_ZONE_RANGE": "16-24 ft.",
+      "FGA": 7197,
+      "FGM": 3007,
+      "FG_PCT": 0.418
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Mid-Range",
+      "SHOT_ZONE_AREA": "Left Side Center(LC)",
+      "SHOT_ZONE_RANGE": "16-24 ft.",
+      "FGA": 6596,
+      "FGM": 2612,
+      "FG_PCT": 0.396
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Mid-Range",
+      "SHOT_ZONE_AREA": "Left Side(L)",
+      "SHOT_ZONE_RANGE": "16-24 ft.",
+      "FGA": 2511,
+      "FGM": 994,
+      "FG_PCT": 0.396
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Mid-Range",
+      "SHOT_ZONE_AREA": "Left Side(L)",
+      "SHOT_ZONE_RANGE": "8-16 ft.",
+      "FGA": 6400,
+      "FGM": 2575,
+      "FG_PCT": 0.402
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Mid-Range",
+      "SHOT_ZONE_AREA": "Right Side Center(RC)",
+      "SHOT_ZONE_RANGE": "16-24 ft.",
+      "FGA": 6809,
+      "FGM": 2662,
+      "FG_PCT": 0.391
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Mid-Range",
+      "SHOT_ZONE_AREA": "Right Side(R)",
+      "SHOT_ZONE_RANGE": "16-24 ft.",
+      "FGA": 2316,
+      "FGM": 903,
+      "FG_PCT": 0.39
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Mid-Range",
+      "SHOT_ZONE_AREA": "Right Side(R)",
+      "SHOT_ZONE_RANGE": "8-16 ft.",
+      "FGA": 6047,
+      "FGM": 2476,
+      "FG_PCT": 0.409
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Restricted Area",
+      "SHOT_ZONE_AREA": "Center(C)",
+      "SHOT_ZONE_RANGE": "Less Than 8 ft.",
+      "FGA": 66875,
+      "FGM": 42188,
+      "FG_PCT": 0.631
+    },
+    {
+      "GRID_TYPE": "League Averages",
+      "SHOT_ZONE_BASIC": "Right Corner 3",
+      "SHOT_ZONE_AREA": "Right Side(R)",
+      "SHOT_ZONE_RANGE": "24+ ft.",
+      "FGA": 7440,
+      "FGM": 3007,
+      "FG_PCT": 0.404
+    }
+  ]
 ]

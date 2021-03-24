@@ -94,8 +94,8 @@ const Charts = ({playerId, seasonId}) => {
 };
 
 Charts.propTypes = {
-  playerId: PropTypes.number,
-  seasonId: PropTypes.number,
+  playerId: PropTypes.string,
+  seasonId: PropTypes.string,
 };
 
 export default Charts;

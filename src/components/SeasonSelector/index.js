@@ -13,7 +13,7 @@ const SeasonSelector = ({playerId, season, seasons, setSeasonId}) => {
           value={season}
           onChange={e => {
             const seasonId = e.target.value;
-            history.push(`/players/${playerId}/${seasonId}`);
+            history.push(`/players/${playerId}${history.location.search}`);
             setSeasonId(seasonId);
           }}
         >
@@ -33,8 +33,7 @@ SeasonSelector.propTypes = {
   season: PropTypes.string.isRequired,
   seasons: PropTypes.arrayOf(
     PropTypes.shape({
-      season: PropTypes.string.isRequired,
-      string: PropTypes.string.isRequired,
+      GROUP_VALUE: PropTypes.string.isRequired
     })
   ).isRequired,
   setSeasonId: PropTypes.func.isRequired,

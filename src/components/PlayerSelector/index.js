@@ -13,7 +13,8 @@ const PlayerSelector = ({player, players, setPlayerId}) => {
           value={player}
           onChange={e => {
             const playerId = e.target.value;
-            history.push(`/players/${playerId}${history.location.search}`);
+            const season = '2020-21'
+            history.push(`/players/${playerId}/${season}`);
             setPlayerId(playerId);
           }}
         >
@@ -38,7 +39,7 @@ PlayerSelector.propTypes = {
       teamId: PropTypes.number.isRequired
     })
   ).isRequired,
-  setPlayerId: PropTypes.func.isRequired,
+  setPlayerId: PropTypes.func.isRequired
 };
 
 export default PlayerSelector;

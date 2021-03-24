@@ -100,13 +100,13 @@ const ShotChart = props => {
 ShotChart.propTypes = {
   data: PropTypes.arrayOf(
     PropTypes.shape({
-      GAME_ID: PropTypes.number.isRequired,
+      GAME_ID: PropTypes.string.isRequired,
       GAME_EVENT_ID: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
       PLAYER_ID: PropTypes.number.isRequired,
       SHOT_DISTANCE: PropTypes.number.isRequired,
       LOC_X: PropTypes.number.isRequired,
       LOC_Y: PropTypes.number.isRequired,
-      SHOT_MADE_FLAG: PropTypes.bool.isRequired,
+      SHOT_MADE_FLAG: PropTypes.number.isRequired,
     })
   ).isRequired,
   leagueShootingPct: PropTypes.arrayOf(PropTypes.number).isRequired,

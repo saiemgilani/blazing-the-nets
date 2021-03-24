@@ -8,7 +8,6 @@ import SeasonSelector from '../../components/SeasonSelector';
 import {
   usePlayersWithRostersBySeasonApi,
   useSeasonsApi,
-  useUrlSearchParams,
 } from '../../hooks';
 
 export default function ChartDashboard() {

@@ -13,7 +13,7 @@ import {
 
 export default function ChartDashboard() {
   const match = useRouteMatch('/players/:playerId/:season');
-  const urlSearchParams = useUrlSearchParams();
+  // const urlSearchParams = useUrlSearchParams();
   const slugSeasonId = match && match.params.season ? match.params.season : '2020-21';
   
   const slugPlayerId = match && match.params.playerId ? match.params.playerId : '2544';

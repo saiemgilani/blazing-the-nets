@@ -1,7 +1,6 @@
 import React, {useState} from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
-import * as d3 from 'd3';
 import {hexbin} from 'd3-hexbin';
 import {scaleLinear, scaleSequential, scaleSqrt} from 'd3-scale';
 import {interpolatePlasma} from 'd3-scale-chromatic';

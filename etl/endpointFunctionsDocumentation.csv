@@ -1,0 +1,21 @@
+﻿EndPoint,Scrape Function
+playerdashboardbyyearoveryear,fetchPlayerYearOverYear
+,
+leaguedashptdefend,fetchLeagueTrackingDefense
+leaguedashptteamdefend,fetchLeagueTrackingTeamDefense
+playerdashptshots,fetchTrackingPlayerShots
+shotchartdetail,fetchPlayerShotDetail
+,
+leaguedashplayerptshot,fetchLeagueTrackingPlayerShots
+leaguedashteamptshot,fetchLeagueTrackingTeamShots
+,
+,
+,
+leaguedashplayershotlocations,fetchLeagueTrackingPlayerShotLocations
+leaguedashteamshotlocations,fetchLeagueTrackingTeamShotLocations
+,
+,
+,
+leaguedashteamstats,fetchLeagueTeamStats
+leaguedashplayerstats,fetchLeaguePlayerStats
+leaguedashptstats,fetchLeagueTracking

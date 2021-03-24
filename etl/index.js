@@ -73,13 +73,26 @@ async function fetchPlayerYearOverYear(playerId) {
     "Cache-Control": "no-cache",
     Origin: "http://stats.nba.com",
   };
-  console.log(baseUrl)
   const results = await axios.get(
       baseUrl, { headers })
-
+  
+  var players = results.data.resultSets;
+  var dat = [];
+  var result = players.forEach(function(cellValue, cellInd){
+    var headers = players[cellInd].headers
+    var rowSet = players[cellInd].rowSet
+    var results = rowSet.map(function(row){
+      var jsonRow = {};
+      row.forEach(function(cellValue, cellIndex){
+        jsonRow[headers[cellIndex]] = cellValue;
+      });
+      return jsonRow;
+    });
+    dat.push(results);
+  });
   await fs.promises.writeFile(
       `../public/data/player_dashboard_year_over_year/${playerId}.json`,
-      JSON.stringify(results.data.resultSets,null, 2)
+      JSON.stringify(dat,null, 2)
     );
 }
 async function playerYoyPull() {
@@ -135,17 +148,30 @@ async function fetchLeagueTracking(playerOrTeam,season,measure) {
     'VsDivision': '',
     'VsConference': ''
   }
-  
-  console.log(baseUrl)
   const results = await axios.get(
       baseUrl, { 
         params: parameters,
         headers: headers 
       })
   // console.log(results.data.resultSets)
+  const players = results.data.resultSets;
+  var dat = [];
+  var result = players.forEach(function(cellValue, cellInd){
+    var headers = players[cellInd].headers
+    var rowSet = players[cellInd].rowSet
+    var results = rowSet.map(function(row){
+      var jsonRow = {};
+      row.forEach(function(cellValue, cellIndex){
+        jsonRow[headers[cellIndex]] = cellValue;
+      });
+      return jsonRow;
+    });
+    dat.push(results);
+  });
+
   await fs.promises.writeFile(
       `../public/data/LeagueTracking/${playerOrTeam}/${season}/${measure}.json`,
-      JSON.stringify(results.data.resultSets,null, 2)
+      JSON.stringify(dat,null, 2)
     );
 }
 async function leagueTrackingPull() {
@@ -210,17 +236,28 @@ async function fetchLeagueTrackingDefense(playerOrTeam,season,measure) {
     'VsDivision': '',
     'VsConference': ''
   }
-  
-  console.log(baseUrl)
   const results = await axios.get(
       baseUrl, { 
         params: parameters,
         headers: headers 
       })
-  // console.log(results.data.resultSets)
+  var players = results.data.resultSets;
+  var dat = [];
+  var result = players.forEach(function(cellValue, cellInd){
+    var headers = players[cellInd].headers
+    var rowSet = players[cellInd].rowSet
+    var results = rowSet.map(function(row){
+      var jsonRow = {};
+      row.forEach(function(cellValue, cellIndex){
+        jsonRow[headers[cellIndex]] = cellValue;
+      });
+      return jsonRow;
+    });
+    dat.push(results);
+  });
   await fs.promises.writeFile(
       `../public/data/LeagueTracking/${playerOrTeam}/${season}/Defense_${measure}.json`,
-      JSON.stringify(results.data.resultSets,null, 2)
+      JSON.stringify(dat,null, 2)
     );
 }
 async function leagueTrackingDefensePull() {
@@ -284,17 +321,28 @@ async function fetchLeagueTrackingTeamDefense(playerOrTeam,season,measure) {
     'VsDivision': '',
     'VsConference': ''
   }
-  
-  console.log(baseUrl)
   const results = await axios.get(
       baseUrl, { 
         params: parameters,
         headers: headers 
       })
-  // console.log(results.data.resultSets)
+  var players = results.data.resultSets;
+  var dat = [];
+  var result = players.forEach(function(cellValue, cellInd){
+    var headers = players[cellInd].headers
+    var rowSet = players[cellInd].rowSet
+    var results = rowSet.map(function(row){
+      var jsonRow = {};
+      row.forEach(function(cellValue, cellIndex){
+        jsonRow[headers[cellIndex]] = cellValue;
+      });
+      return jsonRow;
+    });
+    dat.push(results);
+  });
   await fs.promises.writeFile(
       `../public/data/LeagueTracking/${playerOrTeam}/${season}/Defense_${measure}.json`,
-      JSON.stringify(results.data.resultSets,null, 2)
+      JSON.stringify(dat,null, 2)
     );
 }
 async function leagueTrackingTeamDefensePull() {
@@ -358,17 +406,28 @@ async function fetchPlayerShotDetail(playerId,season) {
     'DateTo': '',
     'DateFrom': ''
   }
-  
-  console.log(baseUrl)
   const results = await axios.get(
       baseUrl, { 
         params: parameters,
         headers: headers 
-      })
-  // console.log(results.data.resultSets)
+  })
+  var players = results.data.resultSets;
+  var dat = [];
+  var result = players.forEach(function(cellValue, cellInd){
+    var headers = players[cellInd].headers
+    var rowSet = players[cellInd].rowSet
+    var results = rowSet.map(function(row){
+      var jsonRow = {};
+      row.forEach(function(cellValue, cellIndex){
+        jsonRow[headers[cellIndex]] = cellValue;
+      });
+      return jsonRow;
+    });
+    dat.push(results);
+  });
   await fs.promises.writeFile(
       `../public/data/shotchartdetail/${season}/${playerId}.json`,
-      JSON.stringify(results.data.resultSets,null, 2)
+      JSON.stringify(dat,null, 2)
     );
 }
 async function playerShotDetailPull() {
@@ -425,17 +484,29 @@ async function fetchLeagueTrackingTeamShots(season) {
     'VsDivision': '',
     'VsConference': ''
   }
-  
-  console.log(baseUrl)
   const results = await axios.get(
       baseUrl, { 
         params: parameters,
         headers: headers 
       })
-  // console.log(results.data.resultSets)
+  
+  var players = results.data.resultSets;
+  var dat = [];
+  var result = players.forEach(function(cellValue, cellInd){
+    var headers = players[cellInd].headers
+    var rowSet = players[cellInd].rowSet
+    var results = rowSet.map(function(row){
+      var jsonRow = {};
+      row.forEach(function(cellValue, cellIndex){
+        jsonRow[headers[cellIndex]] = cellValue;
+      });
+      return jsonRow;
+    });
+    dat.push(results);
+  });
   await fs.promises.writeFile(
       `../public/data/LeagueTracking/Team/${season}/Team_Shots.json`,
-      JSON.stringify(results.data.resultSets,null, 2)
+      JSON.stringify(dat,null, 2)
     );
 }
 async function leagueTrackingTeamShotsPull() {
@@ -490,17 +561,28 @@ async function fetchLeagueTrackingPlayerShots(season) {
     'VsDivision': '',
     'VsConference': ''
   }
-  
-  console.log(baseUrl)
   const results = await axios.get(
       baseUrl, { 
         params: parameters,
         headers: headers 
       })
-  // console.log(results.data.resultSets)
+  var players = results.data.resultSets;
+  var dat = [];
+  var result = players.forEach(function(cellValue, cellInd){
+    var headers = players[cellInd].headers
+    var rowSet = players[cellInd].rowSet
+    var results = rowSet.map(function(row){
+      var jsonRow = {};
+      row.forEach(function(cellValue, cellIndex){
+        jsonRow[headers[cellIndex]] = cellValue;
+      });
+      return jsonRow;
+    });
+    dat.push(results);
+  });
   await fs.promises.writeFile(
       `../public/data/LeagueTracking/Player/${season}/Player_Shots.json`,
-      JSON.stringify(results.data.resultSets,null, 2)
+      JSON.stringify(dat,null, 2)
     );
 }
 async function leagueTrackingPlayerShotsPull() {
@@ -552,19 +634,31 @@ async function fetchTrackingPlayerShots(playerId,season) {
     'VsConference': '',
     'VsDivision': ''
   }
-  
-  console.log(baseUrl)
   const results = await axios.get(
       baseUrl, { 
         params: parameters,
         headers: headers 
       })
-  // console.log(results.data.resultSets)
+  var players = results.data.resultSets;
+  var dat = [];
+  var result = players.forEach(function(cellValue, cellInd){
+    var headers = players[cellInd].headers
+    var rowSet = players[cellInd].rowSet
+    var results = rowSet.map(function(row){
+      var jsonRow = {};
+      row.forEach(function(cellValue, cellIndex){
+        jsonRow[headers[cellIndex]] = cellValue;
+      });
+      return jsonRow;
+    });
+    dat.push(results);
+  });
   await fs.promises.writeFile(
       `../public/data/PlayerDashPtShots/${season}/${playerId}.json`,
-      JSON.stringify(results.data.resultSets,null, 2)
+      JSON.stringify(dat,null, 2)
     );
 }
+
 async function trackingPlayerShotsPull() {
   await delay20();
   const playerIds = playersList;
@@ -623,19 +717,18 @@ async function fetchLeagueTrackingPlayerShotLocations(season, measure) {
     'VsConference': '',
     'VsDivision': ''
   }
-  
-  console.log(baseUrl)
   const results = await axios.get(
       baseUrl, { 
         params: parameters,
         headers: headers 
       })
-  // console.log(results.data.resultSets)
+  var players = results.data.resultSets;
   await fs.promises.writeFile(
       `../public/data/LeagueTracking/Player/${season}/Player_Shot_Locations_${measure}.json`,
-      JSON.stringify(results.data.resultSets,null, 2)
+      JSON.stringify(players,null, 2)
     );
 }
+
 async function leagueTrackingPlayerShotLocationsPull() {
   await delay20();
   let measures = ['Base','Opponent'];
@@ -655,6 +748,250 @@ async function leagueTrackingPlayerShotLocationsPull() {
   console.log('Done!');
 }
 
+async function fetchLeagueTrackingTeamShotLocations(season, measure) {
+  console.log(`Making API Request for ${season}...`);
+  const baseUrl = `https://stats.nba.com/stats/leaguedashteamshotlocations`
+
+  const headers =  {
+    "Accept-Encoding": "gzip, deflate",
+    "Accept-Language": "en-US",
+    Accept: "*/*",
+    "User-Agent": template.user_agent,
+    Referer: template.referrer,
+    Connection: "keep-alive",
+    "Cache-Control": "no-cache",
+    Origin: "http://stats.nba.com",
+  };
+  parameters = {
+    'DateFrom': '',
+    'DateTo': '',
+    'DistanceRange': 'By Zone',
+    'GameScope': '',
+    'GameSegment': '',
+    'LastNGames': 0,
+    'Location': '',
+    'Month': 0,
+    'MeasureType': measure,
+    'OpponentTeamID': 0,
+    'Outcome': '',
+    'PaceAdjust':'N',
+    'PerMode': 'PerGame',
+    'Period': 0,
+    'PlayerExperience': '',
+    'PlayerPosition': '',
+    'PlusMinus': 'N',
+    'Rank': 'N',
+    'Season': season,
+    'SeasonSegment': '',
+    'SeasonType': 'Regular Season',
+    'StarterBench': '',
+    'VsConference': '',
+    'VsDivision': ''
+  }
+  const results = await axios.get(
+    baseUrl, { 
+      params: parameters,
+      headers: headers 
+  })
+  var teams = results.data.resultSets;
+
+  await fs.promises.writeFile(
+      `../public/data/LeagueTracking/Team/${season}/Team_Shot_Locations_${measure}.json`,
+      JSON.stringify(teams,null, 2)
+    );
+}
+
+async function leagueTrackingTeamShotLocationsPull() {
+  await delay20();
+  let measures = ['Base'];
+  // console.log(playerIds);
+  let seasons =['2015-16','2016-17','2017-18','2018-19','2019-20','2020-21'];
+  for(const measure of measures){
+    for(const season of seasons){
+      try {
+        await fetchLeagueTrackingTeamShotLocations(season,measure);
+      } catch (error) {
+        console.error(error);
+      }
+      await delay();
+    }
+  }
+
+  console.log('Done!');
+}
+
+async function fetchLeagueTeamStats(season, measure) {
+  console.log(`Making API Request for ${season} ${measure}...`);
+  const baseUrl = `https://stats.nba.com/stats/leaguedashteamstats`
+
+  const headers =  {
+    "Accept-Encoding": "gzip, deflate",
+    "Accept-Language": "en-US",
+    Accept: "*/*",
+    "User-Agent": template.user_agent,
+    Referer: template.referrer,
+    Connection: "keep-alive",
+    "Cache-Control": "no-cache",
+    Origin: "http://stats.nba.com",
+  };
+  parameters = {
+    'DateFrom': '',
+    'DateTo': '',
+    'GameSegment': '',
+    'LastNGames': 0,
+    'Location': '',
+    'MeasureType': measure,
+    'Month': 0,
+    'OpponentTeamID': 0,
+    'Outcome': '',
+    'PaceAdjust':'N',
+    'PerMode': 'PerGame',
+    'Period': 0,
+    'PlusMinus': 'N',
+    'Rank': 'N',
+    'Season': season,
+    'SeasonSegment': '',
+    'SeasonType': 'Regular Season',
+    'StarterBench': '',
+    'VsConference': '',
+    'VsDivision': ''
+  }
+  const results = await axios.get(
+      baseUrl, { 
+        params: parameters,
+        headers: headers 
+      })
+
+  var teams = results.data.resultSets;
+  var dat = [];
+  var result = teams.forEach(function(cellValue, cellInd){
+    var headers = teams[cellInd].headers
+    var rowSet = teams[cellInd].rowSet
+    var results = rowSet.map(function(row){
+      var jsonRow = {};
+      row.forEach(function(cellValue, cellIndex){
+        jsonRow[headers[cellIndex]] = cellValue;
+      });
+      return jsonRow;
+    });
+    dat.push(results);
+  });
+  await fs.promises.writeFile(
+      `../public/data/LeagueTracking/Team/${season}/Team_Stats_${measure}.json`,
+      JSON.stringify(dat,null, 2)
+    );
+}
+async function leagueTeamStatsPull() {
+  await delay20();
+  let measures = [
+    'Base','Advanced','Misc', 'Four Factors',
+    'Scoring', 'Usage', 'Defense', 'Opponent'
+  ];
+  // console.log(playerIds);
+  let seasons =['2015-16','2016-17','2017-18','2018-19','2019-20','2020-21'];
+  for(const measure of measures){
+    for(const season of seasons){
+      try {
+        await fetchLeagueTeamStats(season,measure);
+      } catch (error) {
+        console.error(error);
+      }
+      await delay();
+    }
+  }
+
+  console.log('Done!');
+}
+
+async function fetchLeaguePlayerStats(season, measure) {
+  console.log(`Making API Request for ${season} ${measure}...`);
+  const baseUrl = `https://stats.nba.com/stats/leaguedashplayerstats`
+
+  const headers =  {
+    "Accept-Encoding": "gzip, deflate",
+    "Accept-Language": "en-US",
+    Accept: "*/*",
+    "User-Agent": template.user_agent,
+    Referer: template.referrer,
+    Connection: "keep-alive",
+    "Cache-Control": "no-cache",
+    Origin: "http://stats.nba.com",
+  };
+  parameters = {
+    'DateFrom': '',
+    'DateTo': '',
+    'GameScope': '',
+    'GameSegment': '',
+    'LastNGames': 0,
+    'Location': '',
+    'MeasureType': measure,
+    'Month': 0,
+    'OpponentTeamID': 0,
+    'Outcome': '',
+    'PaceAdjust':'N',
+    'PerMode': 'PerGame',
+    'Period': 0,
+    'PlayerExperience': '',
+    'PlayerPosition': '',
+    'PlusMinus': 'N',
+    'Rank': 'N',
+    'Season': season,
+    'SeasonSegment': '',
+    'SeasonType': 'Regular Season',
+    'StarterBench': '',
+    'VsConference': '',
+    'VsDivision': ''
+  }
+  
+  const results = await axios.get(
+      baseUrl, { 
+        params: parameters,
+        headers: headers 
+      })
+
+  var players = results.data.resultSets;
+  var dat = [];
+  var result = players.forEach(function(cellValue, cellInd){
+    var headers = players[cellInd].headers
+    var rowSet = players[cellInd].rowSet
+    var results = rowSet.map(function(row){
+      var jsonRow = {};
+      row.forEach(function(cellValue, cellIndex){
+        jsonRow[headers[cellIndex]] = cellValue;
+      });
+      return jsonRow;
+    });
+    dat.push(results);
+  });
+  await fs.promises.writeFile(
+      `../public/data/LeagueTracking/Player/${season}/Player_Stats_${measure}.json`,
+      JSON.stringify(dat,null, 2)
+    );
+}
+
+async function leaguePlayerStatsPull() {
+  await delay20();
+  let measures = [
+    'Base','Advanced','Misc', 
+    'Scoring', 'Usage', 'Defense'
+  ];
+  // console.log(playerIds);
+  let seasons =['2015-16','2016-17','2017-18','2018-19','2019-20','2020-21'];
+  for(const measure of measures){
+    for(const season of seasons){
+      try {
+        await fetchLeaguePlayerStats(season,measure);
+      } catch (error) {
+        console.error(error);
+      }
+      await delay();
+    }
+  }
+
+  console.log('Done!');
+}
+
+
 // playerYoyPull();
 // playerShotDetailPull();
 // leagueTrackingPull();
@@ -663,4 +1000,7 @@ async function leagueTrackingPlayerShotLocationsPull() {
 // leagueTrackingTeamShotsPull();
 // leagueTrackingPlayerShotsPull();
 // trackingPlayerShotsPull();
-leagueTrackingPlayerShotLocationsPull();
+// leagueTrackingPlayerShotLocationsPull();
+// leagueTrackingTeamShotLocationsPull();
+// leagueTeamStatsPull();
+// leaguePlayerStatsPull();

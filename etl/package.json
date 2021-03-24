@@ -13,6 +13,7 @@
     "axios": "0.21.1",
     "nba": "latest",
     "nba-client-template": "5.0.0",
-    "promise": "^8.1.0"
+    "promise": "^8.1.0",
+    "request": "^2.88.2"
   }
 }

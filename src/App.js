@@ -1,16 +1,29 @@
-import logo from './logo.svg';
-import './App.css';
+import React from 'react';
+import styled from 'styled-components';
+import {BrowserRouter as Router} from 'react-router-dom';
 
-import Header from './Header'
-import Main from './Main'
-function App() {
-  return (
-      <div className="App">
-        
-        <Header />
-        <Main />
-      </div>
-  );
-}
+import ChartDashboard from './containers/ChartDashboard';
+import Footer from './containers/Footer';
+
+const Div = styled.div`
+  padding: 0 1em;
+  @media only screen and (min-width: 768px) {
+    padding: 0 2em;
+  }
+`;
+
+const H1 = styled.h1`
+  color: midnightblue;
+`;
+
+const App = () => (
+  <Router>
+    <Div className="App">
+      <H1>Blazing the Nets</H1>
+      <ChartDashboard />
+      <Footer />
+    </Div>
+  </Router>
+);
 
 export default App;

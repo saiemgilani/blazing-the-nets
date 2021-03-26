@@ -34,7 +34,7 @@ const ShotChart = props => {
   const height = 470;
   const svgWidth = width + margin.left + margin.right;
   const svgHeight = height + margin.top + margin.bottom;
-  const backgroundColor = '#ddd';
+  const backgroundColor = '#FAFBFC';
   const hexbinSize = 10;
   const clipPathId = 'hexshotchart-court-clip-path';
 

@@ -29,7 +29,7 @@ const SeasonSelector = ({playerId, season, seasons, setSeasonId}) => {
 };
 
 SeasonSelector.propTypes = {
-  player: PropTypes.string.isRequired,
+  playerId: PropTypes.string.isRequired,
   season: PropTypes.string.isRequired,
   seasons: PropTypes.arrayOf(
     PropTypes.shape({

@@ -3,7 +3,7 @@ import axios from 'axios';
 
 import {apiOrigin} from '../utils/config';
 
-function useSeasonsApi(playerId,seasonId) {
+function useSeasonsApi(playerId) {
   const [seasons, setSeasons] = useState([]);
 
   useEffect(() => {
@@ -18,7 +18,7 @@ function useSeasonsApi(playerId,seasonId) {
       setSeasons(seasons);
     };
     fetchData();
-  }, [playerId,seasonId]);
+  }, [playerId]);
 
   return [seasons];
 }

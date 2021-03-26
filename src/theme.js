@@ -1,6 +1,6 @@
 // Colors
 const colors = [
-  '#252525',
+  '#FAFBFC',
   '#525252',
   '#737373',
   '#969696',
@@ -10,6 +10,7 @@ const colors = [
 ];
 
 const charcoal = '#FAFBFC';
+const barfill = '4E5E6D'
 
 // Typography
 const sansSerif = 'Lato, sans-serif';
@@ -80,7 +81,7 @@ const theme = {
   bar: {
     style: {
       data: {
-        fill: charcoal,
+        fill: barfill,
         padding: 10,
         stroke: 'transparent',
         strokeWidth: 0,

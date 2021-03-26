@@ -41,16 +41,14 @@ jobs:
           name: build
           path: build        
       - name: Deploy to Firebase
-        uses: w9jds/firebase-action@master
+        - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_BLAZING_THE_NETS }}'
           channelId: live
           projectId: blazing-the-nets
-          args: deploy --only hosting
         env:
           FIREBASE_CLI_PREVIEWS: hostingchannels
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BLAZING_THE_NETS }}
   remove:
     name: Remove
     needs: deploy

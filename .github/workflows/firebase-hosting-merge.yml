@@ -43,8 +43,8 @@ jobs:
       - name: Deploy to Firebase
         - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_BLAZING_THE_NETS }}'
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BLAZING_THE_NETS }}
           channelId: live
           projectId: blazing-the-nets
         env:

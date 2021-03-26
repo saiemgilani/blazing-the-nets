@@ -12,11 +12,13 @@ import {
 } from '../../hooks';
 
 export default function ChartDashboard() {
-  const match = useRouteMatch('/players/:playerId/:season');
-  // const urlSearchParams = useUrlSearchParams();
-  const slugSeasonId = match && match.params.season ? match.params.season : '2020-21';
+  const match = useRouteMatch('/players/:playerId');
+  const urlSearchParams = useUrlSearchParams();
+  const slugSeasonId = urlSearchParams.get('season_id');
   
-  const slugPlayerId = match && match.params.playerId ? match.params.playerId : '201142';
+  // const slugSeasonId = match && match.params.season ? match.params.season : '2020-21';
+  
+  const slugPlayerId = match && match.params.playerId ? match.params.playerId : '202681';
   const [seasons] = useSeasonsApi(slugPlayerId);
   const [seasonId, setSeasonId] = useState(slugSeasonId || '2020-21');
   const [players] = usePlayersWithRostersBySeasonApi(slugPlayerId);
@@ -24,9 +26,6 @@ export default function ChartDashboard() {
 
   if (slugPlayerId && slugPlayerId !== playerId) {
     setPlayerId(slugPlayerId);
-  }
-  if (slugSeasonId && slugSeasonId !== seasonId) {
-    setSeasonId(slugSeasonId);
   }
 
   if (players === undefined || seasons === undefined) {

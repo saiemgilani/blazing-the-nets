@@ -5,7 +5,7 @@ const Footer = styled.footer`
   text-align: center;
   font-family: sans-serif;
   font-size: 14px;
-  color: #555;
+  color: #181818;
   padding-top: 10px;
   small {
     font-size: 0.75rem;

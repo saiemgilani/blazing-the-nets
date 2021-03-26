@@ -13,8 +13,7 @@ const PlayerSelector = ({player, players, setPlayerId}) => {
           value={player}
           onChange={e => {
             const playerId = e.target.value;
-            const season = '2020-21'
-            history.push(`/players/${playerId}/${season}`);
+            history.push(`/players/${playerId}${history.location.search}`);
             setPlayerId(playerId);
           }}
         >

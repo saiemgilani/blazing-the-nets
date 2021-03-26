@@ -4,6 +4,7 @@ import {BrowserRouter as Router} from 'react-router-dom';
 
 import ChartDashboard from './containers/ChartDashboard';
 import Footer from './containers/Footer';
+import { firebase } from './firebase';
 
 const Div = styled.div`
   padding: 0 1em;
@@ -13,7 +14,7 @@ const Div = styled.div`
 `;
 
 const H1 = styled.h1`
-  color: midnightblue;
+  color: #070707;
 `;
 
 const App = () => (

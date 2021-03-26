@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {useHistory} from 'react-router-dom';
 
-const SeasonSelector = ({playerId, season, seasons, setSeasonId}) => {
+const SeasonSelector = ({player, season, seasons, setSeasonId}) => {
   const history = useHistory();
   return (
     <form>
@@ -13,7 +13,7 @@ const SeasonSelector = ({playerId, season, seasons, setSeasonId}) => {
           value={season}
           onChange={e => {
             const seasonId = e.target.value;
-            history.push(`/players/${playerId}${history.location.search}`);
+            history.push(`/players/${player}?season_id=${seasonId}`);
             setSeasonId(seasonId);
           }}
         >

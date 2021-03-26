@@ -11,9 +11,10 @@ function useSeasonsApi(playerId) {
       const endpoint = new URL(apiOrigin);
       const pathname = 'data/player_dashboard_year_over_year/';
       const result = await axios.get(endpoint+pathname+`${playerId}.json`);
+      endpoint.search = new URLSearchParams({
+        player_id: playerId,
+      });
       const seasons = result.data[1].slice(0,5);
-      console.log(seasons)
-      console.log(result.data.reverse())
       
       setSeasons(seasons);
     };

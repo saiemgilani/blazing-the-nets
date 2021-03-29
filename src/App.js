@@ -1,8 +1,8 @@
 import React from 'react';
 import styled from 'styled-components';
 import {BrowserRouter as Router} from 'react-router-dom';
-
 import ChartDashboard from './containers/ChartDashboard';
+import Navbar from './containers/Navbar/Navbar';
 import Footer from './containers/Footer';
 import { firebase } from './firebase';
 
@@ -13,17 +13,17 @@ const Div = styled.div`
   }
 `;
 
-const H1 = styled.h1`
-  color: #070707;
-`;
+// const H1 = styled.h1`
+//   color: #070707;
+// `;
 
 const App = () => (
   <Router>
-    <Div className="App">
-      <H1>Blazing the Nets</H1>
-      <ChartDashboard />
+      <Navbar />
+      <Div className="App">
+        <ChartDashboard />
+      </Div>
       <Footer />
-    </Div>
   </Router>
 );
 

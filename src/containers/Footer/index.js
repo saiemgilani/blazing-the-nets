@@ -5,17 +5,19 @@ const Footer = styled.footer`
   text-align: center;
   font-family: sans-serif;
   font-size: 14px;
-  color: #181818;
-  padding-top: 10px;
+  color: hsl(0, 6%, 94%);
+  background: hsl(0, 0%, 6%);
+  padding-top: 0.6px;
+  padding-bottom: 0.95rem;
   small {
-    font-size: 0.75rem;
+    font-size: 0.95rem;
   }
+  border-bottom: 4px solid hsl(0, 4%, 94%);
 `;
 const A = styled.a`
   text-decoration: none;
-  color: #333;
+  color: hsl(0, 4%, 94%);
 `;
-
 const FooterComponent = () => (
   <Footer>
     <p>

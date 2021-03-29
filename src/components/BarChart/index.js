@@ -13,6 +13,9 @@ import ChartDiv from '../ChartDiv';
 import ChartTitle from '../ChartTitle';
 import Cursor from './Cursor';
 import {voronoiActivatorEvents} from './functions';
+import {scaleSequential} from 'd3-scale';
+import {interpolateRdBu} from 'd3-scale-chromatic';
+import {distance as euclideanDistance} from '../../lib';
 
 const margin = {top: 20, right: 50, bottom: 50, left: 50};
 const svgWidth = 450;
@@ -26,7 +29,15 @@ const voronoiDimension = 'x';
 const voronoiOptions = {voronoiDimension};
 
 const BarChart = props => {
-  const {accessor, data, domain: yDomain, label, maxDistance, title} = props;
+  const {
+    accessor, 
+    data, 
+    domain: yDomain, 
+    label, 
+    maxDistance,
+    color: colorScale,
+    leagueShootingPct,
+    title} = props;
 
   const [hover, dispatchHover] = useHover();
   const svgRef = createRef();
@@ -39,7 +50,11 @@ const BarChart = props => {
     [yDomain, maxDistance]
   );
 
-  const scale = useChartScale(data, domain, maxDistance, margin, {
+  const scale = useChartScale(
+    data, 
+    domain, 
+    maxDistance, 
+    margin, {
     height: svgHeight,
     width: svgWidth,
   });
@@ -81,7 +96,23 @@ const BarChart = props => {
     width: svgWidth,
     voronoiPadding: 5,
   };
+  const colors = scaleSequential(interpolateRdBu).domain([-0.21, 0.21]);
+  
+  const vardata = data.bins.map(function(d,i){
+    d.shootingPct = d.SHOT_ATTEMPTED_FLAG> 0 ? d.SHOT_MADE_FLAG/d.SHOT_ATTEMPTED_FLAG : 0.0;
+    d.shootingPctAboveAvg = d.shootingPct - leagueShootingPct[i]
+    d.color = colors(d.shootingPctAboveAvg)
+  
+    return d
+  })
 
+  // const {x, y} = data;
+  // const distance = Math.floor(euclideanDistance({x, y}) / 10);
+  // const madeShots = data.reduce((a, b) => a + b[2], 0);
+  // const totalShots = data.length;
+  // const shootingPct = madeShots / totalShots;
+  // const shootingPctAboveAvg =
+  //   shootingPct - (leagueShootingPct[distance] ?? leagueShootingPct[distance - 1]);
   const formattedData = useMemo(() => data.bins.map((d, i) => ({...d, x: i})), [
     data,
   ]);
@@ -107,6 +138,7 @@ const BarChart = props => {
           d =>
             d.total !== 0 && (
               <Rect
+                fill={d.color}
                 x={scale.x(d.x + barRectOffset)}
                 y={scale.y(accessor(data.totalShotsWithinMaxDistance)(d))}
                 width={scale.x(1 - barPadding) - scale.x(0)}
@@ -136,6 +168,9 @@ BarChart.propTypes = {
       PropTypes.exact({
         SHOT_MADE_FLAG: PropTypes.number.isRequired,
         SHOT_ATTEMPTED_FLAG: PropTypes.number.isRequired,
+        shootingPct: PropTypes.number,
+        shootingPctAboveAvg: PropTypes.number,
+        color: PropTypes.any
       })
     ),
     totalMakes: PropTypes.number.isRequired,
@@ -144,6 +179,7 @@ BarChart.propTypes = {
   }).isRequired,
   domain: PropTypes.func.isRequired,
   label: PropTypes.func.isRequired,
+  leagueShootingPct: PropTypes.array.isRequired,
   maxDistance: PropTypes.number.isRequired,
   title: PropTypes.string.isRequired,
 };

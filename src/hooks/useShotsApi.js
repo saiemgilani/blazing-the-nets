@@ -19,7 +19,7 @@ function useShotsApi(playerId, seasonId, maxDistance) {
       endpoint.pathname = `/data/shotchartdetail/${seasonId}/${playerId}.json`;
 
       const res = await axios.get(endpoint);
-      console.log(res.data[0])
+      console.log(res.data[0].filter(isLessThanDistance(maxDistance)))
       setData(res.data[0].filter(isLessThanDistance(maxDistance)));
       setRibbonedData(ribbonShots(res.data[0], maxDistance));
       setBinnedData(binShots(res.data[0], maxDistance));
@@ -27,7 +27,7 @@ function useShotsApi(playerId, seasonId, maxDistance) {
     };
     fetchData();
   }, [playerId, seasonId, maxDistance]);
-  console.log([{data, ribbonedData, binnedData, leftRightData}])
+  // console.log([{data, ribbonedData, binnedData, leftRightData}])
   return [{data, ribbonedData, binnedData, leftRightData}];
 }
 

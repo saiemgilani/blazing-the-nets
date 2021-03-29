@@ -12,6 +12,7 @@ const domain = {
     return [-max, max];
   },
   fieldGoalPercentage: d => [-100, 100],
+  vsLeaguePercentage: d => [-50, 50]
 };
 
 const labeler = {

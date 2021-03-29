@@ -10,7 +10,7 @@ export const Svg = styled.svg`
 `;
 
 export const Rect = styled.rect`
-  fill: rgba(78,94,109, 0.5);
+  
 `;
 
 const NoninteractiveDiv = styled.div`

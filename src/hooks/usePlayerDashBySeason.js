@@ -3,7 +3,7 @@ import axios from 'axios';
 
 import {apiOrigin} from '../utils/config';
 
-function usePlayersWithRostersBySeasonApi(seasonId = null) {
+function usePlayerDashBySeason(seasonId = null) {
   const [players, setPlayers] = useState([]);
 
   useEffect(() => {
@@ -12,8 +12,7 @@ function usePlayersWithRostersBySeasonApi(seasonId = null) {
       const pathname = 'data/';
       const result = await axios.get(endpoint+pathname+`players.json`);
       const seasons = result.data[1];
-      console.log(seasons)
-      console.log(result.data.reverse())
+      
       setPlayers(result.data.reverse());
     };
     fetchData();
@@ -22,4 +21,4 @@ function usePlayersWithRostersBySeasonApi(seasonId = null) {
   return [players];
 }
 
-export default usePlayersWithRostersBySeasonApi;
+export default usePlayerDashBySeason;

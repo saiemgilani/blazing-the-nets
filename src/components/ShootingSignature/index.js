@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {scaleLinear, scaleSequential} from 'd3-scale';
-import {interpolatePlasma} from 'd3-scale-chromatic';
+import {interpolateRdBu} from 'd3-scale-chromatic';
 import {area, curveBasis} from 'd3-shape';
 import styled from 'styled-components';
 
@@ -9,6 +9,7 @@ import ChartDiv from '../ChartDiv';
 import ChartTitle from '../ChartTitle';
 import Cursor from './Cursor';
 import Gradient from './Gradient';
+import Legend from './Legend';
 
 const Div2 = styled.div`
   flex: 1;
@@ -33,7 +34,7 @@ const calculateGradientData = (data, leagueShootingPct, maxDistance) => {
     .domain([0, maxDistance])
     .range([0, 100]);
 
-  const colorScale = scaleSequential(interpolatePlasma).domain([-0.15, 0.15]);
+  const colorScale = scaleSequential(interpolateRdBu).domain([-0.15, 0.15]);
 
   const colorData = [];
   const stripe = false; // set stripe to true to prevent linear gradient fading
@@ -113,8 +114,22 @@ const ShootingSignature = props => {
                   style={{fill: `url(#${gradientId})`}}
                 />
               </Gradient>
+              
+              
               <Cursor scale={{x, y}} />
             </g>
+          </g>
+        </Svg>
+      </Div2>
+      <Div2>
+        <Svg  
+          viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+          preserveAspectRatio="xMidYMid meet"
+        >
+          <g>
+            <Legend imgHeight={5}
+                    imgWidth={svgWidth}
+                      />
           </g>
         </Svg>
       </Div2>

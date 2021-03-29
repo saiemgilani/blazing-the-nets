@@ -17,13 +17,13 @@ const config = {
 
 firebase.initializeApp(config);
 
-const firebaseDB = firebase.database();
-const firebaseTeams = firebaseDB.ref('teams');
-const firebasePlayers = firebaseDB.ref('players');
+const firebaseStorage = firebase.storage();
+const firebaseTeams = firebaseStorage.ref('Teams');
+const firebasePlayers = firebaseStorage.ref('Players');
 
 export {
     firebase,
     firebaseTeams,
     firebasePlayers,
-    firebaseDB
+    firebaseStorage
 }

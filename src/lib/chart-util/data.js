@@ -8,7 +8,6 @@ import {createAccessor} from './helpers';
  * @returns {Array} the sanitized data.
  */
 function cleanData(dataset, props) {
-  // TODO: implement function to sanitize log scales with values of 0
   return dataset;
 }
 

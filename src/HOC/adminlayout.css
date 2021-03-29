@@ -1,0 +1,14 @@
+.admin_container {
+    margin-top: 88px;
+    display: flex;
+}
+
+.admin_container .admin_left_nav {
+    min-height: 75vh;
+    margin-top: -8px;
+    background: rgb(80, 79, 79);
+}
+
+.admin_container .admin_right {
+    flex-grow: 1;
+}

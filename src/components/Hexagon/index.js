@@ -46,8 +46,7 @@ const Hexagon = props => {
   const totalShots = data.length;
   const shootingPct = madeShots / totalShots;
   const shootingPctAboveAvg =
-    shootingPct -
-    (leagueShootingPct[distance] ?? leagueShootingPct[distance - 1]);
+    shootingPct - (leagueShootingPct[distance] ?? leagueShootingPct[distance - 1]);
   const color = colorScale(shootingPctAboveAvg);
 
   const tooltipProps = {
@@ -61,7 +60,7 @@ const Hexagon = props => {
     <path
       shapeRendering="geometricPrecision"
       transform={`translate(${scale.x(x)},${scale.y(y)})`}
-      d={hexbinPath.hexagon(renderSize(radius(totalShots), hexbinSize))}
+      d={hexbinPath.hexagon(renderSize(totalShots, hexbinSize))}
       style={{
         fill: color,
       }}

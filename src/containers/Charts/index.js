@@ -61,6 +61,7 @@ const Charts = ({playerId, seasonId}) => {
           data={binnedData}
           domain={barChartFunctions.shotProportion.domain}
           label={barChartFunctions.shotProportion.labeler}
+          leagueShootingPct={leagueShootingPct}
           maxDistance={maxDistance}
           title="Shot Proportion by Distance"
         />
@@ -69,6 +70,7 @@ const Charts = ({playerId, seasonId}) => {
           data={binnedData}
           domain={barChartFunctions.fieldGoalPercentage.domain}
           label={barChartFunctions.fieldGoalPercentage.labeler}
+          leagueShootingPct={leagueShootingPct}
           maxDistance={maxDistance}
           title="Field Goal Percentage by Distance"
         />
@@ -78,6 +80,7 @@ const Charts = ({playerId, seasonId}) => {
           accessor={leftRightFunctions.shotFrequency.accessor}
           data={leftRightData}
           domain={leftRightFunctions.shotFrequency.domain}
+          leagueShootingPct={leagueShootingPct}
           maxDistance={maxDistance}
           title="Shooting Frequency by Side"
         />
@@ -85,6 +88,7 @@ const Charts = ({playerId, seasonId}) => {
           accessor={leftRightFunctions.fieldGoalPercentage.accessor}
           data={leftRightData}
           domain={leftRightFunctions.fieldGoalPercentage.domain}
+          leagueShootingPct={leagueShootingPct}
           maxDistance={maxDistance}
           title="Field Goal Percentage by Side"
         />

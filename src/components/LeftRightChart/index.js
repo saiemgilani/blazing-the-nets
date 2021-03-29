@@ -13,6 +13,8 @@ import {XAxis, YAxis} from './Axis';
 import Cursor from './Cursor';
 import {voronoiActivatorEvents} from './functions';
 import {Rect, StaticSvg as Svg} from './style';
+import {scaleSequential} from 'd3-scale';
+import {interpolateRdBu} from 'd3-scale-chromatic';
 
 const margin = {top: 20, right: 50, bottom: 50, left: 50};
 const svgWidth = 450;
@@ -26,7 +28,14 @@ const voronoiDimension = 'y';
 const voronoiOptions = {voronoiDimension};
 
 const LeftRightChart = props => {
-  const {accessor, data, domain: xDomain, maxDistance, title} = props;
+  const {
+    accessor, 
+    data, 
+    domain: xDomain, 
+    maxDistance, 
+    color: colorScale,
+    leagueShootingPct,
+    title} = props;
   const [hover, dispatchHover] = useHover();
   const svgRef = createRef();
 
@@ -69,6 +78,7 @@ const LeftRightChart = props => {
 
   const activeIndex = hover.toggle && hover.distance;
   const activePoint = hover.toggle && data.left?.[hover.distance];
+  const color = scaleSequential(interpolateRdBu).domain([-0.21, 0.21]);
   const targetProps = {
     activeIndex,
     activePoint,
@@ -77,6 +87,22 @@ const LeftRightChart = props => {
     width: svgWidth,
     voronoiPadding: 5,
   };
+  const colors = scaleSequential(interpolateRdBu).domain([-0.21, 0.21]);
+  
+  data.left?.map(function(d,i){
+    d.shootingPct = d.SHOT_MADE_FLAG/d.SHOT_ATTEMPTED_FLAG;
+    d.shootingPctAboveAvg = d.shootingPct - leagueShootingPct[i]
+    d.color = colors(d.shootingPctAboveAvg)
+  
+    return d
+  })
+  data.right?.map(function(d,i){
+    d.shootingPct = d.SHOT_MADE_FLAG/d.SHOT_ATTEMPTED_FLAG;
+    d.shootingPctAboveAvg = d.shootingPct - leagueShootingPct[i]
+    d.color = colors(d.shootingPctAboveAvg)
+  
+    return d
+  })
   if (!scale || !voronoi) return null;
   return (
     <ChartDiv>
@@ -98,6 +124,8 @@ const LeftRightChart = props => {
           (d, i) =>
             d.total !== 0 && (
               <Rect
+              
+                fill={d.color}
                 x={scale.x(-accessor(d))}
                 y={scale.y(i + barRectOffset)}
                 width={scale.x(0) - scale.x(-accessor(d))}
@@ -110,6 +138,7 @@ const LeftRightChart = props => {
           (d, i) =>
             d.total !== 0 && (
               <Rect
+                fill={d.color}
                 x={scale.x(0)}
                 y={scale.y(i + barRectOffset)}
                 width={scale.x(accessor(d)) - scale.x(0)}
@@ -141,6 +170,7 @@ LeftRightChart.propTypes = {
     ),
   }).isRequired,
   domain: PropTypes.func.isRequired,
+  leagueShootingPct: PropTypes.array.isRequired,
   maxDistance: PropTypes.number.isRequired,
   title: PropTypes.string.isRequired,
 };

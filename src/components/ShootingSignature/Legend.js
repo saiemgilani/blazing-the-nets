@@ -7,7 +7,8 @@ import styled from 'styled-components';
 import theme from '../../theme';
 
 const TSpan = styled.tspan`
-  font-size: 14px;
+  margin-top: 5px;
+  font-size: 13px;
   fill: rgb(43, 49, 55);
 `;
 
@@ -23,7 +24,7 @@ const tickFormat = d => `${(100 * d).toFixed(0)}`;
 
 const Legend = ({imgHeight, imgWidth, x, y}) => {
   const scale = scaleLinear()
-    .domain([-0.25, 0.25])
+    .domain([-0.15, 0.15])
     .range([0, imgWidth]);
   const ticks = scale.ticks();
   const tickLength = 5;
@@ -31,7 +32,7 @@ const Legend = ({imgHeight, imgWidth, x, y}) => {
   return (
     <g role="presentation" transform={`translate(${x}, ${y})`}>
       <image
-        xlinkHref="/media/img/plasma.png"
+        xlinkHref="/data/images/RdBu.png"
         height={imgHeight}
         width={imgWidth}
         preserveAspectRatio="none"
@@ -54,7 +55,7 @@ const Legend = ({imgHeight, imgWidth, x, y}) => {
             y2={imgHeight + tickLength}
           />
           {t % 0.1 === 0 && (
-            <text x={scale(t)} y={imgHeight + tickLength + 10} dy={12}>
+            <text x={scale(t)} y={imgHeight + tickLength + 10} dy={20}>
               <TSpan textAnchor="middle">{tickFormat(t)}</TSpan>
             </text>
           )}

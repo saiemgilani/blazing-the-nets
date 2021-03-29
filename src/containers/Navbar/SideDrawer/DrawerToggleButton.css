@@ -1,0 +1,26 @@
+.toggle-button {
+  outline: none !important;
+  margin-top: 2px !important;
+  margin-right: -20px !important;
+}
+
+
+.sc-bdVaJa.bLyUej {
+  outline-color: transparent !important;
+  border-color: transparent !important;
+}
+
+span.sc-htpNat.sc-gqjmRU.fygmjP,
+span.sc-htpNat.sc-gqjmRU.fygmjP::before,
+span.sc-htpNat.sc-gqjmRU.fygmjP::after,
+span.sc-htpNat.sc-gqjmRU.fygmjP {
+  width: 28px !important;
+  height: 2px;
+}
+
+span.sc-htpNat.sc-gqjmRU.hJasVL,
+span.sc-htpNat.sc-gqjmRU.hJasVL::before,
+span.sc-htpNat.sc-gqjmRU.hJasVL::after {
+  width: 28px !important;
+  height: 2px;
+}

@@ -1,12 +1,12 @@
 import React, {useState} from 'react';
-import {useRouteMatch} from 'react-router-dom';
+import { useRouteMatch } from 'react-router-dom';
 
 import Charts from '../Charts';
 import PlayerImage from '../../components/PlayerImage';
 import PlayerSelector from '../../components/PlayerSelector';
 import SeasonSelector from '../../components/SeasonSelector';
 import {
-  usePlayersWithRostersBySeasonApi,
+  usePlayerDashBySeason,
   useSeasonsApi,
   useUrlSearchParams,
 } from '../../hooks';
@@ -21,7 +21,7 @@ export default function ChartDashboard() {
   const slugPlayerId = match && match.params.playerId ? match.params.playerId : '202681';
   const [seasons] = useSeasonsApi(slugPlayerId);
   const [seasonId, setSeasonId] = useState(slugSeasonId || '2020-21');
-  const [players] = usePlayersWithRostersBySeasonApi(slugPlayerId);
+  const [players] = usePlayerDashBySeason(slugPlayerId);
   const [playerId, setPlayerId] = useState(slugPlayerId);
 
   if (slugPlayerId && slugPlayerId !== playerId) {

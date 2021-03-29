@@ -2,15 +2,25 @@ import React, {useState} from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import {hexbin} from 'd3-hexbin';
+import * as d3 from 'd3';
 import {scaleLinear, scaleSequential, scaleSqrt} from 'd3-scale';
-import {interpolatePlasma} from 'd3-scale-chromatic';
+import {interpolateRdBu} from 'd3-scale-chromatic';
 
 import Court from '../Court';
 import ChartDiv from '../ChartDiv';
 import Hexagons from '../Hexagons';
 import ShotchartCursor from './ShotchartCursor';
 import Tooltip from '../Tooltip';
-
+const colorSet = [
+  '#195943',
+  '#708d81',
+  '#b2b187',
+  '#d3c38a',
+  '#f4d58d',
+  '#cb552a',
+  '#bf0603',
+  '#8d0801'
+];
 const Svg = styled.svg`
   display: block;
   margin: 0 auto;
@@ -52,10 +62,10 @@ const ShotChart = props => {
   const radius = scaleSqrt()
     .domain([0, 50])
     .range([0, 10]);
-  const color = scaleSequential(interpolatePlasma).domain([-0.15, 0.15]);
+  const color = scaleSequential(interpolateRdBu).domain([-0.21, 0.21]);
   const hexbinPath = hexbin()
-    .size([width, height])
-    .radius(hexbinSize);
+  .size([width,height])
+  .radius(hexbinSize);
 
   return (
     <ChartDiv>

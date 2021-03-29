@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {useHistory} from 'react-router-dom';
 
-const SeasonSelector = ({team, season, seasons, setSeasonId}) => {
+const TeamSeasonSelector = ({team, season, seasons, setSeasonId}) => {
   const history = useHistory();
   return (
     <form>
@@ -28,7 +28,7 @@ const SeasonSelector = ({team, season, seasons, setSeasonId}) => {
   );
 };
 
-SeasonSelector.propTypes = {
+TeamSeasonSelector.propTypes = {
   team: PropTypes.string.isRequired,
   season: PropTypes.string.isRequired,
   seasons: PropTypes.arrayOf(
@@ -39,4 +39,4 @@ SeasonSelector.propTypes = {
   setSeasonId: PropTypes.func.isRequired,
 };
 
-export default SeasonSelector;
+export default TeamSeasonSelector;

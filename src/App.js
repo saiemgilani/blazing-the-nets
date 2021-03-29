@@ -1,10 +1,8 @@
 import React from 'react';
 import styled from 'styled-components';
 import {BrowserRouter as Router} from 'react-router-dom';
-import ChartDashboard from './containers/ChartDashboard';
-import Navbar from './containers/Navbar/Navbar';
-import Footer from './containers/Footer';
-import { firebase } from './firebase';
+import ScrollToTop from './components/ScrollToTop';
+import Routes from './routes';
 
 const Div = styled.div`
   padding: 0 1em;
@@ -17,14 +15,19 @@ const Div = styled.div`
 //   color: #070707;
 // `;
 
-const App = () => (
-  <Router>
-      <Navbar />
+const App = (props) => {
+  return(
+    <Router>
+      {/* <Navbar />
       <Div className="App">
         <ChartDashboard />
       </Div>
-      <Footer />
-  </Router>
-);
+      <Footer /> */}
+      <ScrollToTop>
+        <Routes {...props}/>
+      </ScrollToTop>
+    </Router>
+  )
+};
 
 export default App;

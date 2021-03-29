@@ -21,6 +21,11 @@ const Div2 = styled.div`
   width: 100%;
   position: relative;
 `;
+const TSpan = styled.tspan`
+  margin-top: 5px;
+  font-size: 13px;
+  fill: rgb(43, 49, 55);
+`;
 
 const Svg = styled.svg`
   display: block;
@@ -130,6 +135,9 @@ const ShootingSignature = props => {
             <Legend imgHeight={5}
                     imgWidth={svgWidth}
                       />
+            <TSpan imgWidth={svgWidth / 2} imgHeight={15} textAnchor="middle">
+              FG% vs LeagueAvg
+            </TSpan>
           </g>
         </Svg>
       </Div2>

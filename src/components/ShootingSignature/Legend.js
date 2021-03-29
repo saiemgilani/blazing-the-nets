@@ -24,16 +24,16 @@ const tickFormat = d => `${(100 * d).toFixed(0)}`;
 
 const Legend = ({imgHeight, imgWidth, x, y}) => {
   const scale = scaleLinear()
-    .domain([-0.15, 0.15])
+    .domain([-0.21, 0.21])
     .range([0, imgWidth]);
   const ticks = scale.ticks();
-  const tickLength = 5;
+  const tickLength = 15;
 
   return (
     <g role="presentation" transform={`translate(${x}, ${y})`}>
       <image
         xlinkHref="/data/images/RdBu.png"
-        height={imgHeight}
+        height={imgHeight+15}
         width={imgWidth}
         preserveAspectRatio="none"
       />
@@ -42,8 +42,8 @@ const Legend = ({imgHeight, imgWidth, x, y}) => {
         {...defaultAxisProps}
         x1={scale.range()[0]}
         x2={scale.range()[1]}
-        y1={imgHeight}
-        y2={imgHeight}
+        y1={imgHeight+15}
+        y2={imgHeight+15}
       />
       {ticks.map(t => (
         <g role="presentation" key={t}>
@@ -51,7 +51,7 @@ const Legend = ({imgHeight, imgWidth, x, y}) => {
             {...defaultAxisProps}
             x1={scale(t)}
             x2={scale(t)}
-            y1={imgHeight}
+            y1={imgHeight+5}
             y2={imgHeight + tickLength}
           />
           {t % 0.1 === 0 && (
@@ -61,9 +61,9 @@ const Legend = ({imgHeight, imgWidth, x, y}) => {
           )}
         </g>
       ))}
-      <TSpan x={imgWidth / 2} y={imgHeight + 30} textAnchor="middle">
-        FG% vs LeagueAvg
-      </TSpan>
+      <text x={imgWidth / 2} y={imgHeight + tickLength + 30} dy={20}>
+              <TSpan textAnchor="middle">FG% vs League Average</TSpan>
+      </text>
     </g>
   );
 };

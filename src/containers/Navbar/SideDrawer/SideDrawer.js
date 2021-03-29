@@ -16,13 +16,10 @@ const SideDrawer = props => {
           <a className="btn ripple" href="/">Home</a>
         </li>
         <li>
-          <a className="btn ripple" href="/team">Team</a>
+          <a className="btn ripple" href="/teams">Teams</a>
         </li>
         <li>
-          <a className="btn ripple" href="/games">Games</a>
-        </li>
-        <li>
-          <a className="btn ripple" href="/nba-teams">NBA Teams</a>
+          <a className="btn ripple" href="/players">Players</a>
         </li>
 
         {

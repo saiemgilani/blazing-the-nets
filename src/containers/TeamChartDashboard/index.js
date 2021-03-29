@@ -1,27 +1,27 @@
 import React, {useState} from 'react';
 import {useRouteMatch} from 'react-router-dom';
 
-import Charts from '../Charts';
+import Charts from '../TeamCharts';
 import TeamImage from '../../components/TeamImage';
 import TeamSelector from '../../components/TeamSelector';
-import SeasonSelector from '../../components/SeasonSelector';
+import TeamSeasonSelector from '../../components/TeamSeasonSelector';
 import {
-  usePlayerDashBySeason,
-  useSeasonsApi,
+  useTeamDashBySeason,
+  useTeamSeasonsApi,
   useUrlSearchParams,
 } from '../../hooks';
 
-export default function ChartDashboard() {
-  const match = useRouteMatch('/team/:teamId');
+export default function TeamChartDashboard() {
+  const match = useRouteMatch('/teams/:teamId');
   const urlSearchParams = useUrlSearchParams();
   const slugSeasonId = urlSearchParams.get('season_id');
   
   // const slugSeasonId = match && match.params.season ? match.params.season : '2020-21';
   
   const slugTeamId = match && match.params.teamId ? match.params.teamId : '1610612751';
-  const [seasons] = useSeasonsApi(slugTeamId);
+  const [seasons] = useTeamSeasonsApi(slugTeamId);
   const [seasonId, setSeasonId] = useState(slugSeasonId || '2020-21');
-  const [teams] = usePlayerDashBySeason(slugTeamId);
+  const [teams] = useTeamDashBySeason(slugTeamId);
   const [teamId, setTeamId] = useState(slugTeamId);
 
   if (slugTeamId && slugTeamId !== teamId) {
@@ -43,7 +43,7 @@ export default function ChartDashboard() {
         teams={teams}
         setTeamId={setTeamId}
       />
-      <SeasonSelector
+      <TeamSeasonSelector
         team={teamId}
         season={seasonId}
         seasons={seasons}

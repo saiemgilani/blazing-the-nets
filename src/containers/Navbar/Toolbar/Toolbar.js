@@ -20,7 +20,7 @@ const Toolbar = props => {
             <Link to='/'>
               <Button color='inherit'>Home</Button>
             </Link>
-            <Link to='/team'>
+            <Link to='/teams'>
               <Button color='inherit'>Teams</Button>
             </Link>
             <Link to='/players'>

@@ -8,34 +8,37 @@ const fetch = require("node-fetch");
 // so I had a really stupid time trying to read files from disk using async/await
 // it resulted in me doing something i know is terribly stupid in delay20
 let playersList = []
-function getPlayers(){
-  fs.readFile(path.resolve(__dirname, "players.json"), function (err, data) {
-      if (err) {
-          throw err;
-      }
-      players = JSON.parse(data);
-      for(const player of players){
-        console.log(player.playerId)
-        playersList.push(player.playerId)
-      }
-  });
+async function readFile(filePath) {
+  try { 
+    const data = await fsp.readFile(filePath);
+    return data
+  } catch (error) {
+    console.error(`Got an error trying to read the file: ${error.message}`);
+  }
+}
+function getPlayers(data){
+  
+  const players = JSON.parse(data);
+  for(const player of players){
+      playersList.push(
+          {
+              playerId: player.playerId,
+              teamId: player.teamId,
+          })
+  }
 };
-getPlayers();
 
 let teamsList = []
-function getTeams(){
-  fs.readFile(path.resolve(__dirname, "teams.json"), function (err, data) {
-      if (err) {
-          throw err;
-      }
-      teams = JSON.parse(data);
-      for(const team of teams){
-        console.log(team.teamId)
-        teamsList.push(team.teamId)
-      }
-  });
+function getTeams(data){
+  const teams = JSON.parse(data);
+  for(const team of teams){
+      teamsList.push(
+          {
+              teamId: team.teamId,
+          })
+  }
 };
-getTeams();
+
 
 async function indexing(){
   await delay20();
@@ -97,7 +100,6 @@ async function fetchPlayerYearOverYear(playerId) {
     );
 }
 async function playerYoyPull() {
-  await delay20();
   const playerIds = playersList;
   // console.log(playerIds);
   console.log('Starting script for players', playerIds);
@@ -176,7 +178,6 @@ async function fetchLeagueTracking(playerOrTeam,season,measure) {
     );
 }
 async function leagueTrackingPull() {
-  await delay20();
   const cats = ['Player','Team'];
   // console.log(playerIds);
   console.log('Starting script for ', cats);
@@ -262,7 +263,6 @@ async function fetchLeagueTrackingDefense(playerOrTeam,season,measure) {
     );
 }
 async function leagueTrackingDefensePull() {
-  await delay20();
   const cats = ['Player'];
   // console.log(playerIds);
   console.log('Starting script for ', cats);
@@ -347,7 +347,6 @@ async function fetchLeagueTrackingTeamDefense(playerOrTeam,season,measure) {
     );
 }
 async function leagueTrackingTeamDefensePull() {
-  await delay20();
   const cats = ['Team'];
   // console.log(playerIds);
   console.log('Starting script for ', cats);
@@ -432,7 +431,6 @@ async function fetchPlayerShotDetail(playerId,season) {
     );
 }
 async function playerShotDetailPull() {
-  await delay20();
   const playerIds = playersList;
   // console.log(playerIds);
   console.log('Starting script for players', playerIds);
@@ -511,7 +509,6 @@ async function fetchLeagueTrackingTeamShots(season) {
     );
 }
 async function leagueTrackingTeamShotsPull() {
-  await delay20();
   // console.log(playerIds);
   
   let seasons =['2015-16','2016-17','2017-18','2018-19','2019-20','2020-21'];
@@ -587,7 +584,6 @@ async function fetchLeagueTrackingPlayerShots(season) {
     );
 }
 async function leagueTrackingPlayerShotsPull() {
-  await delay20();
   // console.log(playerIds);
   let seasons =['2015-16','2016-17','2017-18','2018-19','2019-20','2020-21'];
   for(const season of seasons){
@@ -661,7 +657,6 @@ async function fetchTrackingPlayerShots(playerId,season) {
 }
 
 async function trackingPlayerShotsPull() {
-  await delay20();
   const playerIds = playersList;
   // console.log(playerIds);
   let seasons =['2015-16','2016-17','2017-18','2018-19','2019-20','2020-21'];
@@ -731,7 +726,6 @@ async function fetchLeagueTrackingPlayerShotLocations(season, measure) {
 }
 
 async function leagueTrackingPlayerShotLocationsPull() {
-  await delay20();
   let measures = ['Base','Opponent'];
   // console.log(playerIds);
   let seasons =['2015-16','2016-17','2017-18','2018-19','2019-20','2020-21'];
@@ -803,7 +797,6 @@ async function fetchLeagueTrackingTeamShotLocations(season, measure) {
 }
 
 async function leagueTrackingTeamShotLocationsPull() {
-  await delay20();
   let measures = ['Base'];
   // console.log(playerIds);
   let seasons =['2015-16','2016-17','2017-18','2018-19','2019-20','2020-21'];
@@ -883,7 +876,6 @@ async function fetchLeagueTeamStats(season, measure) {
     );
 }
 async function leagueTeamStatsPull() {
-  await delay20();
   let measures = [
     'Base','Advanced','Misc', 'Four Factors',
     'Scoring', 'Usage', 'Defense', 'Opponent'
@@ -971,7 +963,6 @@ async function fetchLeaguePlayerStats(season, measure) {
 }
 
 async function leaguePlayerStatsPull() {
-  await delay20();
   let measures = [
     'Base','Advanced','Misc', 
     'Scoring', 'Usage', 'Defense'
@@ -992,16 +983,106 @@ async function leaguePlayerStatsPull() {
   console.log('Done!');
 }
 
+async function fetchShotChartLineupDetail(season,team) {
+  console.log(`Making API Request for ${season}...`);
+  const baseUrl = `https://stats.nba.com/stats/shotchartlineupdetail`
 
-// playerYoyPull();
-// playerShotDetailPull();
-// leagueTrackingPull();
-// leagueTrackingDefensePull();
-// leagueTrackingTeamDefensePull();
-// leagueTrackingTeamShotsPull();
-// leagueTrackingPlayerShotsPull();
-// trackingPlayerShotsPull();
-// leagueTrackingPlayerShotLocationsPull();
-// leagueTrackingTeamShotLocationsPull();
-// leagueTeamStatsPull();
-// leaguePlayerStatsPull();
+  const headers =  {
+    "Accept-Encoding": "gzip, deflate",
+    "Accept-Language": "en-US",
+    Accept: "*/*",
+    "User-Agent": template.user_agent,
+    Referer: template.referrer,
+    Connection: "keep-alive",
+    "Cache-Control": "no-cache",
+    Origin: "http://stats.nba.com",
+  };
+  parameters = {
+    'ContextFilter': '',
+    'ContextMeasure': 'PTS',
+    'DateFrom': '',
+    'DateTo': '',
+    'GameID': 0022000653,
+    'GameSegment': '',
+    'GROUP_ID': 0,
+    'LastNGames': 0,
+    'LeagueID': '00',
+    'Location': '',
+    'Month': 0,
+    'OpponentTeamID': '',
+    'Outcome': '',
+    'Period': 0,
+    'Season': season,
+    'SeasonSegment': '',
+    'SeasonType': 'Regular Season',
+    'TeamId': team,
+    'VsConference': '',
+    'VsDivision': ''
+  }
+  const results = await axios.get(
+      baseUrl, { 
+        params: parameters,
+        headers: headers 
+      })
+
+  var teams = results.data.resultSets;
+  var dat = [];
+  var result = teams.forEach(function(cellValue, cellInd){
+    var headers = teams[cellInd].headers
+    var rowSet = teams[cellInd].rowSet
+    var results = rowSet.map(function(row){
+      var jsonRow = {};
+      row.forEach(function(cellValue, cellIndex){
+        jsonRow[headers[cellIndex]] = cellValue;
+      });
+      return jsonRow;
+    });
+    dat.push(results);
+  });
+  await fs.promises.writeFile(
+      `../public/data/shotchartlineupdetail/${season}/${team}.json`,
+      JSON.stringify(dat,null, 2)
+    );
+}
+async function shotChartLineupDetailPull() {
+  
+  // console.log(playerIds);
+  let seasons =['2015-16','2016-17','2017-18','2018-19','2019-20','2020-21'];
+  let teams = teamsList;
+  
+  for(const season of seasons){
+    for(const team of teams){
+      try {
+        await fetchShotChartLineupDetail(season, team.teamId);
+      } catch (error) {
+        console.error(error);
+      }
+      await delay();
+    }
+  }
+  console.log('Done!');
+}
+
+
+
+(async function () {
+  const data = await readFile(path.resolve(__dirname, "players.json"));
+  getPlayers(data);
+  console.log(playersList)
+  const teams = await readFile(path.resolve(__dirname, "teams.json"));
+  getTeams(teams);
+  console.log(teamsList)
+  // playerYoyPull();
+  // playerShotDetailPull();
+  // leagueTrackingPull();
+  // leagueTrackingDefensePull();
+  // leagueTrackingTeamDefensePull();
+  // leagueTrackingTeamShotsPull();
+  // leagueTrackingPlayerShotsPull();
+  // trackingPlayerShotsPull();
+  // leagueTrackingPlayerShotLocationsPull();
+  // leagueTrackingTeamShotLocationsPull();
+  // leagueTeamStatsPull();
+  // leaguePlayerStatsPull();
+  shotChartLineupDetailPull();
+})();

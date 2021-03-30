@@ -11,10 +11,10 @@ const Toolbar = props => {
   <header className="toolbar">
     <div className="toolbar-wrapper">
       <nav className="toolbar__navigation">
-        <div className="spacer" />
         <div className="toolbar_navigation-header">
           <h1>Blazing the Nets</h1>
         </div>
+        <div className="spacer" />
         <div className="toolbar_navigation-items">
           <ul>
             <Link to='/'>

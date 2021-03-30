@@ -9,9 +9,10 @@ function usePlayersApi() {
   useEffect(() => {
     const fetchData = async () => {
       const endpoint = new URL(apiOrigin);
-      const fullUrl = endpoint + 'data/players.json';
+      const pathname = 'data/'
       
-      const result = await axios.get(fullUrl,{
+      
+      const result = await axios.get(`${endpoint}${pathname}players.json`,{
         responseType: 'stream'
       });
       setPlayers(result.data);

@@ -1,5 +1,4 @@
 .toggle-button {
-  background-color: rgba(19, 19, 19, 0.6);
   outline: none !important;
   margin-top: 2px !important;
   margin-right: -20px !important;
@@ -15,7 +14,6 @@ span.sc-htpNat.sc-gqjmRU.fygmjP,
 span.sc-htpNat.sc-gqjmRU.fygmjP::before,
 span.sc-htpNat.sc-gqjmRU.fygmjP::after,
 span.sc-htpNat.sc-gqjmRU.fygmjP {
-  background: rgba(19, 19, 19, 0.6);
   color: rgba(19, 19, 19, 0.6);
   width: 28px !important;
   height: 2px;

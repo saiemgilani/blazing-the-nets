@@ -1,7 +1,6 @@
 .side-drawer {
     height: 100%;
     background: rgba(19, 19, 19, 0.6);
-    box-shadow: 2px 0px 5px rgba(0, 0, 0, 0.5);
     position: fixed;
     top: 0;
     left: 0;
@@ -65,7 +64,7 @@
 }
 
 .ripple:hover {
-    background: rgba(12, 12, 12, 0.9) radial-gradient(circle, transparent 50%, rgba(19, 19, 19, 0.7) 1%) center/15000%;
+    background: rgba(12, 12, 12, 0.9) radial-gradient(circle, transparent 40%, rgba(19, 19, 19, 0.7) 1%) center/15000%;
 }
 
 .ripple:active {

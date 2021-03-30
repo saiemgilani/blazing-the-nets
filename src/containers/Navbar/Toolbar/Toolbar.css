@@ -3,7 +3,7 @@
     top: 0;
     left: 0;
     width: 100%;
-    background: rgba(0, 0, 0,0.7);
+    background: rgba(0, 0, 0,0.6);
     height: 50px;
     padding-top: 0rem;
     padding: 0 10px;
@@ -13,7 +13,7 @@
 
 .toolbar-wrapper {
     height: 100%;
-    background: rgba(0, 0, 0, 0.4) ;
+    background: rgba(0, 0, 0, 0.5) ;
     width: 100%;
     margin: 0 auto;
 }
@@ -45,7 +45,7 @@
     list-style: none;
     margin: 0;
     padding-top: 20px;
-    padding-bottom: 10px;
+    padding-bottom: 15px;
     display: flex;
 }
   
@@ -55,7 +55,7 @@
 }
   
 .toolbar_navigation-items li {
-    padding-bottom: 10px;
+    padding-bottom: 5px;
 }
 .toolbar_navigation-items a {
     color: rgb(255, 255, 255);
@@ -68,6 +68,7 @@
 .toolbar_navigation-items a:hover,
 .toolbar_navigation-items a:active {
     color: rgb(255, 255, 255);
+    box-shadow: 1px 0px 1px rgba(121, 120, 120, 0.5);
 }
 
 @media (max-width: 1200px) {

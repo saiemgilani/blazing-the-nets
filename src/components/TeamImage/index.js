@@ -6,7 +6,7 @@ import {Img} from './style';
 
 const TeamImage = ({team}) => {
   const endpoint = new URL(apiOrigin);
-  endpoint.pathname = `/data/images/Teams/${team}.png`;
+  endpoint.pathname = `/data/images/teams/${team}.png`;
 
   return <Img src={endpoint.href} alt="Team's logo" width={200} height={200} />;
 };

@@ -3,8 +3,25 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {scaleLinear} from 'd3-scale';
 import styled from 'styled-components';
-
+import { LegendThreshold } from '@vx/legend';
+import { scaleThreshold } from '@vx/scale';
+ 
 import theme from '../../theme';
+const threshold = scaleThreshold({
+  domain: [[-.99,-0.225,-0.15,-0.075,0.0,0.075, 0.15,0.225,0.99]],
+  range: [
+    '#6a1511',
+    '#8d0801',
+    '#bf0603',
+    '#cb552a',
+    '#f4d58d',
+    '#b2b187',
+    '#708d81',
+    '#195943',
+    '#124030'
+  
+  ],
+});
 
 const TSpan = styled.tspan`
   margin-top: 5px;
@@ -23,16 +40,30 @@ const defaultAxisProps = {
 const tickFormat = d => `${(100 * d).toFixed(0)}`;
 
 const Legend = ({imgHeight, imgWidth, x, y}) => {
+  
+  const colorSet = [
+    '#6a1511',
+    '#8d0801',
+    '#bf0603',
+    '#cb552a',
+    '#f4d58d',
+    '#b2b187',
+    '#708d81',
+    '#195943',
+    '#124030'
+  ];
+  const colorScale = scaleLinear().domain([-.99,-0.225,-0.15,-0.075,0.0,0.075, 0.15,0.225,0.99]).range(colorSet);
   const scale = scaleLinear()
-    .domain([-0.21, 0.21])
+    .domain([-0.30,0.30])
     .range([0, imgWidth]);
+  console.log(scale)
   const ticks = scale.ticks();
   const tickLength = 15;
 
   return (
     <g role="presentation" transform={`translate(${x}, ${y})`}>
       <image
-        xlinkHref="/data/images/RdBu.png"
+        xlinkHref="/data/images/ryg.png"
         height={imgHeight+15}
         width={imgWidth}
         preserveAspectRatio="none"
@@ -51,16 +82,23 @@ const Legend = ({imgHeight, imgWidth, x, y}) => {
             {...defaultAxisProps}
             x1={scale(t)}
             x2={scale(t)}
-            y1={imgHeight+5}
+            y1={imgHeight}
             y2={imgHeight + tickLength}
           />
-          {t % 0.1 === 0 && (
-            <text x={scale(t)} y={imgHeight + tickLength + 10} dy={20}>
+          {t % 0.15 === 0 && (
+            <text x={scale(t)} y={imgHeight + tickLength + 7} dy={20}>
               <TSpan textAnchor="middle">{tickFormat(t)}</TSpan>
             </text>
           )}
         </g>
       ))}
+      <LegendThreshold
+        scale={threshold}
+        direction="column-reverse"
+        itemDirection="row-reverse"
+        labelMargin="0 20px 0 0"
+        shapeMargin="1px 0 0"
+      />
       <text x={imgWidth / 2} y={imgHeight + tickLength + 30} dy={20}>
               <TSpan textAnchor="middle">FG% vs League Average</TSpan>
       </text>

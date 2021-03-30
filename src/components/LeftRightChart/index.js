@@ -13,8 +13,7 @@ import {XAxis, YAxis} from './Axis';
 import Cursor from './Cursor';
 import {voronoiActivatorEvents} from './functions';
 import {Rect, StaticSvg as Svg} from './style';
-import {scaleSequential} from 'd3-scale';
-import {interpolateRdBu} from 'd3-scale-chromatic';
+import {scaleLinear} from 'd3-scale';
 
 const margin = {top: 20, right: 50, bottom: 50, left: 50};
 const svgWidth = 450;
@@ -78,7 +77,6 @@ const LeftRightChart = props => {
 
   const activeIndex = hover.toggle && hover.distance;
   const activePoint = hover.toggle && data.left?.[hover.distance];
-  const color = scaleSequential(interpolateRdBu).domain([-0.21, 0.21]);
   const targetProps = {
     activeIndex,
     activePoint,
@@ -87,7 +85,18 @@ const LeftRightChart = props => {
     width: svgWidth,
     voronoiPadding: 5,
   };
-  const colors = scaleSequential(interpolateRdBu).domain([-0.21, 0.21]);
+  const colorSet = [
+    '#6a1511',
+    '#8d0801',
+    '#bf0603',
+    '#cb552a',
+    '#f4d58d',
+    '#b2b187',
+    '#708d81',
+    '#195943',
+    '#124030'
+  ];
+  const colors = scaleLinear().domain([-.99,-0.21,-0.15,-0.07,0.0,0.07, 0.15,0.21,0.99]).range(colorSet);
   
   data.left?.map(function(d,i){
     d.shootingPct = d.SHOT_MADE_FLAG/d.SHOT_ATTEMPTED_FLAG;

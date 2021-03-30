@@ -2,6 +2,7 @@ import React, {useState} from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import {hexbin} from 'd3-hexbin';
+
 import * as d3 from 'd3';
 import {scaleLinear, scaleSequential, scaleSqrt} from 'd3-scale';
 import {interpolateRdBu} from 'd3-scale-chromatic';
@@ -11,16 +12,6 @@ import ChartDiv from '../ChartDiv';
 import Hexagons from '../Hexagons';
 import ShotchartCursor from './ShotchartCursor';
 import Tooltip from '../Tooltip';
-const colorSet = [
-  '#195943',
-  '#708d81',
-  '#b2b187',
-  '#d3c38a',
-  '#f4d58d',
-  '#cb552a',
-  '#bf0603',
-  '#8d0801'
-];
 const Svg = styled.svg`
   display: block;
   margin: 0 auto;
@@ -62,7 +53,29 @@ const ShotChart = props => {
   const radius = scaleSqrt()
     .domain([0, 50])
     .range([0, 10]);
-  const color = scaleSequential(interpolateRdBu).domain([-0.21, 0.21]);
+  
+const colorSet = [
+  '#6a1511',
+  '#8d0801',
+  '#bf0603',
+  '#cb552a',
+  '#f4d58d',
+  '#b2b187',
+  '#708d81',
+  '#195943',
+  '#124030'
+];
+  const color = scaleLinear().domain([-.99,-0.21,-0.15,-0.07,0.0,0.07, 0.15,0.21,0.99]).range(colorSet);
+  const squarePath = function(context,size){
+    var w = Math.sqrt(size),
+        x = -w/2;
+    return context.rect(x,x,w,w,);
+  }
+  const boxPath = function(context, size) {
+      var w = Math.sqrt(size),
+          x = -w / 2;
+      context.rect(x, x, w, w);
+    };
   const hexbinPath = hexbin()
   .size([width,height])
   .radius(hexbinSize);

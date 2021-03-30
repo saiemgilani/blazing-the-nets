@@ -1,7 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {scaleLinear, scaleSequential} from 'd3-scale';
-import {interpolateRdBu} from 'd3-scale-chromatic';
+import {scaleLinear} from 'd3-scale';
 import {area, curveBasis} from 'd3-shape';
 import styled from 'styled-components';
 
@@ -39,7 +38,18 @@ const calculateGradientData = (data, leagueShootingPct, maxDistance) => {
     .domain([0, maxDistance])
     .range([0, 100]);
 
-  const colorScale = scaleSequential(interpolateRdBu).domain([-0.15, 0.15]);
+  const colorSet = [
+    '#6a1511',
+    '#8d0801',
+    '#bf0603',
+    '#cb552a',
+    '#f4d58d',
+    '#b2b187',
+    '#708d81',
+    '#195943',
+    '#124030'
+  ];
+  const colorScale = scaleLinear().domain([-.99,-0.21,-0.15,-0.07,0.0,0.07, 0.15,0.21,0.99]).range(colorSet);
 
   const colorData = [];
   const stripe = false; // set stripe to true to prevent linear gradient fading

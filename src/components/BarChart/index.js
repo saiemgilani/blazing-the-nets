@@ -13,9 +13,7 @@ import ChartDiv from '../ChartDiv';
 import ChartTitle from '../ChartTitle';
 import Cursor from './Cursor';
 import {voronoiActivatorEvents} from './functions';
-import {scaleSequential} from 'd3-scale';
-import {interpolateRdBu} from 'd3-scale-chromatic';
-import {distance as euclideanDistance} from '../../lib';
+import {scaleLinear} from 'd3-scale';
 
 const margin = {top: 20, right: 50, bottom: 50, left: 50};
 const svgWidth = 450;
@@ -96,7 +94,18 @@ const BarChart = props => {
     width: svgWidth,
     voronoiPadding: 5,
   };
-  const colors = scaleSequential(interpolateRdBu).domain([-0.21, 0.21]);
+  const colorSet = [
+    '#6a1511',
+    '#8d0801',
+    '#bf0603',
+    '#cb552a',
+    '#f4d58d',
+    '#b2b187',
+    '#708d81',
+    '#195943',
+    '#124030'
+  ];
+  const colors = scaleLinear().domain([-.99,-0.21,-0.15,-0.07,0.0,0.07, 0.15,0.21,0.99]).range(colorSet);
   
   const vardata = data.bins.map(function(d,i){
     d.shootingPct = d.SHOT_ATTEMPTED_FLAG> 0 ? d.SHOT_MADE_FLAG/d.SHOT_ATTEMPTED_FLAG : 0.0;

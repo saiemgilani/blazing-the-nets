@@ -53,19 +53,15 @@ const ShotChart = props => {
   const radius = scaleSqrt()
     .domain([0, 50])
     .range([0, 10]);
-  
-const colorSet = [
-  '#6a1511',
-  '#8d0801',
-  '#bf0603',
-  '#cb552a',
-  '#f4d58d',
-  '#b2b187',
-  '#708d81',
-  '#195943',
-  '#124030'
-];
-  const color = scaleLinear().domain([-.99,-0.21,-0.15,-0.07,0.0,0.07, 0.15,0.21,0.99]).range(colorSet);
+    
+    const colorSet = [
+      '#8d0801',
+      '#bf0603',
+      '#f4d58d',
+      '#708d81',
+      '#195943'
+    ];
+  const color = scaleLinear().domain([-.99,-0.15,0.0, 0.15,0.99]).range(colorSet);
   const squarePath = function(context,size){
     var w = Math.sqrt(size),
         x = -w/2;

@@ -42,17 +42,13 @@ const tickFormat = d => `${(100 * d).toFixed(0)}`;
 const Legend = ({imgHeight, imgWidth, x, y}) => {
   
   const colorSet = [
-    '#6a1511',
     '#8d0801',
     '#bf0603',
-    '#cb552a',
     '#f4d58d',
-    '#b2b187',
     '#708d81',
-    '#195943',
-    '#124030'
+    '#195943'
   ];
-  const colorScale = scaleLinear().domain([-.99,-0.225,-0.15,-0.075,0.0,0.075, 0.15,0.225,0.99]).range(colorSet);
+    const colorScale = scaleLinear().domain([-.99,-0.15,0.0, 0.15,0.99]).range(colorSet);
   const scale = scaleLinear()
     .domain([-0.30,0.30])
     .range([0, imgWidth]);
@@ -63,7 +59,7 @@ const Legend = ({imgHeight, imgWidth, x, y}) => {
   return (
     <g role="presentation" transform={`translate(${x}, ${y})`}>
       <image
-        xlinkHref="/data/images/ryg.png"
+        xlinkHref="/data/images/rgy5.png"
         height={imgHeight+15}
         width={imgWidth}
         preserveAspectRatio="none"

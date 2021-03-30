@@ -38,18 +38,14 @@ const calculateGradientData = (data, leagueShootingPct, maxDistance) => {
     .domain([0, maxDistance])
     .range([0, 100]);
 
-  const colorSet = [
-    '#6a1511',
-    '#8d0801',
-    '#bf0603',
-    '#cb552a',
-    '#f4d58d',
-    '#b2b187',
-    '#708d81',
-    '#195943',
-    '#124030'
-  ];
-  const colorScale = scaleLinear().domain([-.99,-0.21,-0.15,-0.07,0.0,0.07, 0.15,0.21,0.99]).range(colorSet);
+    const colorSet = [
+      '#8d0801',
+      '#bf0603',
+      '#f4d58d',
+      '#708d81',
+      '#195943'
+    ];
+      const colorScale = scaleLinear().domain([-.99,-0.15,0.0, 0.15,0.99]).range(colorSet);
 
   const colorData = [];
   const stripe = false; // set stripe to true to prevent linear gradient fading

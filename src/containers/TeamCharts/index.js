@@ -30,7 +30,7 @@ const withHoverProvider = children => <HoverProvider>{children}</HoverProvider>;
 const TeamCharts = ({teamId, seasonId}) => {
     const maxDistance = 35;
     const [leagueShootingPct] = useLeagueShootingPctApi(maxDistance, seasonId);
-    console.log("with team charts:",{teamId, seasonId});
+    // console.log("with team charts:",{teamId, seasonId});
     const [{data, ribbonedData, binnedData, leftRightData}] = useTeamShotsApi(
       teamId,
       seasonId,

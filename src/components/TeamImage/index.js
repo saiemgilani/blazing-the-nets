@@ -8,7 +8,7 @@ const TeamImage = ({team}) => {
   const endpoint = new URL(apiOrigin);
   endpoint.pathname = `/data/images/teams/${team}.png`;
 
-  return <Img src={endpoint.href} alt="Team's logo" width={200} height={200} />;
+  return <Img src={endpoint.href} alt="Team's logo" width={180}  mode='fit' />;
 };
 
 TeamImage.propTypes = {

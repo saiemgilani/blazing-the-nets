@@ -3,25 +3,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {scaleLinear} from 'd3-scale';
 import styled from 'styled-components';
-import { LegendThreshold } from '@vx/legend';
-import { scaleThreshold } from '@vx/scale';
  
 import theme from '../../theme';
-const threshold = scaleThreshold({
-  domain: [[-.99,-0.225,-0.15,-0.075,0.0,0.075, 0.15,0.225,0.99]],
-  range: [
-    '#6a1511',
-    '#8d0801',
-    '#bf0603',
-    '#cb552a',
-    '#f4d58d',
-    '#b2b187',
-    '#708d81',
-    '#195943',
-    '#124030'
-  
-  ],
-});
+
 
 const TSpan = styled.tspan`
   margin-top: 5px;
@@ -48,11 +32,11 @@ const Legend = ({imgHeight, imgWidth, x, y}) => {
     '#708d81',
     '#195943'
   ];
-    const colorScale = scaleLinear().domain([-.99,-0.15,0.0, 0.15,0.99]).range(colorSet);
+  const colorScale = scaleLinear().domain([-.99,-0.15,0.15,0.99]).range(colorSet);
   const scale = scaleLinear()
     .domain([-0.30,0.30])
     .range([0, imgWidth]);
-  console.log(scale)
+    
   const ticks = scale.ticks();
   const tickLength = 15;
 
@@ -88,13 +72,6 @@ const Legend = ({imgHeight, imgWidth, x, y}) => {
           )}
         </g>
       ))}
-      <LegendThreshold
-        scale={threshold}
-        direction="column-reverse"
-        itemDirection="row-reverse"
-        labelMargin="0 20px 0 0"
-        shapeMargin="1px 0 0"
-      />
       <text x={imgWidth / 2} y={imgHeight + tickLength + 30} dy={20}>
               <TSpan textAnchor="middle">FG% vs League Average</TSpan>
       </text>

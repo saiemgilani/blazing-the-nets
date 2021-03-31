@@ -36,7 +36,7 @@ const BarChart = props => {
     color: colorScale,
     leagueShootingPct,
     title} = props;
-
+    // console.log(data)
   const [hover, dispatchHover] = useHover();
   const svgRef = createRef();
 
@@ -111,13 +111,7 @@ const BarChart = props => {
     return d
   })
 
-  // const {x, y} = data;
-  // const distance = Math.floor(euclideanDistance({x, y}) / 10);
-  // const madeShots = data.reduce((a, b) => a + b[2], 0);
-  // const totalShots = data.length;
-  // const shootingPct = madeShots / totalShots;
-  // const shootingPctAboveAvg =
-  //   shootingPct - (leagueShootingPct[distance] ?? leagueShootingPct[distance - 1]);
+ 
   const formattedData = useMemo(() => data.bins.map((d, i) => ({...d, x: i})), [
     data,
   ]);

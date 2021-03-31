@@ -1,9 +1,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {useHistory} from 'react-router-dom';
+// import {useHistory} from 'react-router-dom';
 
 const TeamSelector = ({team, teams, setTeamId}) => {
-  const history = useHistory();
+  // const history = useHistory();
   return (
     <form>
       <label htmlFor="teamselector">
@@ -13,7 +13,7 @@ const TeamSelector = ({team, teams, setTeamId}) => {
           value={team}
           onChange={e => {
             const teamId = e.target.value;
-            history.push(`/teams/${teamId}${history.location.search}`);
+            // history.push(`/teams/${teamId}${history.location.search}`);
             setTeamId(teamId);
           }}
         >

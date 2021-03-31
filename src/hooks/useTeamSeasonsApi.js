@@ -24,13 +24,17 @@ function useTeamSeasonsApi(teamId) {
   useEffect(() => {
     const fetchData = async () => {
       const endpoint = new URL(apiOrigin);
-      // const pathname = 'data/team_dashboard_year_over_year/';
-      // const result = await axios.get(endpoint+pathname+`${teamId}.json`);
-      // endpoint.search = new URLSearchParams({
-      //   team_id: teamId,
-      // });
-      const seasons = ['2020-21','2019-20','2018-19','2017-18','2016-17','2015-16'];
-      const seasonList  = ['2020-21','2019-20','2018-19','2017-18','2016-17','2015-16'];
+      const pathname = 'data/team_dashboard_year_over_year/2020-21/';
+      const result = await axios.get(endpoint+pathname+`${teamId}_Base.json`);
+      endpoint.search = new URLSearchParams({
+        team_id: teamId,
+      });
+      const seasons = result.data[1];
+      console.log(seasons)
+      const seasonList  = [];
+      const dataSeasons = ['2020-21','2019-20','2018-19','2017-18','2016-17','2015-16'];
+      dataSeasons.forEach(data => addYear(data,seasons,seasonList))
+      console.log(seasonList)
       setSeasons(seasonList);
     };
     fetchData();

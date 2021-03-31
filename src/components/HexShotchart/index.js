@@ -72,6 +72,7 @@ const ShotChart = props => {
           x = -w / 2;
       context.rect(x, x, w, w);
     };
+  
   const hexbinPath = hexbin()
   .size([width,height])
   .radius(hexbinSize);

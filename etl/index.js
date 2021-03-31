@@ -20,11 +20,7 @@ function getPlayers(data){
   
   const players = JSON.parse(data);
   for(const player of players){
-      playersList.push(
-          {
-              playerId: player.playerId,
-              teamId: player.teamId,
-          })
+      playersList.push(player.playerId)
   }
 };
 
@@ -38,21 +34,17 @@ function getTeams(data){
           })
   }
 };
+let teamsRoster = []
+function getRoster(data){
+  const players = JSON.parse(data)[0];
+  for(const player of players){
+      teamsRoster.push(
+          {
+              playerId: player.PLAYER_ID,
+          })
+  }
+};
 
-
-async function indexing(){
-  await delay20();
-  const playerIds = playersList;
-  console.log(playerIds.indexOf(203463));
-  console.log('Starting script for players', playerIds);
-}
-
-async function delay20() {
-  const durationMs = Math.random() * 800*20 + 300;
-  return new Promise(resolve => {
-    setTimeout(() => resolve(), durationMs);
-  });
-}
 
 async function delay() {
   const durationMs = Math.random() * 800 + 300;
@@ -110,6 +102,92 @@ async function playerYoyPull() {
       console.error(error);
     }
     await delay();
+  }
+  console.log('Done!');
+}
+
+async function fetchTeamYearOverYear(teamId, season, measure) {
+  console.log(`Making API Request for ${teamId} ${season}: ${measure}...`);
+  const baseUrl = 'https://stats.nba.com/stats/teamdashboardbyyearoveryear'
+
+  const headers =  {
+    "Accept-Encoding": "gzip, deflate",
+    "Accept-Language": "en-US",
+    Accept: "*/*",
+    "User-Agent": template.user_agent,
+    Referer: template.referrer,
+    Connection: "keep-alive",
+    "Cache-Control": "no-cache",
+    Origin: "http://stats.nba.com",
+  };
+  parameters = {
+    'DateFrom': '',
+    'DateTo': '',
+    'GameSegment': '',
+    'LastNGames': 0,
+    'LeagueId': '',
+    'Location': '',
+    'MeasureType': measure,
+    'Month': 0,
+    'OpponentTeamID': 0,
+    'Outcome': '',
+    'PORound': '',
+    'PaceAdjust': 'N',
+    'PerMode': 'PerGame',
+    'Period': 0,
+    'PlusMinus': 'N',
+    'Rank': 'N',
+    'Season': season,
+    'SeasonSegment': '',
+    'SeasonType': 'Regular Season',
+    'TeamId': teamId,
+    'VsConference': '',
+    'VsDivision': ''
+  }
+  const results = await axios.get(
+      baseUrl, { 
+        params: parameters,
+        headers: headers 
+       })
+  
+  var teams = results.data.resultSets;
+  var dat = [];
+  var result = teams.forEach(function(cellValue, cellInd){
+    var headers = teams[cellInd].headers
+    var rowSet = teams[cellInd].rowSet
+    var results = rowSet.map(function(row){
+      var jsonRow = {};
+      row.forEach(function(cellValue, cellIndex){
+        jsonRow[headers[cellIndex]] = cellValue;
+      });
+      return jsonRow;
+    });
+    dat.push(results);
+  });
+  await fs.promises.writeFile(
+      `../public/data/team_dashboard_year_over_year/${season}/${teamId}_${measure}.json`,
+      JSON.stringify(dat,null, 2)
+    );
+}
+async function teamYoyPull() {
+  const teamIds = teamsList;
+  
+  let seasons =['2015-16','2016-17','2017-18','2018-19','2019-20','2020-21'];
+  let measures = ['Base','Advanced','Misc','Four Factors','Scoring','Opponent'];
+  // console.log(teamIds);
+  console.log('Starting script for team', teamIds);
+  
+  for(const season in seasons){
+    for (const teamId of teamIds) {
+      for(const measure in measures){
+        try {
+          await fetchTeamYearOverYear(teamId.teamId, seasons[season], measures[measure]);
+        } catch (error) {
+          console.error(error);
+        }
+        await delay();
+      }
+    }
   }
   console.log('Done!');
 }
@@ -1063,15 +1141,188 @@ async function shotChartLineupDetailPull() {
   console.log('Done!');
 }
 
+async function fetchTeamLineupsDetail(season,team, measure) {
+  console.log(`Making API Request for ${season} ${team}: ${measure}...`);
+  const baseUrl = `https://stats.nba.com/stats/teamdashlineups`
 
+  const headers =  {
+    "Accept-Encoding": "gzip, deflate",
+    "Accept-Language": "en-US",
+    Accept: "*/*",
+    "User-Agent": template.user_agent,
+    Referer: template.referrer,
+    Connection: "keep-alive",
+    "Cache-Control": "no-cache",
+    Origin: "http://stats.nba.com",
+  };
+  parameters = {
+    'DateFrom': '',
+    'DateTo': '',
+    'GameID': '',
+    'GameSegment': '',
+    'GroupQuantity': 5,
+    'LastNGames': 0,
+    'LeagueID': '',
+    'Location': '',
+    'MeasureType': measure,
+    'Month': 0,
+    'OpponentTeamID': '',
+    'Outcome': '',
+    'PORound': '',
+    'PaceAdjust': 'N',
+    'PerMode': 'Totals',
+    'Period': 0,
+    'PlusMinus': 'N',
+    'Rank': 'N',
+    'Season': season,
+    'SeasonSegment': '',
+    'SeasonType': 'Regular Season',
+    'ShotClockRange': '',
+    'TeamId': team,
+    'VsConference': '',
+    'VsDivision': ''
+  }
+  const results = await axios.get(
+      baseUrl, { 
+        params: parameters,
+        headers: headers 
+      })
+
+  var teams = results.data.resultSets;
+  var dat = [];
+  var result = teams.forEach(function(cellValue, cellInd){
+    var headers = teams[cellInd].headers
+    var rowSet = teams[cellInd].rowSet
+    var results = rowSet.map(function(row){
+      var jsonRow = {};
+      row.forEach(function(cellValue, cellIndex){
+        jsonRow[headers[cellIndex]] = cellValue;
+      });
+      return jsonRow;
+    });
+    dat.push(results);
+  });
+  await fs.promises.writeFile(
+      `../public/data/teamlineups/${season}/${team}_${measure}.json`,
+      JSON.stringify(dat,null, 2)
+    );
+}
+async function teamLineupsDetailPull() {
+  
+  // console.log(playerIds);
+  let seasons =['2020-21','2019-20','2018-19','2017-18', '2016-17', '2015-16'];
+  let teams = teamsList;
+  let measures = ['Base','Advanced','Misc','Four Factors','Scoring','Opponent'];
+  // console.log(teamIds);
+  console.log('Starting script for team', teams);
+  
+  for(const season of seasons){
+    for (const team of teams) {
+      for(const measure of measures){
+        try {
+          await fetchTeamLineupsDetail(season, team.teamId, measure);
+        } catch (error) {
+          console.error(error);
+        }
+        await delay();
+      }
+    }
+  };
+  console.log('Done!');
+}
+
+async function fetchTeamRosters(season,team) {
+  console.log(`Making API Request for ${season} ${team}...`);
+  const baseUrl = `https://stats.nba.com/stats/commonteamroster`
+
+  const headers =  {
+    "Accept-Encoding": "gzip, deflate",
+    "Accept-Language": "en-US",
+    Accept: "*/*",
+    "User-Agent": template.user_agent,
+    Referer: template.referrer,
+    Connection: "keep-alive",
+    "Cache-Control": "no-cache",
+    Origin: "http://stats.nba.com",
+  };
+  parameters = {
+    'LeagueID': '',
+    'Season': season,
+    'SeasonType': 'Regular Season',
+    'TeamId': team
+  }
+  const results = await axios.get(
+      baseUrl, { 
+        params: parameters,
+        headers: headers 
+      })
+
+  var teams = results.data.resultSets;
+  var dat = [];
+  var result = teams.forEach(function(cellValue, cellInd){
+    var headers = teams[cellInd].headers
+    var rowSet = teams[cellInd].rowSet
+    var results = rowSet.map(function(row){
+      var jsonRow = {};
+      row.forEach(function(cellValue, cellIndex){
+        jsonRow[headers[cellIndex]] = cellValue;
+      });
+      return jsonRow;
+    });
+    dat.push(results);
+  });
+  await fs.promises.writeFile(
+    `teamrosters/${season}/${team}.json`,
+    JSON.stringify(dat,null, 2)
+  );
+  await fs.promises.writeFile(
+      `../public/data/teamrosters/${season}/${team}.json`,
+      JSON.stringify(dat,null, 2)
+    );
+}
+async function teamRostersPull() {
+  
+  // console.log(playerIds);
+  let seasons =['2020-21','2019-20','2018-19','2017-18', '2016-17', '2015-16'];
+  let teams = teamsList;
+  // console.log(teamIds);
+  console.log('Starting script for team', teams);
+  
+  for(const season of seasons){
+    for (const team of teams) {
+      try {
+        await fetchTeamRosters(season, team.teamId);
+      } catch (error) {
+        console.error(error);
+      }
+      await delay();      
+    }
+  };
+  console.log('Done!');
+}
+
+async function rosterRead(season,teamId){
+  try {
+    const rosters = readFile(`../public/data/teamrosters/${season}/${teamId}.json`);
+    await getRoster(rosters);
+  } catch (error) {
+    console.error(error);
+  }
+  await delay();
+};
 
 (async function () {
   const data = await readFile(path.resolve(__dirname, "players.json"));
   getPlayers(data);
-  console.log(playersList)
+  // console.log(playersList)
   const teams = await readFile(path.resolve(__dirname, "teams.json"));
   getTeams(teams);
-  console.log(teamsList)
+  // console.log(teamsList)
+  const rosters = await readFile('../public/data/teamrosters/2020-21/1610612761.json');
+  console.log(JSON.parse(rosters)[0]);
+  getRoster(rosters)
+  console.log(teamsRoster);
+  
   // playerYoyPull();
   // playerShotDetailPull();
   // leagueTrackingPull();
@@ -1084,5 +1335,8 @@ async function shotChartLineupDetailPull() {
   // leagueTrackingTeamShotLocationsPull();
   // leagueTeamStatsPull();
   // leaguePlayerStatsPull();
-  shotChartLineupDetailPull();
+  // teamYoyPull();
+  // shotChartLineupDetailPull();
+  // teamLineupsDetailPull();
+  // teamRostersPull();
 })();

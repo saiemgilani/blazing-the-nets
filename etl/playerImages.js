@@ -7,12 +7,7 @@ const path = require("path");
 const util = require("util");
 const fetch = require("node-fetch");
 let playersList = [];
-async function delay20() {
-    const durationMs = Math.random() * 800*20 + 300;
-    return new Promise(resolve => {
-      setTimeout(() => resolve(), durationMs);
-    });
-  }
+
 async function delay() {
   const durationMs = Math.random() * 800 + 300;
   return new Promise(resolve => {
@@ -70,7 +65,6 @@ function fetchPlayerImage(playerId, teamId, season) {
     
   }
 async function playerImagePull() {
-    await delay20();
     const playerIds = playersList;
     // console.log(playerIds);
     console.log('Starting script for players', playerIds);

@@ -1,9 +1,11 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {useHistory} from 'react-router-dom';
+// import {useHistory} from 'react-router-dom';
 
 const TeamSeasonSelector = ({team, season, seasons, setSeasonId}) => {
-  const history = useHistory();
+  console.log("team:", team, "seasons:", seasons);
+  // const history = useHistory();
+  
   return (
     <form>
       <label htmlFor="seasonselector">
@@ -13,7 +15,7 @@ const TeamSeasonSelector = ({team, season, seasons, setSeasonId}) => {
           value={season}
           onChange={e => {
             const seasonId = e.target.value;
-            history.push(`/teams/${team}?season_id=${seasonId}`);
+            // history.push(`/teams/${team}?season_id=${seasonId}`);
             setSeasonId(seasonId);
           }}
         >

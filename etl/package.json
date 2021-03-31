@@ -14,6 +14,7 @@
     "nba": "latest",
     "nba-client-template": "5.0.0",
     "promise": "^8.1.0",
-    "request": "^2.88.2"
+    "request": "^2.88.2",
+    "victory": "^35.4.12"
   }
 }

@@ -1,11 +1,12 @@
 import React, {useState} from 'react';
 import {useRouteMatch} from 'react-router-dom';
 
-import Charts from '../TeamCharts';
+import TeamCharts from '../TeamCharts';
 import TeamImage from '../../components/TeamImage';
 import TeamSelector from '../../components/TeamSelector';
 import TeamSeasonSelector from '../../components/TeamSeasonSelector';
 import {
+  useTeamDashByCategoryApi,
   useTeamDashBySeason,
   useTeamSeasonsApi,
   useUrlSearchParams,
@@ -20,8 +21,9 @@ export default function TeamChartDashboard() {
   
   const slugTeamId = match && match.params.teamId ? match.params.teamId : '1610612751';
   const [seasons] = useTeamSeasonsApi(slugTeamId);
+  console.log(seasons)
   const [seasonId, setSeasonId] = useState(slugSeasonId || '2020-21');
-  const [teams] = useTeamDashBySeason(slugTeamId);
+  const [teams] = useTeamDashByCategoryApi(slugTeamId);
   const [teamId, setTeamId] = useState(slugTeamId);
 
   if (slugTeamId && slugTeamId !== teamId) {
@@ -49,7 +51,7 @@ export default function TeamChartDashboard() {
         seasons={seasons}
         setSeasonId={setSeasonId}
       />
-      <Charts teamId={teamId} seasonId={teamId} />
+      <TeamCharts teamId={teamId} seasonId={seasonId} />
     </div>
   );
 }

@@ -17,7 +17,7 @@ function useShotsApi(playerId, seasonId, maxDistance) {
     const fetchData = async () => {
       const endpoint = new URL(apiOrigin);
       endpoint.pathname = `/data/shotchartdetail/${seasonId}/${playerId}.json`;
-
+      
       const res = await axios.get(endpoint);
       console.log(res.data[0].filter(isLessThanDistance(maxDistance)))
       setData(res.data[0].filter(isLessThanDistance(maxDistance)));

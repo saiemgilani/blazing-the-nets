@@ -8,30 +8,36 @@ import isLessThanDistance from '../utils/visuals/filters/isLessThanDistance';
 import {apiOrigin} from '../utils/config';
 
 function useTeamShotsApi(teamId, seasonId, maxDistance) {
-  const [teamData, setTeamData] = useState();
-  const [teamRibbonedData, setTeamRibbonedData] = useState([]);
-  const [teamBinnedData, setTeamBinnedData] = useState({});
-  const [teamLeftRightData, setTeamLeftRightData] = useState({});
+  const [data, setData] = useState(null);
+  
+  const [ribbonedData, setRibbonedData] = useState([]);
+  const [binnedData, setBinnedData] = useState({});
+  const [leftRightData, setLeftRightData] = useState({});
 
-  useEffect(() => {
-    const fetchTeamData = async () => {
+  useEffect(async() => {
+    const fetchData = async () => {
       const endpoint = new URL(apiOrigin);
       endpoint.pathname = `/data/teamshotchartdetail/${seasonId}/${teamId}.json`;
       
       const res = await axios.get(endpoint);
       let teamRes = [];
       teamRes.push(res.data);
-      console.log(teamRes);
+      // console.log(teamRes);
       
-      setTeamData(teamRes[0].filter(isLessThanDistance(maxDistance)));
-      setTeamRibbonedData(ribbonShots(teamRes[0], maxDistance));
-      setTeamBinnedData(binShots(teamRes[0], maxDistance));
-      setTeamLeftRightData(binLeftRight(teamRes[0], maxDistance));
+      setData(teamRes[0].filter(isLessThanDistance(maxDistance)));
+      setRibbonedData(ribbonShots(teamRes[0], maxDistance));
+      // console.log(setData(teamRes[0].filter(isLessThanDistance(maxDistance))));
+      // console.log(setRibbonedData(ribbonShots(teamRes[0], maxDistance)));
+      setBinnedData(binShots(teamRes[0], maxDistance));
+      setLeftRightData(binLeftRight(teamRes[0], maxDistance));
     };
-    fetchTeamData();
+    fetchData();
   }, [teamId, seasonId, maxDistance]);
-  console.log([{teamData, teamRibbonedData, teamBinnedData, teamLeftRightData}])
-  return [{teamData, teamRibbonedData, teamBinnedData, teamLeftRightData}];
+  if(data === null){
+    return 'Loading...'
+  }
+  // console.log([{data, ribbonedData, binnedData, leftRightData}])
+  return [{data, ribbonedData, binnedData, leftRightData}];
 }
 
 export default useTeamShotsApi;

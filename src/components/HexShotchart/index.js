@@ -62,16 +62,16 @@ const ShotChart = props => {
       '#195943'
     ];
   const color = scaleLinear().domain([-.99,-0.15,0.0, 0.15,0.99]).range(colorSet);
-  const squarePath = function(context,size){
-    var w = Math.sqrt(size),
-        x = -w/2;
-    return context.rect(x,x,w,w,);
-  }
-  const boxPath = function(context, size) {
-      var w = Math.sqrt(size),
-          x = -w / 2;
-      context.rect(x, x, w, w);
-    };
+  // const squarePath = function(context,size){
+  //   var w = Math.sqrt(size),
+  //       x = -w/2;
+  //   return context.rect(x,x,w,w,);
+  // }
+  // const boxPath = function(context, size) {
+  //     var w = Math.sqrt(size),
+  //         x = -w / 2;
+  //     context.rect(x, x, w, w);
+  //   };
   
   const hexbinPath = hexbin()
   .size([width,height])
@@ -127,6 +127,7 @@ ShotChart.propTypes = {
       LOC_X: PropTypes.number.isRequired,
       LOC_Y: PropTypes.number.isRequired,
       SHOT_MADE_FLAG: PropTypes.number.isRequired,
+      TEAM_ID: PropTypes.number.isRequired
     })
   ).isRequired,
   leagueShootingPct: PropTypes.arrayOf(PropTypes.number).isRequired,

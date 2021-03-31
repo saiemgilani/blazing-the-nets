@@ -6,7 +6,7 @@ import TeamImage from '../../components/TeamImage';
 import TeamSelector from '../../components/TeamSelector';
 import TeamSeasonSelector from '../../components/TeamSeasonSelector';
 import {
-  useTeamDashByCategoryApi,
+  // useTeamDashByCategoryApi,
   useTeamDashBySeason,
   useTeamSeasonsApi,
   useUrlSearchParams,
@@ -14,6 +14,7 @@ import {
 
 export default function TeamChartDashboard() {
   const match = useRouteMatch('/teams/:teamId');
+  
   const urlSearchParams = useUrlSearchParams();
   const slugSeasonId = urlSearchParams.get('season_id');
   
@@ -23,7 +24,7 @@ export default function TeamChartDashboard() {
   const [seasons] = useTeamSeasonsApi(slugTeamId);
   console.log(seasons)
   const [seasonId, setSeasonId] = useState(slugSeasonId || '2020-21');
-  const [teams] = useTeamDashByCategoryApi(slugTeamId);
+  const [teams] = useTeamDashBySeason(slugTeamId);
   const [teamId, setTeamId] = useState(slugTeamId);
 
   if (slugTeamId && slugTeamId !== teamId) {

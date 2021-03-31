@@ -4,6 +4,10 @@ import styled from 'styled-components';
 
 import media from '../../components/style-utils';
 
+import { binLeftRight } from '../../utils/visuals/bin';
+import { binShots } from '../../utils/visuals/binShots';
+import { ribbonShots } from '../../utils/visuals/ribbonShots';
+import isLessThanDistance from '../../utils/visuals/filters/isLessThanDistance';
 import HexShotchart from '../../components/HexShotchart';
 import ShootingSignature from '../../components/ShootingSignature';
 import BarChart, {
@@ -26,37 +30,37 @@ const withHoverProvider = children => <HoverProvider>{children}</HoverProvider>;
 const TeamCharts = ({teamId, seasonId}) => {
     const maxDistance = 35;
     const [leagueShootingPct] = useLeagueShootingPctApi(maxDistance, seasonId);
-    console.log({teamId, seasonId});
-    const [{teamData, teamRibbonedData, teamBinnedData, teamLeftRightData}] = useTeamShotsApi(
+    console.log("with team charts:",{teamId, seasonId});
+    const [{data, ribbonedData, binnedData, leftRightData}] = useTeamShotsApi(
       teamId,
       seasonId,
       maxDistance
   );
-  console.log(teamData)
+  
   if (
     
-    teamData === undefined 
+    data === undefined 
     
     
   ) {
     return <div>Loading Team data</div>;
   }
-  if (teamData.length === 0) {
+  if (data.length === 0) {
     return <div>No result found for this team</div>;
   }
 
   return withHoverProvider(
     <>
       <ChartsDiv>
-        <HexShotchart data={teamData} leagueShootingPct={leagueShootingPct} />
+        <HexShotchart data={data} leagueShootingPct={leagueShootingPct} />
         <ShootingSignature
-          data={teamRibbonedData}
+          data={ribbonedData}
           leagueShootingPct={leagueShootingPct}
           maxDistance={maxDistance}
         />
         <BarChart
           accessor={barChartFunctions.shotProportion.accessor}
-          data={teamBinnedData}
+          data={binnedData}
           domain={barChartFunctions.shotProportion.domain}
           label={barChartFunctions.shotProportion.labeler}
           leagueShootingPct={leagueShootingPct}
@@ -65,7 +69,7 @@ const TeamCharts = ({teamId, seasonId}) => {
         />
         <BarChart
           accessor={barChartFunctions.fieldGoalPercentage.accessor}
-          data={teamBinnedData}
+          data={binnedData}
           domain={barChartFunctions.fieldGoalPercentage.domain}
           label={barChartFunctions.fieldGoalPercentage.labeler}
           leagueShootingPct={leagueShootingPct}
@@ -76,7 +80,7 @@ const TeamCharts = ({teamId, seasonId}) => {
       <ChartsDiv>
         <LeftRightChart
           accessor={leftRightFunctions.shotFrequency.accessor}
-          data={teamLeftRightData}
+          data={leftRightData}
           domain={leftRightFunctions.shotFrequency.domain}
           leagueShootingPct={leagueShootingPct}
           maxDistance={maxDistance}
@@ -84,7 +88,7 @@ const TeamCharts = ({teamId, seasonId}) => {
         />
         <LeftRightChart
           accessor={leftRightFunctions.fieldGoalPercentage.accessor}
-          data={teamLeftRightData}
+          data={leftRightData}
           domain={leftRightFunctions.fieldGoalPercentage.domain}
           leagueShootingPct={leagueShootingPct}
           maxDistance={maxDistance}

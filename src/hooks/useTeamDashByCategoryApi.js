@@ -5,7 +5,7 @@ import axios from 'axios';
 import {apiOrigin} from '../utils/config';
 
 function useTeamDashByCategoryApi(teamId, measure) {
-  const [teamData, setTeamData] = useState(undefined);
+  const [data, setData] = useState([]);
 //   const [ribbonedData, setRibbonedData] = useState([]);
 
   useEffect(() => {
@@ -15,13 +15,13 @@ function useTeamDashByCategoryApi(teamId, measure) {
 
       const res = await axios.get(endpoint);
       
-      setTeamData(res.data[1]);
+      setData(res.data[1]);
       
     };
     fetchData();
   }, [teamId, measure]);
-  console.log(teamData)
-  return [teamData];
+  
+  return [data];
 }
 
 export default useTeamDashByCategoryApi;

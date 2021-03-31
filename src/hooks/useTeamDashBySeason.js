@@ -11,13 +11,11 @@ function useTeamDashBySeason(seasonId = null) {
       const endpoint = new URL(apiOrigin);
       const pathname = 'data/';
       const result = await axios.get(endpoint+pathname+`teams.json`);
-      const seasons = result.data[1];
-      console.log(seasons)
+      const seasons = result.data;
       setTeams(result.data.reverse());
     };
     fetchData();
   }, [seasonId]);
-  console.log(teams)
   return [teams];
 }
 

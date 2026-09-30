@@ -1,0 +1,54 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { QuerySelect } from "@/components/QuerySelect.tsx";
+import { listSeasons, parseSeason, seasonLabel } from "@/lib/data/seasons.ts";
+import { teamsFromShots } from "@/lib/data/teams.ts";
+import { fmtInt, fmtPct } from "@/lib/format.ts";
+import { readSeasonData, seasonOptions, teamLines } from "@/lib/pageData.ts";
+
+// Served at /teams?season= (proxy.ts).
+export const revalidate = 21600;
+export const metadata: Metadata = { title: "Teams", alternates: { canonical: "/teams" } };
+
+export function generateStaticParams() {
+  return [{ season: "current" }];
+}
+
+export default async function Teams({ params }: { params: Promise<{ season: string }> }) {
+  const [{ season: param }, seasons] = await Promise.all([params, listSeasons()]);
+  const season = parseSeason(param, seasons);
+  const data = await readSeasonData(season);
+  const lines = teamLines(data.shots);
+  const teams = teamsFromShots(data.shots);
+  return (
+    <div className="space-y-6">
+      <header className="space-y-3">
+        <h1 className="font-display text-3xl font-bold">Teams, {seasonLabel(season)}</h1>
+        <QuerySelect label="Season" name="season" value={String(season)} options={seasonOptions(seasons)} basePath="/teams" />
+      </header>
+      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {teams.map((t) => {
+          const line = lines.get(t.team_id);
+          return (
+            <li key={t.team_id}>
+              <Link
+                href={`/teams/${t.team_id}?season=${season}`}
+                className="flex items-center gap-3 rounded-lg border border-line bg-surface p-3 hover:border-accent"
+              >
+                <span aria-hidden className="h-10 w-2 shrink-0 rounded-sm ring-1 ring-muted" style={{ background: t.color }} />
+                <span className="min-w-0 text-sm">
+                  <span className="block font-display text-base font-bold">
+                    {t.tricode} <span className="font-sans text-sm font-normal text-muted">{t.name}</span>
+                  </span>
+                  <span className="tabular-nums">
+                    {fmtInt(line?.attempts)} FGA · {fmtPct(line?.fgPct)} FG · {fmtPct(line?.efgPct)} eFG
+                  </span>
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}

@@ -12,6 +12,7 @@ import { buildDashboard } from "@/lib/dashboard.ts";
 import { rollingLines, shootingLine } from "@/lib/data/aggregate.ts";
 import { fmtDate, fmtInt, fmtPct } from "@/lib/format.ts";
 import type { ExplorerData } from "@/lib/pageData.ts";
+import { toggleClass } from "@/lib/ui.ts";
 import {
   GAME_PRESETS,
   PRESET_LABELS,
@@ -23,9 +24,6 @@ import {
 } from "@/lib/selection.ts";
 
 const WINDOWS = [5, 10, 20] as const;
-
-const buttonClass = (active: boolean) =>
-  `rounded border px-2.5 py-1 text-sm ${active ? "border-fg bg-fg text-bg" : "border-line text-muted hover:text-fg"}`;
 
 const NO_GAMES = "No games selected: choose games above (a preset, single games or a date window) to draw this.";
 
@@ -98,7 +96,7 @@ export function PlayerExplorer({ data, subject }: { data: ExplorerData; subject:
         <Card title="Games" id="games">
           <div className="mb-3 flex flex-wrap items-center gap-2" role="group" aria-label="Select games">
             {GAME_PRESETS.map((p) => (
-              <button key={p} type="button" aria-pressed={activePreset === p} onClick={() => choose(p)} className={buttonClass(activePreset === p)}>
+              <button key={p} type="button" aria-pressed={activePreset === p} onClick={() => choose(p)} className={toggleClass(activePreset === p)}>
                 {PRESET_LABELS[p]}
               </button>
             ))}
@@ -120,7 +118,7 @@ export function PlayerExplorer({ data, subject }: { data: ExplorerData; subject:
               {dateField("From", 0)}
               {dateField("To", 1)}
               {dateWindow && (
-                <button type="button" onClick={() => setDateWindow(null)} className={buttonClass(false)}>
+                <button type="button" onClick={() => setDateWindow(null)} className={toggleClass(false)}>
                   Clear dates
                 </button>
               )}
@@ -144,7 +142,7 @@ export function PlayerExplorer({ data, subject }: { data: ExplorerData; subject:
           <div className="mb-3 flex items-center gap-2 text-sm text-muted" role="group" aria-label="Rolling window">
             Window
             {WINDOWS.map((w) => (
-              <button key={w} type="button" aria-pressed={n === w} onClick={() => setN(w)} className={buttonClass(n === w)}>
+              <button key={w} type="button" aria-pressed={n === w} onClick={() => setN(w)} className={toggleClass(n === w)}>
                 {w} games
               </button>
             ))}

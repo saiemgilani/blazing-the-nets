@@ -7,6 +7,7 @@ import { fmtDec, fmtInt, fmtPct, foldText } from "@/lib/format.ts";
 import { playerHref } from "@/lib/links.ts";
 import type { RosterRow } from "@/lib/pageData.ts";
 import { hotkey, sortRows, tableReducer } from "@/lib/table.ts";
+import { toggleClass } from "@/lib/ui.ts";
 
 type Mode = "pergame" | "totals";
 type Photos = "photos" | "initials" | "none";
@@ -36,9 +37,6 @@ const COLUMNS: Column[] = [
 ];
 const KEYS = COLUMNS.map((c) => c.key);
 const GROUPS = ["Volume", "Shooting", "Usage"] as const;
-
-const button = (active: boolean) =>
-  `rounded border px-2 py-0.5 text-xs ${active ? "border-fg bg-fg text-bg" : "border-line text-muted hover:text-fg"}`;
 
 /**
  * A databallr-style roster table: column groups, click or `s` to sort (aria-sort on the header),
@@ -115,16 +113,16 @@ export function RosterTable({ rows, seasonQuery }: { rows: RosterRow[]; seasonQu
           />
         </label>
         <div role="group" aria-label="Per game or totals" className="inline-flex gap-1">
-          <button type="button" aria-pressed={mode === "pergame"} onClick={() => setMode("pergame")} className={button(mode === "pergame")}>
+          <button type="button" aria-pressed={mode === "pergame"} onClick={() => setMode("pergame")} className={toggleClass(mode === "pergame", true)}>
             Per game
           </button>
-          <button type="button" aria-pressed={mode === "totals"} onClick={() => setMode("totals")} className={button(mode === "totals")}>
+          <button type="button" aria-pressed={mode === "totals"} onClick={() => setMode("totals")} className={toggleClass(mode === "totals", true)}>
             Totals
           </button>
         </div>
         <div role="group" aria-label="Headshots" className="inline-flex gap-1">
           {(["photos", "initials", "none"] as const).map((p) => (
-            <button key={p} type="button" aria-pressed={photos === p} onClick={() => setPhotos(p)} className={button(photos === p)}>
+            <button key={p} type="button" aria-pressed={photos === p} onClick={() => setPhotos(p)} className={toggleClass(photos === p, true)}>
               {p === "photos" ? "Photos" : p === "initials" ? "Initials" : "None"}
             </button>
           ))}

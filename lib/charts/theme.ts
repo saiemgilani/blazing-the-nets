@@ -22,8 +22,8 @@ export const TOKENS = {
  * text size at every breakpoint.
  */
 export const FONT_PX = 11;
-/** Average advance of an 11 px sans character, for wrapping without measuring. */
-const CHAR_PX = 6.2;
+/** Average advance of an 11 px sans character, for wrapping and label spacing without measuring. */
+export const CHAR_PX = 6.2;
 
 /** FG% minus league FG% saturates at +/-15 points. */
 export const DIFF_DOMAIN = 0.15;

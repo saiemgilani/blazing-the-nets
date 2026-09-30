@@ -4,7 +4,7 @@ import { select } from "d3-selection";
 import type { DistanceBin } from "../data/aggregate.ts";
 import { DEFAULT_WIDTH } from "./court.ts";
 import { fmtPct } from "../format.ts";
-import { FONT_PX, motionMs, setViewBox, tooltip, TOKENS } from "./theme.ts";
+import { CHAR_PX, FONT_PX, motionMs, setViewBox, tooltip, TOKENS } from "./theme.ts";
 
 export type BarMetric = "share" | "fgPct";
 
@@ -17,7 +17,6 @@ export interface DistanceBarsData {
 
 const H = 250;
 const M = { top: 26, right: 8, bottom: 38, left: 40 };
-const CHAR_PX = 6.2;
 
 export const DISTANCE_BARS_VIEWBOX = { width: DEFAULT_WIDTH, height: H };
 

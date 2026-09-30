@@ -3,9 +3,7 @@
 import { useState } from "react";
 import { ScatterChart } from "./charts/ScatterChart.tsx";
 import { randomPair, SCATTER_DEFAULT, SCATTER_INFO, SCATTER_METRICS, type ScatterMetric, type ScatterPoint } from "@/lib/scatterMetrics.ts";
-
-const button = (active: boolean) =>
-  `rounded border px-2.5 py-1 text-sm ${active ? "border-fg bg-fg text-bg" : "border-line text-muted hover:text-fg"}`;
+import { toggleClass } from "@/lib/ui.ts";
 
 /** Axis pickers, Random, dots/faces, a name filter and a zoom reset around the league scatter. */
 export function ScatterExplorer({ points, subject }: { points: ScatterPoint[]; subject: string }) {
@@ -33,7 +31,7 @@ export function ScatterExplorer({ points, subject }: { points: ScatterPoint[]; s
         {picker("X", x, setX)}
         <button
           type="button"
-          className={button(false)}
+          className={toggleClass(false)}
           onClick={() => {
             const [a, b] = randomPair();
             setX(a);
@@ -43,14 +41,14 @@ export function ScatterExplorer({ points, subject }: { points: ScatterPoint[]; s
           Random
         </button>
         <div role="group" aria-label="Marks" className="inline-flex gap-1">
-          <button type="button" aria-pressed={!faces} onClick={() => setFaces(false)} className={button(!faces)}>
+          <button type="button" aria-pressed={!faces} onClick={() => setFaces(false)} className={toggleClass(!faces)}>
             Dots
           </button>
-          <button type="button" aria-pressed={faces} onClick={() => setFaces(true)} className={button(faces)}>
+          <button type="button" aria-pressed={faces} onClick={() => setFaces(true)} className={toggleClass(faces)}>
             Faces
           </button>
         </div>
-        <button type="button" className={button(false)} onClick={() => setResetKey((k) => k + 1)}>
+        <button type="button" className={toggleClass(false)} onClick={() => setResetKey((k) => k + 1)}>
           Reset zoom
         </button>
       </div>

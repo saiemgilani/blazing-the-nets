@@ -5,15 +5,13 @@ import { useState } from "react";
 import { ACTIVE_DAYS, LEADER_LABELS, LEADER_METRICS, LEADER_WINDOWS, minAttempts, minThrees, type Boards, type LeaderMetric, type LeaderRow, type LeaderWindow } from "@/lib/data/leaders.ts";
 import { fmtDate, fmtInt, fmtPct, fmtPts } from "@/lib/format.ts";
 import { playerHref } from "@/lib/links.ts";
+import { toggleClass } from "@/lib/ui.ts";
 
 /** Nets rows shown below the top 15; the rest sit in a <details>. */
 const NETS_SHOWN = 5;
 
 // Fixed column widths (table-fixed) so the table inside the <details> lines up with the main one.
 const W = { rank: "w-12", team: "w-16", value: "w-24", window: "w-24", season: "w-28", games: "w-36" };
-
-const button = (active: boolean) =>
-  `rounded border px-2.5 py-1 text-sm ${active ? "border-fg bg-fg text-bg" : "border-line text-muted hover:text-fg"}`;
 
 /** Rolling-window leaderboards: pick the window and the board; the Nets are highlighted. */
 export function Leaderboards({ boards, netsTeamId, seasonQuery }: { boards: Boards; netsTeamId: number; seasonQuery: string }) {
@@ -49,14 +47,14 @@ export function Leaderboards({ boards, netsTeamId, seasonQuery }: { boards: Boar
       <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Window">
         <span className="text-sm text-muted">Last</span>
         {LEADER_WINDOWS.map((w) => (
-          <button key={w} type="button" aria-pressed={n === w} onClick={() => setN(w)} className={button(n === w)}>
+          <button key={w} type="button" aria-pressed={n === w} onClick={() => setN(w)} className={toggleClass(n === w)}>
             {w} games
           </button>
         ))}
       </div>
       <div className="flex flex-wrap gap-2" role="group" aria-label="Board">
         {LEADER_METRICS.map((m) => (
-          <button key={m} type="button" aria-pressed={metric === m} onClick={() => setMetric(m)} className={button(metric === m)}>
+          <button key={m} type="button" aria-pressed={metric === m} onClick={() => setMetric(m)} className={toggleClass(metric === m)}>
             {LEADER_LABELS[m]}
           </button>
         ))}

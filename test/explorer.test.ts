@@ -7,7 +7,7 @@ import { lineOf, playerGames } from "../lib/data/aggregate.ts";
 import { teamGames } from "../lib/data/games.ts";
 import type { PlayerSeason, PlayerStats } from "../lib/data/players.ts";
 import { metricValue, RANK_MIN_FG3A, rankSummaries, rankTable } from "../lib/data/ranks.ts";
-import { GAME_PRESETS, inWindow, presetGames, shotsForGames, visibleGames, windowFromInputs } from "../lib/selection.ts";
+import { GAME_PRESETS, inWindow, presetGames, shotsForGames, visibleGames, withTypedDate, isIsoDate } from "../lib/selection.ts";
 import { fixtureGameLogs, fixtureShots } from "./helpers.ts";
 
 const shots = await fixtureShots();
@@ -121,15 +121,22 @@ test("a brush snaps to the first and last game inside it; one over no game is cl
   assert.deepEqual(brushOutcome(gap, null), { window: null, clear: false }, "a click that clears the brush");
 });
 
-test("the date fields: empty ends are the season's, reversed dates swap, the whole season is no window", () => {
+test("typed dates: only a complete in-season date moves the window; partial, empty or outside values change nothing", () => {
   const [first, last] = ["2025-10-22", "2026-04-12"];
-  assert.deepEqual(windowFromInputs("2025-12-01", "", first, last), ["2025-12-01", last]);
-  assert.deepEqual(windowFromInputs("", "2026-01-31", first, last), [first, "2026-01-31"]);
-  assert.deepEqual(windowFromInputs("2026-02-01", "2025-12-01", first, last), ["2025-12-01", "2026-02-01"]);
-  assert.equal(windowFromInputs("", "", first, last), null);
-  assert.equal(windowFromInputs(first, last, first, last), null);
-  assert.equal(windowFromInputs("2025-10-01", "2026-05-01", first, last), null, "wider than the season");
-  assert.deepEqual(windowFromInputs("12/01/2025", "2026-01-31", first, last), [first, "2026-01-31"], "a malformed date is an empty field");
+  const w: [string, string] = ["2025-12-01", "2026-01-31"];
+  // Chromium's field mid-entry: every partial year, an empty field, out of season, not a date.
+  for (const v of ["0002-12-01", "0020-12-01", "0202-12-01", "", "2025-10-01", "2026-05-01", "2026-02-30", "12/01/2025"]) {
+    assert.equal(withTypedDate(w, 0, v, first, last), w, `From ${JSON.stringify(v)} leaves the window as it was`);
+    assert.equal(withTypedDate(w, 1, v, first, last), w, `To ${JSON.stringify(v)}`);
+    assert.equal(withTypedDate(null, 0, v, first, last), null, "no window stays no window");
+  }
+  assert.deepEqual(withTypedDate(null, 0, "2025-12-01", first, last), ["2025-12-01", last], "From alone: to the season's end");
+  assert.deepEqual(withTypedDate(null, 1, "2026-01-31", first, last), [first, "2026-01-31"]);
+  assert.deepEqual(withTypedDate(w, 0, "2026-02-10", first, last), ["2026-02-10", "2026-02-10"], "a From after To pulls To along, no swap");
+  assert.deepEqual(withTypedDate(w, 1, "2025-11-15", first, last), ["2025-11-15", "2025-11-15"]);
+  assert.equal(withTypedDate(["2025-10-22", "2026-01-31"], 1, last, first, last), null, "the whole season is no window");
+  assert.equal(withTypedDate(w, 0, "2025-12-01", first, last), w, "the same date: the same window object (no re-render)");
+  assert.ok(isIsoDate("2024-02-29") && !isIsoDate("2025-02-29") && !isIsoDate("2025-2-01"));
   const g = games[0];
   assert.ok(gameLabel(g).endsWith(` ${g.opponent}${g.win === null ? "" : g.win ? ", win" : ", loss"}, ${g.makes} of ${g.attempts} FG`), gameLabel(g));
 });

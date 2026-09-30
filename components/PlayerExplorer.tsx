@@ -18,7 +18,7 @@ import {
   presetGames,
   shotsForGames,
   visibleGames,
-  windowFromInputs,
+  withTypedDate,
   type DateWindow,
   type GamePreset,
 } from "@/lib/selection.ts";
@@ -41,6 +41,10 @@ export function PlayerExplorer({ data, subject }: { data: ExplorerData; subject:
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set(games?.map((g) => g.game_id) ?? []));
   const [dateWindow, setDateWindow] = useState<DateWindow>(null);
   const [n, setN] = useState<(typeof WINDOWS)[number]>(10);
+  // What each date field shows while it has focus: Chromium reports every half-typed value
+  // (0002-..., 0020-...), so the field keeps its own text and only a complete in-season date moves
+  // the window; on blur it shows the window again.
+  const [drafts, setDrafts] = useState<[string | null, string | null]>([null, null]);
 
   const toggle = useCallback(
     (gameId: string) =>
@@ -79,12 +83,13 @@ export function PlayerExplorer({ data, subject }: { data: ExplorerData; subject:
         type="date"
         min={first}
         max={last}
-        value={dateWindow?.[end] ?? ""}
+        value={drafts[end] ?? dateWindow?.[end] ?? ""}
         onChange={(e) => {
-          const from = end === 0 ? e.target.value : (dateWindow?.[0] ?? "");
-          const to = end === 1 ? e.target.value : (dateWindow?.[1] ?? "");
-          setDateWindow(windowFromInputs(from, to, first, last));
+          const value = e.target.value;
+          setDrafts((d) => (end === 0 ? [value, d[1]] : [d[0], value]));
+          setDateWindow((w) => withTypedDate(w, end, value, first, last));
         }}
+        onBlur={() => setDrafts((d) => (end === 0 ? [null, d[1]] : [d[0], null]))}
         className="rounded border border-line bg-surface px-1.5 py-0.5 text-fg"
       />
     </label>

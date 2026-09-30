@@ -18,6 +18,10 @@ const cases = [
   ["/home/current", 404, null],
   ["/teams/list/current", 404, null],
   ["/players/1629008/current/opengraph-image", 200, null], // the one internal path metadata links to
+  ["/scatter", 200, null],
+  ["/leaders?season=2025", 200, null],
+  ["/scatter/current", 404, null],
+  ["/leaders/2026", 404, null],
   ["/sitemap.xml", 200, null],
   ["/robots.txt", 200, null],
 ];

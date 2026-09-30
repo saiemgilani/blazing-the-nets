@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Card } from "@/components/Card.tsx";
 import { Dashboard } from "@/components/Dashboard.tsx";
-import { PlayerTable } from "@/components/PlayerTable.tsx";
+import { RosterTable } from "@/components/RosterTable.tsx";
 import { QuerySelect } from "@/components/QuerySelect.tsx";
 import { listSeasons, parseSeason, seasonLabel } from "@/lib/data/seasons.ts";
 import { TEAMS } from "@/lib/data/teams.ts";
 import { fmtInt, fmtPct } from "@/lib/format.ts";
 import { seasonQuery, teamHref } from "@/lib/links.ts";
-import { loadTeamPage, playerRows, seasonOptions } from "@/lib/pageData.ts";
+import { loadTeamPage, seasonOptions } from "@/lib/pageData.ts";
 
 // Served at /teams/<id>?season= (proxy.ts). All 30 teams are prerendered for the current season.
 export const revalidate = 21600;
@@ -69,7 +69,7 @@ export default async function TeamPage({ params }: { params: Params }) {
       </header>
       <Dashboard data={page.dashboard} subject={`${team.name} ${seasonLabel(season)}`} subjectLabel="Team" />
       <Card title="Roster by attempts">
-        <PlayerTable rows={playerRows(page.roster)} seasonQuery={q} />
+        <RosterTable rows={page.roster} seasonQuery={q} />
       </Card>
     </div>
   );

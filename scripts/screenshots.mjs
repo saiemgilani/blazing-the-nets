@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 
 const base = process.env.BASE_URL ?? "http://localhost:3000";
-const pages = (process.env.PAGES ?? "home=/,players=/players,player=/players/1629008,teams=/teams,team=/teams/1610612751")
+const pages = (process.env.PAGES ?? "home=/,players=/players,player=/players/1629008,teams=/teams,team=/teams/1610612751,scatter=/scatter,leaders=/leaders")
   .split(",")
   .map((p) => p.split("="));
 const widths = (process.env.WIDTHS ?? "390,1280").split(",").map(Number);
@@ -40,6 +40,13 @@ try {
           await page.getByRole("button", { name: "Zones" }).click();
           await page.mouse.move(0, 0);
           await hex.screenshot({ path: `${outDir}${name}-zones-${width}-${colorScheme}.png` });
+        }
+        if (name === "scatter" && width === widths[widths.length - 1]) {
+          // Headshot faces instead of dots; wait for the ESPN images to load and redraw.
+          await page.getByRole("button", { name: "Faces" }).click();
+          await page.waitForLoadState("networkidle");
+          await page.waitForTimeout(800);
+          await page.screenshot({ path: `${outDir}${name}-faces-${width}-${colorScheme}.png`, fullPage: true });
         }
         if (name === "player" && width === widths[widths.length - 1]) {
           // A brushed date window: reload, drag across the middle of the game timeline.

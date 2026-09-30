@@ -35,15 +35,17 @@ test("public URLs rewrite onto the internal season routes", () => {
   assert.equal(internalPath("/players/1629008", q(`season=${LAST_KNOWN_SEASON + 1}`)), `/players/1629008/${LAST_KNOWN_SEASON + 1}`);
   assert.equal(internalPath("/teams/1610612751/", q("season=2020")), "/teams/1610612751/2020");
   assert.equal(internalPath("/teams", q("")), "/teams/list/current");
+  assert.equal(internalPath("/scatter", q("season=2024")), "/scatter/2024");
+  assert.equal(internalPath("/leaders", q("")), "/leaders/current");
   assert.equal(internalPath("/about", q("")), null);
   assert.equal(internalPath("/players/abc", q("")), null);
 });
 
 test("internal routes (noindex) are told apart from public ones", () => {
-  for (const p of ["/home/current", "/players/list/2026/BKN", "/players/1629008/current", "/players/1629008/2025/opengraph-image", "/teams/list/current", "/teams/1610612751/2026"]) {
+  for (const p of ["/home/current", "/scatter/current", "/leaders/2025", "/players/list/2026/BKN", "/players/1629008/current", "/players/1629008/2025/opengraph-image", "/teams/list/current", "/teams/1610612751/2026"]) {
     assert.ok(isInternalPath(p), p);
   }
-  for (const p of ["/", "/players", "/players/1629008", "/teams", "/teams/1610612751", "/about", "/sitemap.xml"]) {
+  for (const p of ["/", "/players", "/players/1629008", "/teams", "/teams/1610612751", "/scatter", "/leaders", "/about", "/sitemap.xml"]) {
     assert.ok(!isInternalPath(p), p);
   }
 });
@@ -96,9 +98,15 @@ test("team page data and table rows", () => {
   assert.equal(page.line.attempts, 2000);
   assert.equal(page.roster.length, 16);
   assert.equal(assembleTeamPage(data, 1610612737), null, "no Hawks shots in the fixture");
-  const rows = playerRows(page.roster);
-  assert.equal(rows[0].attempts, page.roster[0].attempts);
+  const rows = page.roster;
+  assert.equal(rows.reduce((a, r) => a + r.fga, 0), 2000);
   assert.ok(rows.every((r) => r.gp === null && !r.acrossTeams), "no stats rows in the fixture");
+  const top = rows[0];
+  const mine = shots.filter((s) => s.person_id === top.person_id);
+  const rim = mine.filter((s) => Math.hypot(s.x_legacy, s.y_legacy) <= 40 && s.shot_value === 2);
+  assert.equal(top.rimPct, rim.filter((s) => s.shot_result === "Made").length / rim.length, "rim FG% is the restricted-area zone");
+  assert.equal(top.fg3Rate, mine.filter((s) => s.shot_value === 3).length / mine.length);
+  assert.equal(playerRows(data.players)[0].attempts, data.players[0].attempts);
 });
 
 test("the next season becomes current only with regular-season shots and a stats file", () => {

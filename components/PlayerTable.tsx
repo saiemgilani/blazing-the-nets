@@ -8,6 +8,8 @@ import type { PlayerRow } from "@/lib/pageData.ts";
 
 /** Hidden below the sm breakpoint so the table fits a phone without sideways scrolling. */
 const WIDE = "hidden sm:table-cell";
+/** Rows rendered at a time (the all-teams list has 583); "Show more" adds this many. */
+export const PAGE_ROWS = 100;
 
 /**
  * Players sorted by attempts, linking to their pages; with `search`, a text filter on the name.
@@ -16,7 +18,9 @@ const WIDE = "hidden sm:table-cell";
  */
 export function PlayerTable({ rows, seasonQuery, search = false }: { rows: PlayerRow[]; seasonQuery: string; search?: boolean }) {
   const [q, setQ] = useState("");
-  const shown = q ? rows.filter((r) => foldText(r.name).includes(foldText(q))) : rows;
+  const [limit, setLimit] = useState(PAGE_ROWS);
+  const matches = q ? rows.filter((r) => foldText(r.name).includes(foldText(q))) : rows;
+  const shown = matches.slice(0, limit);
   return (
     <div>
       {search && (
@@ -29,7 +33,7 @@ export function PlayerTable({ rows, seasonQuery, search = false }: { rows: Playe
             placeholder="player name"
             className="w-56 rounded border border-line bg-surface px-2 py-1 text-fg"
           />
-          <span>{shown.length} players</span>
+          <span>{matches.length} players</span>
         </label>
       )}
       <div className="overflow-x-auto">
@@ -73,6 +77,11 @@ export function PlayerTable({ rows, seasonQuery, search = false }: { rows: Playe
           </tbody>
         </table>
       </div>
+      {matches.length > shown.length && (
+        <button type="button" onClick={() => setLimit((l) => l + PAGE_ROWS)} className="mt-3 rounded border border-line px-3 py-1 text-sm text-muted hover:text-fg">
+          Show {Math.min(PAGE_ROWS, matches.length - shown.length)} more ({matches.length - shown.length} not shown)
+        </button>
+      )}
       {rows.some((r) => r.acrossTeams) && <p className="mt-2 hidden text-xs text-muted sm:block">* GP and MIN are season totals across teams.</p>}
     </div>
   );

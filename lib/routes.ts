@@ -10,6 +10,8 @@ import { isAddressableSeason } from "./seasonRange.ts";
  *   /players/<id>      -> /players/<id>/<season>
  *   /teams             -> /teams/list/<season>
  *   /teams/<id>        -> /teams/<id>/<season>
+ *   /scatter           -> /scatter/<season>
+ *   /leaders           -> /leaders/<season>
  *
  * <season> is a 4-digit year in the site's range (FIRST_SEASON..LAST_KNOWN_SEASON + 1), anything
  * else is "current", so crafted URLs cannot mint new cache entries; pages resolve and validate it
@@ -25,13 +27,14 @@ export function internalPath(pathname: string, query: URLSearchParams): string |
   if (path === "/") return `/home/${season}`;
   if (path === "/players") return `/players/list/${season}/${team}`;
   if (path === "/teams") return `/teams/list/${season}`;
+  if (path === "/scatter" || path === "/leaders") return `${path}/${season}`;
   const m = /^\/(players|teams)\/(\d{1,10})$/.exec(path);
   return m ? `/${m[1]}/${m[2]}/${season}` : null;
 }
 
 /** The internal routes themselves. Direct requests for them 404 (only the proxy's rewrites reach them). */
 export function isInternalPath(pathname: string): boolean {
-  return /^\/(home\/[^/]+|players\/list\/.+|teams\/list\/.+|(players|teams)\/\d+\/[^/]+)(\/.*)?$/.test(pathname);
+  return /^\/(home\/[^/]+|(scatter|leaders)\/[^/]+|players\/list\/.+|teams\/list\/.+|(players|teams)\/\d+\/[^/]+)(\/.*)?$/.test(pathname);
 }
 
 /** The one internal path served directly: a player's OG image, which the page's metadata links to. */

@@ -1,0 +1,66 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { fgPctByDistance, hexbinShots, statsByZone } from "../lib/data/aggregate.ts";
+import { readPlayers } from "../lib/data/players.ts";
+import { fetchAssetBytes, parseParquet } from "../lib/data/releases.ts";
+import { readHeadshots } from "../lib/data/rosters.ts";
+import { listSeasons } from "../lib/data/seasons.ts";
+import { ShotRow, filterSeasonType, shotsAsset, SHOTS_TAG } from "../lib/data/shots.ts";
+import { NETS_TEAM_ID, readTeams } from "../lib/data/teams.ts";
+
+const skip = process.env.BN_NETWORK_TESTS === "1" ? false : "set BN_NETWORK_TESTS=1 to read the real release files";
+
+test("real release files: shots 2026 -> Nets -> one player", { skip }, async (t) => {
+  const seasons = await listSeasons();
+  t.diagnostic(`seasons ${seasons.join(",")}`);
+  assert.equal(seasons[0], 2016);
+  assert.ok((seasons.at(-1) ?? 0) >= 2026);
+
+  let t0 = performance.now();
+  const bytes = await fetchAssetBytes(SHOTS_TAG, shotsAsset(2026));
+  const downloadMs = performance.now() - t0;
+  t0 = performance.now();
+  const all = await parseParquet(bytes, ShotRow);
+  t.diagnostic(`shots_2026.parquet ${bytes.byteLength} bytes, download ${downloadMs.toFixed(0)} ms, decode+validate ${(performance.now() - t0).toFixed(0)} ms, ${all.length} rows`);
+  assert.ok(all.length > 200_000);
+
+  const league = filterSeasonType(all, "regular");
+  const nets = league.filter((s) => s.team_id === NETS_TEAM_ID);
+  assert.ok(nets.length > 5000);
+  assert.ok(nets.every((s) => s.team_tricode === "BKN"));
+
+  const teams = await readTeams(2026);
+  assert.equal(teams.length, 30);
+  assert.equal(teams.find((tm) => tm.team_id === NETS_TEAM_ID)?.tricode, "BKN");
+
+  const roster = await readPlayers(2026, NETS_TEAM_ID);
+  const headshots = await readHeadshots(2026, roster);
+  for (const p of roster) {
+    const s = p.stats;
+    t.diagnostic(
+      `${p.player_name} (${p.person_id}) FGA ${p.attempts} FG% ${(p.makes / p.attempts).toFixed(3)}` +
+        (s ? ` gp ${s.gp} min ${s.min} ts ${s.ts_pct} usg ${s.usg_pct}` : " no stats") +
+        (headshots.has(p.person_id) ? " headshot" : " NO headshot"),
+    );
+  }
+  assert.equal(roster.reduce((a, p) => a + p.attempts, 0), nets.length);
+  assert.ok(roster.filter((p) => p.stats).length >= roster.length - 1);
+  assert.ok(headshots.size >= roster.length * 0.8);
+
+  const top = roster[0];
+  const mine = nets.filter((s) => s.person_id === top.person_id);
+  const fg = top.makes / top.attempts;
+  assert.ok(fg > 0.3 && fg < 0.7, `FG% ${fg}`);
+  const hexes = hexbinShots(mine, 15);
+  assert.ok(hexes.length > 20);
+  const byDistance = fgPctByDistance(mine);
+  assert.ok(byDistance[0].attempts > 0);
+  const zones = statsByZone(mine);
+  const corner = mine.filter((s) => s.shot_value === 3 && s.y_legacy <= 89).map((s) => Math.abs(s.x_legacy)).sort((a, b) => a - b);
+  const median = corner[Math.floor(corner.length / 2)];
+  t.diagnostic(
+    `${top.player_name}: ${mine.length} FGA, FG% ${fg.toFixed(3)}, ${hexes.length} hexes, corner-3 |x| median ${median} (n=${corner.length}), ` +
+      `zones ${Object.entries(zones).map(([z, v]) => `${z} ${v.makes}/${v.attempts}`).join(", ")}`,
+  );
+  assert.ok(median >= 215 && median <= 245, `corner |x| median ${median}`);
+});

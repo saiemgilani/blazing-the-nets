@@ -4,16 +4,22 @@ import {
   ZONES,
   fgPctByDistance,
   hexbinShots,
-  rollingByGame,
+  lineOf,
+  playerGames,
+  rollingLines,
   statsBySide,
   statsByZone,
+  versusOpponents,
   vsLeague,
   zoneOf,
+  type PlayerGame,
 } from "../lib/data/aggregate.ts";
-import { fixtureGameDates, fixtureShots, shot } from "./helpers.ts";
+import { gameKey, teamGames, type GameInfo } from "../lib/data/games.ts";
+import { fixtureGameLogs, fixtureShots, shot } from "./helpers.ts";
 
 const shots = await fixtureShots();
-const gameDates = await fixtureGameDates();
+const logs = await fixtureGameLogs();
+const NETS = 1610612751;
 
 test("the fixture is 2 000 real Nets attempts from 2025-26", () => {
   assert.equal(shots.length, 2000);
@@ -99,32 +105,75 @@ test("hexbins keep every attempt and stay on the court", () => {
   assert.equal(hexbinShots(offCourt, 15).reduce((a, b) => a + b.attempts, 0), 1, "off-court points are dropped");
 });
 
-test("rollingByGame orders by date, not game_id, and windows the trailing N", () => {
+const info = (game_id: string, date: string, extra: Partial<GameInfo> = {}): [string, GameInfo] => [
+  gameKey(game_id, NETS),
+  { game_id, date, team_id: NETS, opponent_id: 1, opponent: "AAA", home: true, win: true, ...extra },
+];
+
+test("playerGames orders by date, not game_id, and throws on a game missing from the logs", () => {
   // A Cup group game (low id) played after the opener (higher id), as in 2025-26.
-  const dates = new Map([
-    ["0022500031", "2025-11-07"],
-    ["0022500080", "2025-10-22"],
-    ["0022500091", "2025-10-24"],
-  ]);
-  const series = rollingByGame(
-    [shot(0, 0, 2, true, "0022500031"), shot(0, 0, 2, false, "0022500080"), shot(0, 0, 2, true, "0022500091")],
-    2,
-    dates,
-  );
+  const games = new Map([info("0022500031", "2025-11-07"), info("0022500080", "2025-10-22"), info("0022500091", "2025-10-24")]);
+  const series = playerGames([shot(0, 0, 2, true, "0022500031"), shot(0, 0, 2, false, "0022500080"), shot(0, 0, 3, true, "0022500091")], games);
   assert.deepEqual(series.map((g) => g.game_id), ["0022500080", "0022500091", "0022500031"]);
-  assert.deepEqual(series[0].rolling, { attempts: 1, makes: 0, fgPct: 0 });
-  assert.deepEqual(series[2].rolling, { attempts: 2, makes: 2, fgPct: 1 });
-  assert.throws(() => rollingByGame([shot(0, 0, 2, true, "0022599999")], 2, dates), /no date for game 0022599999/);
+  assert.deepEqual([series[1].attempts, series[1].fg3m, series[1].efgPct], [1, 1, 1.5]);
+  assert.throws(() => playerGames([shot(0, 0, 2, true, "0022599999")], games), /no game log for game 0022599999/);
 });
 
 test("the real fixture's games come out in date order, which differs from id order", () => {
-  const real = rollingByGame(shots, 5, gameDates);
+  const real = playerGames(shots, teamGames(logs));
   assert.equal(real.length, 24);
-  const byDate = real.map((g) => g.game_date);
+  const byDate = real.map((g) => g.date);
   assert.deepEqual(byDate, [...byDate].sort());
   const byId = real.map((g) => g.game_id).sort();
-  const moved = real.filter((g, i) => g.game_id !== byId[i]).length;
-  assert.equal(moved, 18, "18 of 24 positions differ between id order and date order");
-  assert.equal(real[0].game_date, "2025-10-22");
-  assert.equal(real.at(-1)?.rolling.attempts, real.slice(-5).reduce((a, g) => a + g.attempts, 0));
+  assert.equal(real.filter((g, i) => g.game_id !== byId[i]).length, 18, "18 of 24 positions differ between id order and date order");
+  assert.equal(real[0].date, "2025-10-22");
+  assert.equal(real.reduce((a, g) => a + g.attempts, 0), 2000);
+});
+
+test("the opponent map pairs each game's two rows (real game logs)", () => {
+  const games = teamGames(logs);
+  assert.equal(games.size, 48);
+  const nets = [...games.values()].filter((g) => g.team_id === NETS);
+  assert.equal(nets.length, 24);
+  for (const g of nets) {
+    assert.notEqual(g.opponent_id, NETS);
+    const other = games.get(gameKey(g.game_id, g.opponent_id));
+    assert.ok(other && other.opponent === "BKN" && other.opponent_id === NETS && other.date === g.date);
+    assert.ok(!(g.home && other.home), "at most one home side per game");
+    if (g.win !== null && other.win !== null) assert.notEqual(g.win, other.win);
+  }
+  assert.deepEqual([nets.filter((g) => g.home).length, nets.filter((g) => !g.home).length, nets.filter((g) => g.win).length], [13, 11, 6]);
+});
+
+const pg = (game_id: string, attempts: number, makes: number, fg3m = 0, opponent = "AAA", opponent_id = 1): PlayerGame => ({
+  game_id,
+  date: `2025-11-${game_id.slice(-2)}`,
+  team_id: NETS,
+  opponent_id,
+  opponent,
+  home: true,
+  win: true,
+  ...lineOf({ attempts, makes, fg3a: fg3m, fg3m }),
+});
+
+test("rollingLines: trailing window, a short start, n longer than the season, n = 1, no games", () => {
+  const games = [pg("01", 10, 5), pg("02", 10, 3, 2), pg("03", 0, 0), pg("04", 20, 10)];
+  const two = rollingLines(games, 2);
+  assert.deepEqual(two.map((p) => p.games), [1, 2, 2, 2]);
+  assert.deepEqual(two.map((p) => p.attempts), [10, 20, 10, 20]);
+  assert.equal(two[1].fgPct, 8 / 20);
+  assert.equal(two[1].efgPct, (8 + 0.5 * 2) / 20);
+  assert.equal(two[2].fgPct, 3 / 10, "a 0-attempt game only widens the window");
+  assert.deepEqual(rollingLines(games, 10).map((p) => p.games), [1, 2, 3, 4]);
+  assert.deepEqual(rollingLines(games, 1).map((p) => p.fgPct), [0.5, 0.3, null, 0.5]);
+  assert.deepEqual(rollingLines([], 5), []);
+});
+
+test("versusOpponents sums each opponent, most attempts first", () => {
+  const rows = versusOpponents([pg("01", 10, 5, 0, "MIA", 2), pg("02", 4, 1, 0, "BOS", 3), pg("03", 8, 4, 1, "MIA", 2)]);
+  assert.deepEqual(rows.map((r) => [r.opponent, r.games, r.attempts, r.makes]), [
+    ["MIA", 2, 18, 9],
+    ["BOS", 1, 4, 1],
+  ]);
+  assert.equal(rows[0].fgPct, 0.5);
 });

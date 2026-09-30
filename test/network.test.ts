@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { fgPctByDistance, hexbinShots, rollingByGame, statsByZone } from "../lib/data/aggregate.ts";
+import { fgPctByDistance, hexbinShots, playerGames, statsByZone, versusOpponents } from "../lib/data/aggregate.ts";
+import { teamGames } from "../lib/data/games.ts";
 import { readPlayers } from "../lib/data/players.ts";
 import { openAsset, parseParquet } from "../lib/data/releases.ts";
 import { readHeadshots } from "../lib/data/rosters.ts";
 import { listSeasons } from "../lib/data/seasons.ts";
-import { ShotRow, filterSeasonType, readGameDates, shotsAsset, SHOTS_TAG } from "../lib/data/shots.ts";
+import { ShotRow, filterSeasonType, gameDateMap, readGameLogs, shotsAsset, SHOTS_TAG } from "../lib/data/shots.ts";
 import { NETS_TEAM_ID, readTeams } from "../lib/data/teams.ts";
 
 const skip = process.env.BN_NETWORK_TESTS === "1" ? false : "set BN_NETWORK_TESTS=1 to read the real release files";
@@ -61,7 +62,8 @@ test("real release files: shots 2026 -> Nets -> one player", { skip }, async (t)
   }
   t.diagnostic(`season-stats parity: ${leaguePlayers.length} players, ${off} attempt(s) off in total`);
 
-  const dates = await readGameDates(2026);
+  const logs = await readGameLogs(2026);
+  const dates = gameDateMap(logs);
   assert.ok(new Set(all.map((s) => s.game_id)).size <= dates.size);
   assert.ok(all.every((s) => dates.has(s.game_id)), "every shot game has a date");
 
@@ -99,7 +101,10 @@ test("real release files: shots 2026 -> Nets -> one player", { skip }, async (t)
       `zones ${Object.entries(zones).map(([z, v]) => `${z} ${v.makes}/${v.attempts}`).join(", ")}`,
   );
   assert.ok(median >= 215 && median <= 245, `corner |x| median ${median}`);
-  const games = rollingByGame(mine, 10, dates);
+  const games = playerGames(mine, teamGames(logs));
   assert.equal(games.length, top.stats?.gp);
-  assert.deepEqual(games.map((g) => g.game_date), games.map((g) => g.game_date).sort());
+  assert.deepEqual(games.map((g) => g.date), games.map((g) => g.date).sort());
+  const versus = versusOpponents(games);
+  t.diagnostic(`${top.player_name}: ${games.length} games, ${games.filter((g) => g.home).length} home, ${games.filter((g) => g.win).length} wins, ${versus.length} opponents, most ${versus[0].opponent} ${versus[0].attempts} FGA`);
+  assert.equal(versus.reduce((a, r) => a + r.attempts, 0), mine.length);
 });

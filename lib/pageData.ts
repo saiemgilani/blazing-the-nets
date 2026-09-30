@@ -1,27 +1,12 @@
-import type { DistanceBarsData } from "./charts/distanceBars.ts";
-import type { HexShotChartData } from "./charts/hexShotChart.ts";
-import type { ShootingSignatureData } from "./charts/shootingSignature.ts";
-import type { SideChartData } from "./charts/sideChart.ts";
-import {
-  fgPctByDistance,
-  hexesVsLeague,
-  leagueHexIndex,
-  lineOf,
-  shootingLine,
-  statsBySide,
-  statsByZone,
-  vsLeague,
-  ZONES,
-  type DistanceBin,
-  type LeagueHexIndex,
-  type ShootingLine,
-  type SideBin,
-} from "./data/aggregate.ts";
+import { buildDashboard, leagueContext, type DashboardData, type LeagueContext } from "./dashboard.ts";
+import { lineOf, playerGames, shootingLine, versusOpponents, type OpponentLine, type PlayerGame, type ShootingLine } from "./data/aggregate.ts";
+import { teamGames } from "./data/games.ts";
 import { PLAYER_STATS_TAG, PlayerStatsRow, seasonPlayers, type PlayerSeason } from "./data/players.ts";
+import { rankSummaries, type RankSummary } from "./data/ranks.ts";
 import { memo, readParquet } from "./data/releases.ts";
 import { readHeadshots } from "./data/rosters.ts";
 import { seasonLabel } from "./data/seasons.ts";
-import { readShots, type Shot } from "./data/shots.ts";
+import { readGameLogs, readShots, toLite, type GameLogRow, type Shot, type ShotLite } from "./data/shots.ts";
 import { teamById, teamsFromShots, type Team } from "./data/teams.ts";
 
 /**
@@ -30,47 +15,8 @@ import { teamById, teamsFromShots, type Team } from "./data/teams.ts";
  * the `load*` functions add the release reads.
  */
 
-export const HEX_RADIUS = 15; // tenths of a foot
-export const BAR_BIN_FT = 3;
-
-/** League-wide aggregates every dashboard compares against. */
-export interface LeagueContext {
-  hexIndex: LeagueHexIndex;
-  byFoot: DistanceBin[];
-  byBin: DistanceBin[];
-  sides: SideBin[];
-}
-
-export function leagueContext(league: Shot[]): LeagueContext {
-  return {
-    hexIndex: leagueHexIndex(league, HEX_RADIUS),
-    byFoot: fgPctByDistance(league),
-    byBin: fgPctByDistance(league, BAR_BIN_FT),
-    sides: statsBySide(league, BAR_BIN_FT),
-  };
-}
-
-export interface DashboardData {
-  hex: HexShotChartData;
-  signature: ShootingSignatureData;
-  bars: DistanceBarsData;
-  sides: SideChartData;
-}
-
-/** The six charts' data for a set of shots (a player's or a team's) against the league. */
-export function buildDashboard(subject: Shot[], league: LeagueContext): DashboardData {
-  const zones = statsByZone(subject);
-  return {
-    hex: {
-      hexes: hexesVsLeague(subject, league.hexIndex),
-      radius: HEX_RADIUS,
-      zones: Object.fromEntries(ZONES.map((z) => [z, { player: zones[z], league: league.hexIndex.zones[z] }])) as HexShotChartData["zones"],
-    },
-    signature: vsLeague(fgPctByDistance(subject), league.byFoot),
-    bars: { player: fgPctByDistance(subject, BAR_BIN_FT), league: league.byBin, binFt: BAR_BIN_FT },
-    sides: { player: statsBySide(subject, BAR_BIN_FT), league: league.sides, binFt: BAR_BIN_FT },
-  };
-}
+export { BAR_BIN_FT, HEX_RADIUS } from "./dashboard.ts";
+export type { DashboardData, LeagueContext } from "./dashboard.ts";
 
 /** One season's regular-season shots, stats, league context and league-wide player index. */
 export interface SeasonData {
@@ -100,8 +46,14 @@ export function teamRoster(data: SeasonData, teamId: number): PlayerSeason[] {
   return seasonPlayers(data.shots, data.stats, teamId);
 }
 
-// 2d note: when the game selector wires rollingByGame (needs readGameDates), catch its
-// "no date for game" throw here per page and drop that game, so one bad release row is not a 500.
+/** What the player page's game filters need in the browser to rebuild the six charts. */
+export interface ExplorerData {
+  shots: ShotLite[];
+  /** Date-ordered games; null when the game logs cannot place every game (the per-game views say so). */
+  games: PlayerGame[] | null;
+  league: LeagueContext;
+  seasonFgPct: number | null;
+}
 
 export interface PlayerPageData {
   season: number;
@@ -112,10 +64,26 @@ export interface PlayerPageData {
   headshot: string | null;
   prev: PlayerSeason | null;
   next: PlayerSeason | null;
+  /** The whole-season charts (the OG image; the page rebuilds them from `explorer`). */
   dashboard: DashboardData;
+  explorer: ExplorerData;
+  ranks: RankSummary[];
+  /** By opponent, most attempts first; null when the per-game views are unavailable. */
+  versus: OpponentLine[] | null;
 }
 
-export function assemblePlayerPage(data: SeasonData, personId: number, headshot: string | null): PlayerPageData | null {
+/** Date-ordered games, or null (logged) when a game is missing from the logs, so the page still renders. */
+function gamesOrNull(shots: ShotLite[], logs: GameLogRow[] | null, personId: number): PlayerGame[] | null {
+  if (!logs) return null;
+  try {
+    return playerGames(shots, teamGames(logs));
+  } catch (e) {
+    console.warn(`[player ${personId}] per-game views unavailable: ${(e as Error).message}`);
+    return null;
+  }
+}
+
+export function assemblePlayerPage(data: SeasonData, personId: number, headshot: string | null, logs: GameLogRow[] | null): PlayerPageData | null {
   const player = data.players.find((p) => p.person_id === personId);
   if (!player) return null;
   const mine = data.shots.filter((s) => s.person_id === personId);
@@ -123,15 +91,21 @@ export function assemblePlayerPage(data: SeasonData, personId: number, headshot:
   for (const s of mine) byTeam.set(s.team_tricode, (byTeam.get(s.team_tricode) ?? 0) + 1);
   const roster = teamRoster(data, player.team_id);
   const i = roster.findIndex((p) => p.person_id === personId);
+  const shots = mine.map(toLite);
+  const games = gamesOrNull(shots, logs, personId);
+  const line = shootingLine(mine);
   return {
     season: data.season,
     player,
-    line: shootingLine(mine),
+    line,
     teams: [...byTeam].sort((a, b) => b[1] - a[1]).map(([t]) => t),
     headshot,
     prev: i > 0 ? roster[i - 1] : null,
     next: i >= 0 && i < roster.length - 1 ? roster[i + 1] : null,
-    dashboard: buildDashboard(mine, data.league),
+    dashboard: buildDashboard(shots, data.league),
+    explorer: { shots, games, league: data.league, seasonFgPct: line.fgPct },
+    ranks: rankSummaries(data.players, personId),
+    versus: games ? versusOpponents(games) : null,
   };
 }
 
@@ -139,8 +113,14 @@ export async function loadPlayerPage(season: number, personId: number): Promise<
   const data = await readSeasonData(season);
   const player = data.players.find((p) => p.person_id === personId);
   if (!player) return null;
-  const headshots = await readHeadshots(season, [player]);
-  return assemblePlayerPage(data, personId, headshots.get(personId) ?? null);
+  const [headshots, logs] = await Promise.all([
+    readHeadshots(season, [player]),
+    readGameLogs(season).catch((e: unknown) => {
+      console.warn(`[season ${season}] game logs unavailable: ${(e as Error).message}`);
+      return null;
+    }),
+  ]);
+  return assemblePlayerPage(data, personId, headshots.get(personId) ?? null, logs);
 }
 
 export interface TeamPageData {

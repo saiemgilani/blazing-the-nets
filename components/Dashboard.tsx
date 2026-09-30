@@ -3,7 +3,7 @@ import { HexShotChart } from "./charts/HexShotChart.tsx";
 import { ShootingSignature } from "./charts/ShootingSignature.tsx";
 import { SideChart } from "./charts/SideChart.tsx";
 import { Card } from "./Card.tsx";
-import type { DashboardData } from "@/lib/pageData.ts";
+import type { DashboardData } from "@/lib/dashboard.ts";
 
 /** The six charts in the 2021 arrangement: shot chart + signature, the distance pair, the side pair. */
 export function Dashboard({ data, subject }: { data: DashboardData; subject: string }) {

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { parseParquet } from "../lib/data/releases.ts";
-import { gameDateMap, GameDateRow, ShotRow, type Shot } from "../lib/data/shots.ts";
+import { GameLogRow, ShotRow, type Shot } from "../lib/data/shots.ts";
 
 /**
  * First 2 000 Nets rows, in file order, of the real `nba_stats_shots/shots_2026.parquet`
@@ -14,12 +14,13 @@ export async function fixtureShots(): Promise<Shot[]> {
 }
 
 /**
- * game_id -> date for the fixture's 24 games, cut from the real
- * `nba_stats_player_game_logs/player_game_logs_2026.parquet` (2026-09-30, polars 1.42, zstd).
+ * Both teams' rows for the fixture's 24 games (48), cut from the real
+ * `nba_stats_player_game_logs/player_game_logs_2026.parquet` (2026-09-30, polars 1.42, zstd):
+ * game_id, team_id, team_abbreviation, game_date, matchup, wl.
  */
-export async function fixtureGameDates(): Promise<Map<string, string>> {
-  const bytes = new Uint8Array(readFileSync(new URL("./fixtures/game_dates_2026_bkn.parquet", import.meta.url)));
-  return gameDateMap(await parseParquet(bytes.buffer, GameDateRow));
+export async function fixtureGameLogs(): Promise<GameLogRow[]> {
+  const bytes = new Uint8Array(readFileSync(new URL("./fixtures/game_logs_2026_bkn.parquet", import.meta.url)));
+  return parseParquet(bytes.buffer, GameLogRow);
 }
 
 /**

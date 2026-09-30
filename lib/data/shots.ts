@@ -30,6 +30,14 @@ export const ShotRow = z.object({
 
 export type Shot = z.output<typeof ShotRow>;
 
+/** The fields the aggregations read; what the player page ships to the browser for re-filtering. */
+export type ShotLite = Pick<Shot, "game_id" | "team_id" | "x_legacy" | "y_legacy" | "shot_distance" | "shot_value" | "shot_result">;
+
+export function toLite(s: Shot): ShotLite {
+  const { game_id, team_id, x_legacy, y_legacy, shot_distance, shot_value, shot_result } = s;
+  return { game_id, team_id, x_legacy, y_legacy, shot_distance, shot_value, shot_result };
+}
+
 export type SeasonType = "regular" | "playoffs" | "all";
 
 /** stats.nba.com game_id prefixes: 002 regular season, 004 playoffs. */
@@ -48,22 +56,33 @@ export async function readShots(season: number, seasonType: SeasonType = "regula
 export const GAME_LOGS_TAG = "nba_stats_player_game_logs";
 
 /**
- * `nba_stats_player_game_logs/player_game_logs_<endYear>.parquet` is one row per team per game;
- * only the date matters here. game_id order is NOT date order (NBA Cup group games carry low ids
- * but are played in November), so anything per-game sorts by this date.
+ * `nba_stats_player_game_logs/player_game_logs_<endYear>.parquet` is one row per TEAM per game
+ * (two rows per game_id). `matchup` is "BKN vs. MIA" for the home side and "BKN @ MIA" for the
+ * away side (neutral-site games list both sides with "@"); `wl` is "W" or "L". game_id order is
+ * NOT date order (NBA Cup group games carry low ids but are played in November), so anything
+ * per-game sorts by `game_date`.
  */
-export const GameDateRow = z.object({
+export const GameLogRow = z.object({
   game_id: z.string(),
+  team_id: int64,
+  team_abbreviation: z.string(),
   game_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  matchup: z.string(),
+  wl: z.enum(["W", "L"]).nullable(),
 });
 
-export type GameDateRow = z.output<typeof GameDateRow>;
+export type GameLogRow = z.output<typeof GameLogRow>;
 
-export function gameDateMap(rows: GameDateRow[]): Map<string, string> {
+export function readGameLogs(season: number): Promise<GameLogRow[]> {
+  return readParquet(GAME_LOGS_TAG, `player_game_logs_${season}.parquet`, GameLogRow);
+}
+
+/** game_id -> "YYYY-MM-DD". */
+export function gameDateMap(rows: Pick<GameLogRow, "game_id" | "game_date">[]): Map<string, string> {
   return new Map(rows.map((r) => [r.game_id, r.game_date]));
 }
 
 /** game_id -> "YYYY-MM-DD" for every game of the season (regular season and playoffs). */
 export async function readGameDates(season: number): Promise<Map<string, string>> {
-  return gameDateMap(await readParquet(GAME_LOGS_TAG, `player_game_logs_${season}.parquet`, GameDateRow));
+  return gameDateMap(await readGameLogs(season));
 }

@@ -28,23 +28,27 @@ export interface Point {
   y: number;
 }
 
-/** A pixel box `width` wide showing the court from the baseline up to legacy `top`; hoop at the bottom. */
+/**
+ * A pixel box `width` wide showing the court from the baseline up to legacy `top`, hoop at the
+ * bottom, with `pad` tenths of a foot of margin beside the sidelines and below the baseline.
+ */
 export interface Viewport {
   width: number;
   height: number;
   /** Pixels per tenth of a foot. */
   scale: number;
   top: number;
+  pad: number;
 }
 
-export function viewport(width: number, top: number = COURT.halfCourtY): Viewport {
-  const scale = width / (2 * COURT.halfWidth);
-  return { width, height: (top - COURT.baselineY) * scale, scale, top };
+export function viewport(width: number, top: number = COURT.halfCourtY, pad = 0): Viewport {
+  const scale = width / (2 * (COURT.halfWidth + pad));
+  return { width, height: (top - COURT.baselineY + pad) * scale, scale, top, pad };
 }
 
 /** Legacy frame -> SVG pixels. x keeps its sign (x < 0 is the left of the chart); y is flipped. */
 export function toSvg(p: Point, v: Viewport): Point {
-  return { x: (p.x + COURT.halfWidth) * v.scale, y: (v.top - p.y) * v.scale };
+  return { x: (p.x + COURT.halfWidth + v.pad) * v.scale, y: (v.top - p.y) * v.scale };
 }
 
 /** A length in tenths of a foot (a hex radius, a mark size) -> pixels. */

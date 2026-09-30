@@ -100,6 +100,9 @@ export function teamRoster(data: SeasonData, teamId: number): PlayerSeason[] {
   return seasonPlayers(data.shots, data.stats, teamId);
 }
 
+// 2d note: when the game selector wires rollingByGame (needs readGameDates), catch its
+// "no date for game" throw here per page and drop that game, so one bad release row is not a 500.
+
 export interface PlayerPageData {
   season: number;
   player: PlayerSeason;

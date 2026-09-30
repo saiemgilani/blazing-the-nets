@@ -3,11 +3,11 @@ import { Delaunay } from "d3-delaunay";
 import { hexbin } from "d3-hexbin";
 import { scaleSqrt, type ScalePower } from "d3-scale";
 import { pointer, select, type Selection } from "d3-selection";
-import { LEAGUE_PRIOR_ATTEMPTS, shrunkDiff, type HexVsLeague, type Split, type Zone } from "../data/aggregate.ts";
+import { shrunkDiff, type HexVsLeague, type Split, type Zone } from "../data/aggregate.ts";
 import { toSvg, toSvgLength, zoneAreas, type Viewport } from "../data/court.ts";
 import { courtViewport, DEFAULT_WIDTH, drawCourt } from "./court.ts";
 import { fmtPct, fmtPts } from "../format.ts";
-import { chartTheme, diffColor, drawDiffLegend, drawNotes, FONT_PX, motionMs, setViewBox, tooltip, TOKENS, type ChartTheme, type G } from "./theme.ts";
+import { chartTheme, diffColor, drawDiffLegend, drawNotes, FONT_PX, motionMs, setViewBox, SHRINK_NOTE, tooltip, TOKENS, type ChartTheme, type G } from "./theme.ts";
 
 export interface ZoneComparison {
   player: Split;
@@ -28,6 +28,8 @@ export type HexMode = "raw" | "zones";
 export interface HexShotChartOptions {
   width: number;
   mode: HexMode;
+  /** Grow the hexes in (first draw only; redraws on resize or theme change are instant). */
+  animate?: boolean;
 }
 
 export const ZONE_LABELS: Record<Zone, string> = {
@@ -39,7 +41,6 @@ export const ZONE_LABELS: Record<Zone, string> = {
   above_break_3: "Above-the-break 3",
 };
 
-export const SHRINK_NOTE = `colour shrunk toward the league rate (${LEAGUE_PRIOR_ATTEMPTS}-attempt prior)`;
 
 /** Server-rendered viewBox before measuring (court + a typical legend). */
 export const HEX_VIEWBOX = { width: DEFAULT_WIDTH, height: courtViewport().height + 110 };
@@ -121,18 +122,20 @@ function drawZones(root: G, data: HexShotChartData, v: Viewport, theme: ChartThe
   drawCourt(root, v, { zones: true });
   const labels = root.append("g").attr("pointer-events", "none");
   for (const a of areas) {
-    const z = data.zones[a.zone].player;
+    const { player: z, league } = data.zones[a.zone];
     const g = labels.append("g").attr("transform", `translate(${a.label.x},${a.label.y})${a.vertical ? " rotate(-90)" : ""}`);
     if (a.vertical) {
-      label(g, `${fmtPct(z.fgPct, 0)} · ${z.makes}/${z.attempts}`).attr("dy", "0.35em");
+      label(g, `${fmtPct(z.fgPct, 0)} · ${z.makes}/${z.attempts}`, -2);
+      label(g, `lg ${fmtPct(league.fgPct, 0)}`, FONT_PX);
     } else {
       label(g, fmtPct(z.fgPct, 0)).style("font-weight", "600");
       label(g, `${z.makes}/${z.attempts}`, FONT_PX + 2);
+      label(g, `lg ${fmtPct(league.fgPct, 0)}`, 2 * (FONT_PX + 2));
     }
   }
 }
 
-export function renderHexShotChart(svg: SVGSVGElement, data: HexShotChartData, { width, mode }: HexShotChartOptions): () => void {
+export function renderHexShotChart(svg: SVGSVGElement, data: HexShotChartData, { width, mode, animate = true }: HexShotChartOptions): () => void {
   const v = courtViewport(width);
   const theme = chartTheme(svg);
   const root = select(svg).append("g");
@@ -144,7 +147,7 @@ export function renderHexShotChart(svg: SVGSVGElement, data: HexShotChartData, {
   } else {
     drawCourt(root, v);
     const { marks, cap, size } = layoutHexes(data.hexes, data.radius, v, theme);
-    const ms = motionMs(500);
+    const ms = animate ? motionMs(500) : 0;
     hexes = root
       .append("g")
       .selectAll<SVGPathElement, HexMark>("path")
@@ -153,9 +156,9 @@ export function renderHexShotChart(svg: SVGSVGElement, data: HexShotChartData, {
       .attr("transform", (m) => `translate(${m.cx},${m.cy})`)
       .attr("d", (m) => shape.hexagon(ms ? 0 : m.r))
       .style("fill", (m) => m.fill)
-      .style("stroke", TOKENS.fg)
-      .style("stroke-opacity", 0.25)
-      .style("stroke-width", 0.5);
+      // A full-strength outline keeps average (near-background) hexes visible: size carries meaning.
+      .style("stroke", TOKENS.muted)
+      .style("stroke-width", 0.85);
     if (ms) hexes.transition().duration(ms).attr("d", (m) => shape.hexagon(m.r));
 
     // Hover: nearest hex centre (Delaunay), within 18 px.
@@ -221,4 +224,14 @@ export function renderHexShotChart(svg: SVGSVGElement, data: HexShotChartData, {
     hexes?.interrupt();
     root.remove();
   };
+}
+
+/** A text version for assistive tech: every zone's makes/attempts, FG% and the league FG%. */
+export function describeHex(data: HexShotChartData): string {
+  const zones = (Object.keys(ZONE_LABELS) as Zone[]).map((z) => {
+    const { player, league } = data.zones[z];
+    return `${ZONE_LABELS[z]} ${player.makes}/${player.attempts} (${fmtPct(player.fgPct)}, league ${fmtPct(league.fgPct)})`;
+  });
+  const attempts = data.hexes.reduce((a, h) => a + h.attempts, 0);
+  return `${attempts} attempts in ${data.hexes.length} hexes. By zone: ${zones.join("; ")}.`;
 }

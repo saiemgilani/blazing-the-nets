@@ -4,16 +4,21 @@ import { setViewBox, TOKENS, type G } from "./theme.ts";
 
 /** Charts show the half court from the baseline up to 35 ft, hoop at the bottom (the 2021 orientation). */
 export const COURT_TOP = 350;
+/**
+ * Margin (tenths of a foot) past the sidelines and baseline: hexes centred on the edge of the
+ * court (|x| up to 259.8 for 1.5 ft hexes) stay whole.
+ */
+export const COURT_PAD = 25;
 /** Layout width before the chart is measured (the server-rendered viewBox). */
 export const DEFAULT_WIDTH = 500;
 
 export function courtViewport(width: number = DEFAULT_WIDTH): Viewport {
-  return viewport(width, COURT_TOP);
+  return viewport(width, COURT_TOP, COURT_PAD);
 }
 
 export interface CourtOptions {
   width: number;
-  /** Outline the zones `zoneOf` uses, in the accent colour. */
+  /** Outline the zones `zoneOf` uses (dashed, in the text colour). */
   zones?: boolean;
 }
 

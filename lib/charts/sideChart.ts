@@ -5,7 +5,7 @@ import type { SideBin, Split } from "../data/aggregate.ts";
 import { DEFAULT_WIDTH } from "./court.ts";
 import type { BarMetric } from "./distanceBars.ts";
 import { fmtPct } from "../format.ts";
-import { FONT_PX, motionMs, setViewBox, tooltip, TOKENS } from "./theme.ts";
+import { drawNotes, FONT_PX, motionMs, setViewBox, tooltip, TOKENS } from "./theme.ts";
 
 /** `statsBySide` for the player and for the league, same `binFt`. */
 export interface SideChartData {
@@ -20,9 +20,12 @@ const SIDES: Side[] = ["left", "centre", "right"];
 const M = { top: 38, right: 10, bottom: 10, left: 60 };
 const ROW = 20;
 const CENTRE_W = 56; // px given to the centre column
+/** FG% bars (any side) need this many attempts; fewer draws no bar. */
+export const SIDE_MIN_ATTEMPTS = 5;
+const NOTE = `centre (x = 0, straight on) has its own, narrower scale; FG% bars need ${SIDE_MIN_ATTEMPTS}+ attempts`;
 
 export function sideViewBox(rows: number, width: number = DEFAULT_WIDTH) {
-  return { width, height: M.top + rows * ROW + M.bottom };
+  return { width, height: M.top + rows * ROW + M.bottom + 36 };
 }
 
 export interface SideBar {
@@ -56,7 +59,8 @@ function totals(bins: SideBin[]): number {
 export function sideLayout(data: SideChartData, metric: BarMetric, width: number = DEFAULT_WIDTH): { rows: SideRow[]; max: number } {
   if (data.player.length !== data.league.length) throw new Error("sideLayout: player and league bins differ");
   const [pTotal, lTotal] = [totals(data.player), totals(data.league)];
-  const val = (s: Split, total: number) => (metric === "share" ? (total ? s.attempts / total : null) : s.fgPct);
+  const val = (s: Split, total: number) =>
+    metric === "share" ? (total ? s.attempts / total : null) : s.attempts >= SIDE_MIN_ATTEMPTS ? s.fgPct : null;
   const all = [...data.player, ...data.league].flatMap((b, i) => SIDES.map((s) => val(b[s], i < data.player.length ? pTotal : lTotal)));
   const top = metric === "fgPct" ? 1 : (max(all, (v) => v ?? 0) ?? 0) || 0.1;
   const mid = (M.left + width - M.right) / 2;
@@ -93,9 +97,14 @@ export function sideLayout(data: SideChartData, metric: BarMetric, width: number
   return { rows, max: top };
 }
 
-export function renderSideChart(svg: SVGSVGElement, data: SideChartData, { metric, width }: { metric: BarMetric; width: number }): () => void {
+export function renderSideChart(
+  svg: SVGSVGElement,
+  data: SideChartData,
+  { metric, width, animate = true }: { metric: BarMetric; width: number; animate?: boolean },
+): () => void {
   const { rows } = sideLayout(data, metric, width);
-  const { width: W, height: H } = sideViewBox(rows.length, width);
+  const W = width;
+  const H = M.top + rows.length * ROW + M.bottom;
   const mid = (M.left + W - M.right) / 2;
   const root = select(svg).append("g");
 
@@ -131,7 +140,7 @@ export function renderSideChart(svg: SVGSVGElement, data: SideChartData, { metri
     .style("fill", TOKENS.muted)
     .text((r) => r.label);
 
-  const ms = motionMs(400);
+  const ms = animate ? motionMs(400) : 0;
   const bars = row
     .selectAll("rect")
     .data((r) => r.bars)
@@ -172,9 +181,20 @@ export function renderSideChart(svg: SVGSVGElement, data: SideChartData, { metri
     })
     .on("pointerleave", () => tip.hide());
 
-  setViewBox(svg, W, H);
+  const notes = drawNotes(root, M.left, H + 2, W - M.left - M.right, [NOTE]);
+  setViewBox(svg, W, H + 6 + notes);
   return () => {
     bars.interrupt();
     root.remove();
   };
+}
+
+/** A text version for assistive tech: each distance row's left / centre / right values. */
+export function describeSides(data: SideChartData, metric: BarMetric): string {
+  const { rows } = sideLayout(data, metric);
+  const what = metric === "share" ? "share of shots" : "FG%";
+  return `${what} left, centre and right of the hoop (league in brackets): ${rows
+    .filter((r) => r.bars.some((b) => b.value !== null && b.value > 0))
+    .map((r) => `${r.label} ${r.bars.map((b) => `${b.side} ${fmtPct(b.value)} (${fmtPct(b.league)})`).join(", ")}`)
+    .join("; ")}.`;
 }

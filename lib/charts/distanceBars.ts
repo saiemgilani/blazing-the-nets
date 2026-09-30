@@ -76,7 +76,11 @@ export function barLayout(data: DistanceBarsData, metric: BarMetric, width: numb
   return { groups, yMax };
 }
 
-export function renderDistanceBars(svg: SVGSVGElement, data: DistanceBarsData, { metric, width: W }: { metric: BarMetric; width: number }): () => void {
+export function renderDistanceBars(
+  svg: SVGSVGElement,
+  data: DistanceBarsData,
+  { metric, width: W, animate = true }: { metric: BarMetric; width: number; animate?: boolean },
+): () => void {
   const root = select(svg).append("g");
   const { groups, yMax } = barLayout(data, metric, W);
   const y = scaleLinear().domain([0, yMax]).range([H - M.bottom, M.top]);
@@ -130,7 +134,7 @@ export function renderDistanceBars(svg: SVGSVGElement, data: DistanceBarsData, {
     legend.append("text").attr("x", i * 68 + 14).attr("y", 1).style("fill", TOKENS.muted).text(who === "player" ? "Player" : "League");
   });
 
-  const ms = motionMs(400);
+  const ms = animate ? motionMs(400) : 0;
   const bars = root
     .append("g")
     .selectAll("rect")
@@ -167,4 +171,13 @@ export function renderDistanceBars(svg: SVGSVGElement, data: DistanceBarsData, {
     bars.interrupt();
     root.remove();
   };
+}
+
+/** A text version for assistive tech: the player's and the league's value in every bin. */
+export function describeBars(data: DistanceBarsData, metric: BarMetric): string {
+  const what = metric === "share" ? "share of shots" : "FG%";
+  const { groups } = barLayout(data, metric);
+  return `${what} by distance, player vs league: ${groups
+    .map((g) => `${g.label} ft ${fmtPct(g.bars[0].value)} vs ${fmtPct(g.bars[1].value)}`)
+    .join("; ")}.`;
 }

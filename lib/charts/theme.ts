@@ -2,6 +2,7 @@ import { scaleDiverging, scaleLinear } from "d3-scale";
 import { interpolateRdBu } from "d3-scale-chromatic";
 import type { Selection } from "d3-selection";
 import "d3-transition";
+import { LEAGUE_PRIOR_ATTEMPTS } from "../data/aggregate.ts";
 import { fmtPts } from "../format.ts";
 
 export type G = Selection<SVGGElement, unknown, null, undefined>;
@@ -26,6 +27,9 @@ const CHAR_PX = 6.2;
 
 /** FG% minus league FG% saturates at +/-15 points. */
 export const DIFF_DOMAIN = 0.15;
+
+/** How hex, zone and signature colours are damped for small samples. */
+export const SHRINK_NOTE = `colour shrunk toward the league rate (${LEAGUE_PRIOR_ATTEMPTS}-attempt prior)`;
 
 /** The colour key in words; every diff legend prints it. */
 export const DIFF_WORDS = "red: above league · blue: below";
@@ -137,7 +141,7 @@ export function tooltip(parent: G, width: number, height: number) {
   const text = g.append("text").style("font-size", `${FONT_PX}px`).style("fill", TOKENS.fg);
   return {
     show(x: number, y: number, lines: string[]) {
-      g.style("display", null);
+      g.raise().style("display", null); // above anything drawn after the tooltip was created
       text
         .selectAll("tspan")
         .data(lines)

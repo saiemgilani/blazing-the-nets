@@ -3,10 +3,11 @@ import { lineOf, playerGames, shootingLine, versusOpponents, type OpponentLine, 
 import { teamGames } from "./data/games.ts";
 import { PLAYER_STATS_TAG, PlayerStatsRow, seasonPlayers, type PlayerSeason } from "./data/players.ts";
 import { rankSummaries, type RankSummary } from "./data/ranks.ts";
-import { memo, readParquet } from "./data/releases.ts";
+import { z } from "zod";
+import { int64, memo, openAsset, parseParquet, readParquet } from "./data/releases.ts";
 import { readHeadshots } from "./data/rosters.ts";
-import { seasonLabel } from "./data/seasons.ts";
-import { readGameLogs, readShots, toLite, type GameLogRow, type Shot, type ShotLite } from "./data/shots.ts";
+import { listSeasons, seasonLabel } from "./data/seasons.ts";
+import { readGameLogs, readShots, SHOTS_TAG, shotsAsset, toLite, type GameLogRow, type Shot, type ShotLite } from "./data/shots.ts";
 import { teamById, teamsFromShots, type Team } from "./data/teams.ts";
 
 /**
@@ -36,9 +37,37 @@ export function readSeasonData(season: number): Promise<SeasonData> {
   return memo("season-data", String(season), async () => {
     const [shots, stats] = await Promise.all([
       readShots(season, "regular"),
-      readParquet(PLAYER_STATS_TAG, `player_season_stats_${season}.parquet`, PlayerStatsRow),
+      readParquet(PLAYER_STATS_TAG, `player_season_stats_${season}.parquet`, PlayerStatsRow, { optional: true }),
     ]);
     return seasonData(season, shots, stats);
+  });
+}
+
+const PersonGameRow = z.object({ person_id: int64, game_id: z.string() });
+
+/**
+ * person_id -> the listed seasons he took a regular-season shot in (for the player page's season
+ * picker). Two columns of every season's shots file, read outside the release LRU so they do not
+ * evict whole seasons; built once per process per 6 h.
+ */
+export function readPlayerSeasons(): Promise<Map<number, number[]>> {
+  return memo("player-seasons", "all", async () => {
+    const seasons = await listSeasons();
+    const perSeason = await Promise.all(
+      seasons.map(async (season) => {
+        const rows = await parseParquet(await openAsset(SHOTS_TAG, shotsAsset(season)), PersonGameRow);
+        return [season, new Set(rows.filter((r) => r.game_id.startsWith("002")).map((r) => r.person_id))] as const;
+      }),
+    );
+    const index = new Map<number, number[]>();
+    for (const [season, ids] of perSeason) {
+      for (const id of ids) {
+        const list = index.get(id);
+        if (list) list.push(season);
+        else index.set(id, [season]);
+      }
+    }
+    return index;
   });
 }
 

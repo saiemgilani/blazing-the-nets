@@ -52,24 +52,52 @@ const init = { next: { revalidate: REVALIDATE_SECONDS } } satisfies RequestInit;
 /** Per-request timeout. */
 export const FETCH_TIMEOUT_MS = 20_000;
 
-/** fetch with a fresh AbortSignal.timeout per call (a shared signal would expire for later calls). */
-export function timedFetch(input: string | URL | Request, options?: RequestInit): Promise<Response> {
-  return fetch(input, { ...options, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+/** Wait before a retry (doubled on the second). */
+export const RETRY_DELAY_MS = 500;
+
+/**
+ * fetch with a fresh AbortSignal.timeout per attempt (a shared signal would expire for later
+ * calls) and one retry, after a short backoff, on a network error or a 5xx. Never on a 4xx: a 404
+ * is an answer ("not in the release"), not a failure.
+ */
+export async function timedFetch(
+  input: RequestInfo | URL,
+  options?: RequestInit,
+  { retries = 1, delayMs = RETRY_DELAY_MS }: { retries?: number; delayMs?: number } = {},
+): Promise<Response> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const res = await fetch(input, { ...options, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+      if (res.status < 500 || attempt >= retries) return res;
+      await res.body?.cancel();
+    } catch (e) {
+      if (attempt >= retries) throw e;
+    }
+    await new Promise((resolve) => setTimeout(resolve, delayMs * (attempt + 1)));
+  }
 }
 
 /**
- * A byte-range view of a release asset: one HEAD for the size (404 -> AssetMissingError), then
- * `Range` GETs for the footer and the column chunks actually read. The download URL redirects to
- * GitHub's signed asset host, which honours ranges.
+ * A byte-range view of a release asset. The size comes from a one-byte `Range: bytes=0-0` GET
+ * (its 206 Content-Range), not a HEAD: Next's data cache would keep a HEAD's size for 6 h while the
+ * range reads hit the live file, so a replaced file would fail to decode. 206 responses are never
+ * cached. (GitHub's asset host answers suffix ranges, `bytes=-N`, with 501.) Then `Range` GETs for
+ * the footer and the column chunks read. 404 -> AssetMissingError.
  */
 export async function openAsset(tag: string, asset: string): Promise<AsyncBuffer> {
   const url = releaseUrl(tag, asset);
-  const head = await timedFetch(url, { ...init, method: "HEAD" });
-  if (head.status === 404) throw new AssetMissingError(`${tag}/${asset}: not in the release`);
-  if (!head.ok) throw new Error(`${tag}/${asset}: HEAD ${head.status}`);
-  const byteLength = Number(head.headers.get("content-length"));
-  if (!(byteLength > 0)) throw new Error(`${tag}/${asset}: no content-length`);
-  return asyncBufferFromUrl({ url, byteLength, requestInit: init, fetch: timedFetch });
+  const res = await timedFetch(url, { ...init, headers: { range: "bytes=0-0" } });
+  if (res.status === 404) throw new AssetMissingError(`${tag}/${asset}: not in the release`);
+  if (!res.ok) throw new Error(`${tag}/${asset}: HTTP ${res.status}`);
+  if (res.status === 200) {
+    // The server ignored the range and sent the whole file: use it.
+    const whole = await res.arrayBuffer();
+    return { byteLength: whole.byteLength, slice: (start, end) => whole.slice(start, end) };
+  }
+  await res.body?.cancel();
+  const total = Number(/\/(\d+)$/.exec(res.headers.get("content-range") ?? "")?.[1]);
+  if (!(total > 0)) throw new Error(`${tag}/${asset}: no size in Content-Range`);
+  return asyncBufferFromUrl({ url, byteLength: total, requestInit: init, fetch: timedFetch });
 }
 
 /**

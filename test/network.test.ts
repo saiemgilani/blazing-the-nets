@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { fgPctByDistance, hexbinShots, playerGames, statsByZone, versusOpponents } from "../lib/data/aggregate.ts";
+import { fgPctByDistance, hexbinShots, lineOf, playerGames, statsByZone, versusOpponents } from "../lib/data/aggregate.ts";
 import { teamGames } from "../lib/data/games.ts";
 import { readPlayers } from "../lib/data/players.ts";
 import { openAsset, parseParquet } from "../lib/data/releases.ts";
@@ -59,6 +59,11 @@ test("real release files: shots 2026 -> Nets -> one player", { skip }, async (t)
     // fg_pct is published to 3 decimals; one extra attempt moves FG% by up to 1/fga.
     const tolerance = gap === 0 ? 0.002 : 1 / st.fga + 0.0005;
     assert.ok(Math.abs(p.makes / p.attempts - st.fg_pct) <= tolerance, `${p.player_name}: ${p.makes}/${p.attempts} vs ${st.fg_pct}`);
+    // eFG% from shots against the release's efg_pct (the regular-season advanced row).
+    const efg = lineOf(p).efgPct;
+    if (st.efg_pct !== null && efg !== null) {
+      assert.ok(Math.abs(efg - st.efg_pct) <= tolerance, `${p.player_name}: eFG ${efg} vs ${st.efg_pct}`);
+    }
   }
   t.diagnostic(`season-stats parity: ${leaguePlayers.length} players, ${off} attempt(s) off in total`);
 

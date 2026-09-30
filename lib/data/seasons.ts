@@ -1,12 +1,10 @@
-import { memo, releaseUrl, REVALIDATE_SECONDS, timedFetch } from "./releases.ts";
+import { z } from "zod";
+import { FIRST_SEASON, LAST_KNOWN_SEASON } from "../seasonRange.ts";
+import { PLAYER_STATS_TAG } from "./players.ts";
+import { memo, readParquet, releaseUrl, REVALIDATE_SECONDS, timedFetch } from "./releases.ts";
 import { SHOTS_TAG, shotsAsset } from "./shots.ts";
 
-/** First season the site lists (2015-16). The data layer reads any year the release has. */
-export const FIRST_SEASON = 2016;
-
-/** `nba_stats_shots` holds shots_1997..shots_2026 (checked 2026-09-30). Bump when a season lands. */
-export const FIRST_DATA_SEASON = 1997;
-export const LAST_KNOWN_SEASON = 2026;
+export { FIRST_DATA_SEASON, FIRST_SEASON, LAST_KNOWN_SEASON } from "../seasonRange.ts";
 
 /** Seasons the site lists, ascending; the last one is the current season. */
 export function siteSeasons(nextSeasonPublished: boolean): number[] {
@@ -14,21 +12,37 @@ export function siteSeasons(nextSeasonPublished: boolean): number[] {
   return Array.from({ length: last - FIRST_SEASON + 1 }, (_, i) => FIRST_SEASON + i);
 }
 
-/** HEAD the next season's shots asset: 200 -> published, 404 -> not yet, anything else throws. */
-async function nextSeasonPublished(): Promise<boolean> {
-  const res = await timedFetch(releaseUrl(SHOTS_TAG, shotsAsset(LAST_KNOWN_SEASON + 1)), {
+/**
+ * The next season becomes current only once every page can render it: its shots file holds
+ * regular-season (002) rows, not just preseason, and its season stats file exists. Before the
+ * producer's October rollover completes, one of the two is usually missing.
+ */
+export function nextSeasonReady(shotGameIds: string[], statsFileExists: boolean): boolean {
+  return statsFileExists && shotGameIds.some((id) => id.startsWith("002"));
+}
+
+const GameIdRow = z.object({ game_id: z.string() });
+
+/** One probe per 6 h: the next season's shot game ids (one column, range-read) and a HEAD on its stats file. */
+async function probeNextSeason(): Promise<boolean> {
+  const next = LAST_KNOWN_SEASON + 1;
+  const ids = await readParquet(SHOTS_TAG, shotsAsset(next), GameIdRow, { optional: true });
+  if (!ids.some((r) => r.game_id.startsWith("002"))) return false;
+  const stats = await timedFetch(releaseUrl(PLAYER_STATS_TAG, `player_season_stats_${next}.parquet`), {
     method: "HEAD",
     next: { revalidate: REVALIDATE_SECONDS },
   });
-  if (res.status === 404) return false;
-  if (!res.ok) throw new Error(`season probe: HEAD ${res.status}`);
-  return true;
+  if (stats.status !== 404 && !stats.ok) throw new Error(`season probe: HEAD ${stats.status}`);
+  return nextSeasonReady(
+    ids.map((r) => r.game_id),
+    stats.ok,
+  );
 }
 
-/** The static list plus next season if its shots file exists; one probe per 6 h, static list on any error. */
+/** The static list plus next season once it is ready; static list on any error. */
 export async function listSeasons(): Promise<number[]> {
   try {
-    return siteSeasons(await memo("seasons", "next", nextSeasonPublished));
+    return siteSeasons(await memo("seasons", "next", probeNextSeason));
   } catch {
     return siteSeasons(false);
   }

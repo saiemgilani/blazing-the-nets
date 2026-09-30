@@ -105,7 +105,7 @@ export function seasonPlayers(shots: Shot[], stats: PlayerStatsRow[], teamId?: n
 export async function readPlayers(season: number, teamId?: number): Promise<PlayerSeason[]> {
   const [shots, stats] = await Promise.all([
     readShots(season, "regular"),
-    readParquet(PLAYER_STATS_TAG, `player_season_stats_${season}.parquet`, PlayerStatsRow),
+    readParquet(PLAYER_STATS_TAG, `player_season_stats_${season}.parquet`, PlayerStatsRow, { optional: true }),
   ]);
   return seasonPlayers(shots, stats, teamId);
 }

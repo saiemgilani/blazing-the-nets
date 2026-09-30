@@ -19,5 +19,6 @@ export function Headshot({ src, name, size = 96 }: { src: string | null; name: s
       </div>
     );
   }
-  return <Image src={src} alt={name} width={size} height={h} className="shrink-0 rounded bg-line object-cover" />;
+  // unoptimized: ESPN already serves small PNGs, and this keeps clear of Vercel's image-optimisation quota.
+  return <Image src={src} alt={name} width={size} height={h} unoptimized className="shrink-0 rounded bg-line object-cover" />;
 }

@@ -110,7 +110,15 @@ export function drawNotes(g: G, x: number, y: number, maxWidth: number, notes: s
  * Horizontal FG%-vs-league legend: gradient bar, -15 / 0 / +15 ticks, the key in words and any
  * extra notes. Returns the height used.
  */
-export function drawDiffLegend(g: G, x: number, y: number, maxWidth: number, theme: ChartTheme, notes: string[] = []): number {
+export function drawDiffLegend(
+  g: G,
+  x: number,
+  y: number,
+  maxWidth: number,
+  theme: ChartTheme,
+  notes: string[] = [],
+  key: [caption: string, words: string] = ["FG% vs league (points)", DIFF_WORDS],
+): number {
   const width = Math.min(maxWidth, 240);
   const id = uniqueId("bn-diff");
   const grad = g.append("defs").append("linearGradient").attr("id", id);
@@ -131,7 +139,7 @@ export function drawDiffLegend(g: G, x: number, y: number, maxWidth: number, the
     .style("fill", TOKENS.muted)
     .text((d) => (d === 0 ? "0" : fmtPts(d)));
   const used = 8 + FONT_PX + 6;
-  return used + drawNotes(g, x, y + used, maxWidth, ["FG% vs league (points)", DIFF_WORDS, ...notes]);
+  return used + drawNotes(g, x, y + used, maxWidth, [...key, ...notes]);
 }
 
 /** An in-SVG tooltip: a surface-coloured box of text lines, kept inside `width` x `height`. */

@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "d3-array": "^3.2.4",
+    "d3-brush": "^3.0.0",
     "d3-delaunay": "^6.0.4",
     "d3-hexbin": "^0.2.2",
     "d3-scale": "^4.0.2",
@@ -38,6 +39,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
     "@types/d3-array": "^3.2.2",
+    "@types/d3-brush": "^3.0.6",
     "@types/d3-delaunay": "^6.0.4",
     "@types/d3-hexbin": "^0.2.5",
     "@types/d3-scale": "^4.0.9",

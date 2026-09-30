@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { buildDashboard, leagueContext, type DashboardData, type LeagueContext } from "./dashboard.ts";
 import { lineOf, playerGames, shootingLine, statsByZone, type PlayerGame, type ShootingLine } from "./data/aggregate.ts";
 import { teamGames } from "./data/games.ts";
@@ -8,9 +9,10 @@ import { PLAYER_STATS_TAG, PlayerStatsRow, seasonPlayers, type PlayerSeason } fr
 import { rankSummaries, type RankSummary } from "./data/ranks.ts";
 import { memo, openAsset, readColumns, readParquet } from "./data/releases.ts";
 import { readHeadshots } from "./data/rosters.ts";
-import { listSeasons, seasonLabel } from "./data/seasons.ts";
+import { listSeasons, parseSeason, seasonLabel } from "./data/seasons.ts";
 import { readGameLogs, readShots, SHOTS_TAG, shotsAsset, toLite, type GameLogRow, type Shot, type ShotLite } from "./data/shots.ts";
 import { NETS_TEAM_ID, teamById, teamsFromShots, type Team } from "./data/teams.ts";
+import { seasonQuery } from "./links.ts";
 
 /**
  * Server-side assembly for the pages: plain JSON for the charts, computed once per season where
@@ -169,7 +171,20 @@ export function assemblePlayerPage(data: SeasonData, personId: number, headshot:
   };
 }
 
-export async function loadPlayerPage(season: number, personId: number): Promise<PlayerPageData | null> {
+/**
+ * A route's season segment resolved against the listed seasons: the season, the list, the current
+ * season and the `?season=` query for links. Every page uses it; cache() makes it once per request,
+ * so generateMetadata and the page share one result.
+ */
+export const resolveSeason = cache(async (param: string) => {
+  const seasons = await listSeasons();
+  const season = parseSeason(param, seasons);
+  const current = seasons[seasons.length - 1];
+  return { season, seasons, current, q: seasonQuery(season, current) };
+});
+
+/** The player page's data, once per request (metadata and page share it via cache()). */
+export const loadPlayerPage = cache(async (season: number, personId: number): Promise<PlayerPageData | null> => {
   const data = await readSeasonData(season);
   const player = data.players.find((p) => p.person_id === personId);
   if (!player) return null;
@@ -181,7 +196,7 @@ export async function loadPlayerPage(season: number, personId: number): Promise<
     }),
   ]);
   return assemblePlayerPage(data, personId, headshots.get(personId) ?? null, logs);
-}
+});
 
 /** One row of the dense roster table (plain JSON). Shooting numbers count this team's shots. */
 export interface RosterRow {
@@ -262,11 +277,12 @@ export function assembleTeamPage(
   return { season: data.season, team, line: shootingLine(shots), roster: rosterRows(shots, roster, headshots), dashboard: buildDashboard(shots, data.league) };
 }
 
-export async function loadTeamPage(season: number, teamId: number): Promise<TeamPageData | null> {
+/** The team page's data, once per request (metadata and page share it via cache()). */
+export const loadTeamPage = cache(async (season: number, teamId: number): Promise<TeamPageData | null> => {
   const data = await readSeasonData(season);
   const roster = teamRoster(data, teamId);
   return assembleTeamPage(data, teamId, await readHeadshots(season, roster), roster);
-}
+});
 
 /** Each team's shooting line for the season, keyed by team_id. */
 export function teamLines(shots: Shot[]): Map<number, ShootingLine> {

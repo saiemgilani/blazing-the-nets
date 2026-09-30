@@ -4,11 +4,11 @@ import { Card } from "@/components/Card.tsx";
 import { Dashboard } from "@/components/Dashboard.tsx";
 import { RosterTable } from "@/components/RosterTable.tsx";
 import { QuerySelect } from "@/components/QuerySelect.tsx";
-import { listSeasons, parseSeason, seasonLabel } from "@/lib/data/seasons.ts";
+import { seasonLabel } from "@/lib/data/seasons.ts";
 import { TEAMS } from "@/lib/data/teams.ts";
 import { fmtInt, fmtPct } from "@/lib/format.ts";
-import { seasonQuery, teamHref } from "@/lib/links.ts";
-import { loadTeamPage, seasonOptions } from "@/lib/pageData.ts";
+import { teamHref } from "@/lib/links.ts";
+import { loadTeamPage, resolveSeason, seasonOptions } from "@/lib/pageData.ts";
 
 // Served at /teams/<id>?season= (proxy.ts). All 30 teams are prerendered for the current season.
 export const revalidate = 21600;
@@ -19,13 +19,13 @@ export function generateStaticParams() {
   return TEAMS.map((t) => ({ id: String(t.team_id), season: "current" }));
 }
 
+// Metadata and page both call this; resolveSeason and loadTeamPage are cache()d, so the work runs once per request.
 async function resolve(params: Params) {
-  const [{ id, season: param }, seasons] = await Promise.all([params, listSeasons()]);
-  const season = parseSeason(param, seasons);
+  const { id, season: param } = await params;
+  const resolved = await resolveSeason(param);
   const teamId = Number(id);
-  const page = Number.isSafeInteger(teamId) ? await loadTeamPage(season, teamId) : null;
-  const current = seasons[seasons.length - 1];
-  return { page, season, seasons, current, q: seasonQuery(season, current) };
+  const page = Number.isSafeInteger(teamId) ? await loadTeamPage(resolved.season, teamId) : null;
+  return { ...resolved, page };
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {

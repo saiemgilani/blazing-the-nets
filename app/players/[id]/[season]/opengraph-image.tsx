@@ -5,9 +5,9 @@ import { courtViewport } from "@/lib/charts/court.ts";
 import { layoutHexes } from "@/lib/charts/hexShotChart.ts";
 import { DIFF_WORDS } from "@/lib/charts/theme.ts";
 import { courtLines } from "@/lib/data/court.ts";
-import { listSeasons, parseSeason, seasonLabel } from "@/lib/data/seasons.ts";
+import { seasonLabel } from "@/lib/data/seasons.ts";
 import { fmtInt, fmtPct } from "@/lib/format.ts";
-import { HEX_RADIUS, loadPlayerPage } from "@/lib/pageData.ts";
+import { HEX_RADIUS, loadPlayerPage, resolveSeason } from "@/lib/pageData.ts";
 import { SITE_NAME } from "@/lib/site.ts";
 
 export const revalidate = 21600;
@@ -17,8 +17,8 @@ export const alt = "Player shot chart";
 
 /** The player's hex shot chart drawn as SVG paths (same geometry as the page), plus a typographic header. */
 export default async function Image({ params }: { params: Promise<{ id: string; season: string }> }) {
-  const [{ id, season: param }, seasons] = await Promise.all([params, listSeasons()]);
-  const season = parseSeason(param, seasons);
+  const { id, season: param } = await params;
+  const { season } = await resolveSeason(param);
   const page = Number.isSafeInteger(Number(id)) ? await loadPlayerPage(season, Number(id)) : null;
   if (!page) notFound(); // no generic image for ids that are not players (each would be a new CDN object)
   const v = courtViewport(560);

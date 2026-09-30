@@ -5,11 +5,11 @@ import { Headshot } from "@/components/Headshot.tsx";
 import { PlayerExplorer } from "@/components/PlayerExplorer.tsx";
 import { QuerySelect } from "@/components/QuerySelect.tsx";
 import { RankLists } from "@/components/RankLists.tsx";
-import { listSeasons, parseSeason, seasonLabel } from "@/lib/data/seasons.ts";
+import { listSeasons, seasonLabel } from "@/lib/data/seasons.ts";
 import { NETS_TEAM_ID } from "@/lib/data/teams.ts";
 import { fmtDec, fmtInt, fmtPct } from "@/lib/format.ts";
-import { playerHref, seasonQuery, teamHref } from "@/lib/links.ts";
-import { loadPlayerPage, readPlayerSeasons, readSeasonData, seasonOptions, teamRoster } from "@/lib/pageData.ts";
+import { playerHref, teamHref } from "@/lib/links.ts";
+import { loadPlayerPage, readPlayerSeasons, readSeasonData, resolveSeason, seasonOptions, teamRoster } from "@/lib/pageData.ts";
 
 // Served at /players/<id>?season= (proxy.ts). The current season's Nets are prerendered; everyone
 // else renders on first request and is cached for 6 h.
@@ -23,13 +23,13 @@ export async function generateStaticParams() {
   return teamRoster(data, NETS_TEAM_ID).map((p) => ({ id: String(p.person_id), season: "current" }));
 }
 
+// Metadata and page both call this; resolveSeason and loadPlayerPage are cache()d, so the work runs once per request.
 async function resolve(params: Params) {
-  const [{ id, season: param }, seasons] = await Promise.all([params, listSeasons()]);
-  const season = parseSeason(param, seasons);
-  const current = seasons[seasons.length - 1];
+  const { id, season: param } = await params;
+  const resolved = await resolveSeason(param);
   const personId = Number(id);
-  const page = Number.isSafeInteger(personId) ? await loadPlayerPage(season, personId) : null;
-  return { page, season, seasons, current, q: seasonQuery(season, current) };
+  const page = Number.isSafeInteger(personId) ? await loadPlayerPage(resolved.season, personId) : null;
+  return { ...resolved, page };
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {

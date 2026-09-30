@@ -1,23 +1,15 @@
 import type { Metadata } from "next";
 import { QuerySelect } from "@/components/QuerySelect.tsx";
 import { ScatterExplorer } from "@/components/ScatterExplorer.tsx";
-import { listSeasons, parseSeason, seasonLabel } from "@/lib/data/seasons.ts";
-import { seasonQuery } from "@/lib/links.ts";
-import { readScatter, seasonOptions } from "@/lib/pageData.ts";
+import { seasonLabel } from "@/lib/data/seasons.ts";
+import { readScatter, resolveSeason, seasonOptions } from "@/lib/pageData.ts";
 
 // Served at /scatter?season= (proxy.ts). Axes, marks and the filter are client state.
 export const revalidate = 21600;
 type Params = Promise<{ season: string }>;
 
-async function resolve(params: Params) {
-  const [{ season: param }, seasons] = await Promise.all([params, listSeasons()]);
-  const season = parseSeason(param, seasons);
-  const current = seasons[seasons.length - 1];
-  return { season, seasons, current, q: seasonQuery(season, current) };
-}
-
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const { season, q } = await resolve(params);
+  const { season, q } = await resolveSeason((await params).season);
   return {
     title: `Scatter, ${seasonLabel(season)}`,
     description: `Every NBA player with 100+ field-goal attempts in ${seasonLabel(season)}, plotted on two shooting or volume numbers, the Nets highlighted.`,
@@ -30,7 +22,7 @@ export function generateStaticParams() {
 }
 
 export default async function Scatter({ params }: { params: Params }) {
-  const { season, seasons, current } = await resolve(params);
+  const { season, seasons, current } = await resolveSeason((await params).season);
   const points = await readScatter(season);
   return (
     <div className="space-y-4">

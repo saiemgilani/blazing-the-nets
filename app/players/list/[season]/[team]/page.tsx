@@ -2,20 +2,19 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PlayerTable } from "@/components/PlayerTable.tsx";
 import { QuerySelect } from "@/components/QuerySelect.tsx";
-import { listSeasons, parseSeason, seasonLabel } from "@/lib/data/seasons.ts";
+import { seasonLabel } from "@/lib/data/seasons.ts";
 import { teamsFromShots } from "@/lib/data/teams.ts";
-import { seasonQuery, withParams } from "@/lib/links.ts";
-import { playerRows, readSeasonData, seasonOptions, teamRoster } from "@/lib/pageData.ts";
+import { withParams } from "@/lib/links.ts";
+import { playerRows, readSeasonData, resolveSeason, seasonOptions, teamRoster } from "@/lib/pageData.ts";
 
 // Served at /players?season=&team= (proxy.ts). team is a tricode or ALL; default BKN.
 export const revalidate = 21600;
 type Params = Promise<{ season: string; team: string }>;
 
 async function resolve(params: Params) {
-  const [{ season: param, team }, seasons] = await Promise.all([params, listSeasons()]);
-  const season = parseSeason(param, seasons);
-  const current = String(seasons[seasons.length - 1]);
-  return { team, season, seasons, current, defaults: { season: current, team: "BKN" } };
+  const { season: param, team } = await params;
+  const { season, seasons, current, q } = await resolveSeason(param);
+  return { team, season, seasons, q, defaults: { season: String(current), team: "BKN" } };
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
@@ -32,7 +31,7 @@ export function generateStaticParams() {
 }
 
 export default async function Players({ params }: { params: Params }) {
-  const { team, season, seasons, current, defaults } = await resolve(params);
+  const { team, season, seasons, defaults, q } = await resolve(params);
   const data = await readSeasonData(season);
   const teams = teamsFromShots(data.shots);
   const selected = team === "ALL" ? null : teams.find((t) => t.tricode === team);
@@ -57,7 +56,7 @@ export default async function Players({ params }: { params: Params }) {
         </div>
         <p className="text-sm text-muted">Regular season field-goal attempts from play-by-play; FGA, FG%, eFG% and 3P% count the selected team only.</p>
       </header>
-      <PlayerTable rows={rows} seasonQuery={seasonQuery(season, Number(current))} search />
+      <PlayerTable rows={rows} seasonQuery={q} search />
     </div>
   );
 }

@@ -4,25 +4,18 @@ import { Headshot } from "@/components/Headshot.tsx";
 import { QuerySelect } from "@/components/QuerySelect.tsx";
 import { lineOf } from "@/lib/data/aggregate.ts";
 import { readHeadshots } from "@/lib/data/rosters.ts";
-import { listSeasons, parseSeason, seasonLabel } from "@/lib/data/seasons.ts";
+import { seasonLabel } from "@/lib/data/seasons.ts";
 import { NETS_TEAM_ID } from "@/lib/data/teams.ts";
 import { fmtDec, fmtInt, fmtPct } from "@/lib/format.ts";
-import { playerHref, seasonQuery, withParams } from "@/lib/links.ts";
-import { readSeasonData, seasonOptions, teamRoster } from "@/lib/pageData.ts";
+import { playerHref, withParams } from "@/lib/links.ts";
+import { readSeasonData, resolveSeason, seasonOptions, teamRoster } from "@/lib/pageData.ts";
 
 // Served at / (proxy.ts rewrites /?season= here).
 export const revalidate = 21600;
 type Params = Promise<{ season: string }>;
 
-async function resolve(params: Params) {
-  const [{ season: param }, seasons] = await Promise.all([params, listSeasons()]);
-  const season = parseSeason(param, seasons);
-  const current = seasons[seasons.length - 1];
-  return { season, seasons, current, q: seasonQuery(season, current) };
-}
-
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const { q } = await resolve(params);
+  const { q } = await resolveSeason((await params).season);
   return { alternates: { canonical: `/${q}` } };
 }
 
@@ -31,7 +24,7 @@ export function generateStaticParams() {
 }
 
 export default async function Home({ params }: { params: Params }) {
-  const { season, seasons, current, q } = await resolve(params);
+  const { season, seasons, current, q } = await resolveSeason((await params).season);
   const data = await readSeasonData(season);
   const roster = teamRoster(data, NETS_TEAM_ID);
   const headshots = await readHeadshots(season, roster);

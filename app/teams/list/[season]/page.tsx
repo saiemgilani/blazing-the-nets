@@ -1,25 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { QuerySelect } from "@/components/QuerySelect.tsx";
-import { listSeasons, parseSeason, seasonLabel } from "@/lib/data/seasons.ts";
+import { seasonLabel } from "@/lib/data/seasons.ts";
 import { teamsFromShots } from "@/lib/data/teams.ts";
 import { fmtInt, fmtPct } from "@/lib/format.ts";
-import { seasonQuery, teamHref } from "@/lib/links.ts";
-import { readSeasonData, seasonOptions, teamLines } from "@/lib/pageData.ts";
+import { teamHref } from "@/lib/links.ts";
+import { readSeasonData, resolveSeason, seasonOptions, teamLines } from "@/lib/pageData.ts";
 
 // Served at /teams?season= (proxy.ts).
 export const revalidate = 21600;
 type Params = Promise<{ season: string }>;
 
-async function resolve(params: Params) {
-  const [{ season: param }, seasons] = await Promise.all([params, listSeasons()]);
-  const season = parseSeason(param, seasons);
-  const current = seasons[seasons.length - 1];
-  return { season, seasons, current, q: seasonQuery(season, current) };
-}
-
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const { q } = await resolve(params);
+  const { q } = await resolveSeason((await params).season);
   return { title: "Teams", alternates: { canonical: `/teams${q}` } };
 }
 
@@ -28,7 +21,7 @@ export function generateStaticParams() {
 }
 
 export default async function Teams({ params }: { params: Params }) {
-  const { season, seasons, current, q } = await resolve(params);
+  const { season, seasons, current, q } = await resolveSeason((await params).season);
   const data = await readSeasonData(season);
   const lines = teamLines(data.shots);
   const teams = teamsFromShots(data.shots);

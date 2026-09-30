@@ -17,7 +17,12 @@ const why: Record<RankMetric, string> = {
 export function RankLists({ ranks, personId, seasonQuery }: { ranks: RankSummary[]; personId: number; seasonQuery: string }) {
   const row = (r: RankEntry, metric: RankMetric) => (
     <li key={r.person_id} className={`flex justify-between gap-2 ${r.person_id === personId ? "font-bold text-accent" : ""}`}>
-      <Link href={playerHref(r.person_id, seasonQuery)} prefetch={false} className="truncate underline decoration-muted/60 underline-offset-2 hover:decoration-accent">
+      {/* Others truncate to keep the card tidy; his own name wraps so it is never cut. */}
+      <Link
+        href={playerHref(r.person_id, seasonQuery)}
+        prefetch={false}
+        className={`min-w-0 underline decoration-muted/60 underline-offset-2 hover:decoration-accent ${r.person_id === personId ? "" : "truncate"}`}
+      >
         {r.rank}. {r.name}
       </Link>
       <span className="tabular-nums">{fmt(metric, r.value)}</span>

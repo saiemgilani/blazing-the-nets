@@ -7,7 +7,6 @@ export const metadata: Metadata = {
   title: "Blazing the Nets",
   description:
     "Brooklyn Nets shooting dashboards: hex shot charts, shooting signatures and distance and side splits from NBA play-by-play.",
-  icons: { icon: "/nets.ico" },
 };
 
 export const viewport: Viewport = {

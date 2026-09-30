@@ -95,10 +95,30 @@ test("withStats joins the regular-season advanced totals row by player id", () =
     ts_pct: 0.6,
     usg_pct: 0.25,
     pie: 0.12,
+    pts: null,
   });
   const [p] = withStats(playerIndex([shot(0, 0, 2, true)]), [row("base", 1), row("advanced", 900)]);
   assert.equal(p.player_name, "Test Player");
-  assert.deepEqual(p.stats, { gp: 70, min: 30.5, fga: 900, fg_pct: 0.5, efg_pct: 0.55, ts_pct: 0.6, usg_pct: 0.25, pie: 0.12 });
+  assert.deepEqual(p.stats, {
+    gp: 70,
+    min: 30.5,
+    fga: 900,
+    fg_pct: 0.5,
+    efg_pct: 0.55,
+    ts_pct: 0.6,
+    usg_pct: 0.25,
+    pie: 0.12,
+    pts_pg: null,
+    fga_pg: null,
+    min_total: 30.5, // the base totals row passed above
+  });
+  // Points and FGA per game come from the base per-game row, total minutes from base totals.
+  const [withBase] = withStats(playerIndex([shot(0, 0, 2, true)]), [
+    row("advanced", 900),
+    { ...row("base", 12.5), per_mode: "pergame", pts: 18.2 },
+    { ...row("base", 900), min: 2135 },
+  ]);
+  assert.deepEqual([withBase.stats?.pts_pg, withBase.stats?.fga_pg, withBase.stats?.min_total], [18.2, 12.5, 2135]);
   assert.equal(withStats(playerIndex([{ ...shot(0, 0, 2, true), person_id: 2 }]), [row("advanced", 900)])[0].stats, null);
 });
 
@@ -121,6 +141,7 @@ test("a traded player's team row keeps season stats but says they cover all his 
     ts_pct: 0.5,
     usg_pct: 0.2,
     pie: 0.1,
+    pts: null,
   });
   const stats = [row(7, 5), row(8, 1)];
 

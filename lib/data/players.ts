@@ -8,8 +8,9 @@ export const PLAYER_STATS_TAG = "nba_stats_player_season_stats";
 /**
  * `nba_stats_player_season_stats/player_season_stats_<endYear>.parquet` stacks every
  * season_type x measure_type x per_mode combination (24 per season). The
- * `regular-season / advanced / totals` row carries all eight numbers below; in it `min` is
- * minutes PER GAME and `fga` is the season total.
+ * `regular-season / advanced / totals` row carries gp, min, fga, fg_pct, efg_pct, ts_pct, usg_pct and
+ * pie; in it `min` is minutes PER GAME and `fga` is the season total. Points, FGA per game and
+ * total minutes come from the `base / pergame` and `base / totals` rows.
  */
 export const PlayerStatsRow = z.object({
   player_id: int64,
@@ -25,11 +26,19 @@ export const PlayerStatsRow = z.object({
   ts_pct: z.number().nullable(),
   usg_pct: z.number().nullable(),
   pie: z.number().nullable(),
+  pts: z.number().nullable(),
 });
 
 export type PlayerStatsRow = z.output<typeof PlayerStatsRow>;
 
-export type PlayerStats = Pick<PlayerStatsRow, "gp" | "min" | "fga" | "fg_pct" | "efg_pct" | "ts_pct" | "usg_pct" | "pie">;
+export interface PlayerStats extends Pick<PlayerStatsRow, "gp" | "min" | "fga" | "fg_pct" | "efg_pct" | "ts_pct" | "usg_pct" | "pie"> {
+  /** Points per game (base / pergame). */
+  pts_pg: number | null;
+  /** Field-goal attempts per game (base / pergame). */
+  fga_pg: number | null;
+  /** Total minutes (base / totals). */
+  min_total: number | null;
+}
 
 export interface PlayerSeason extends FieldGoals {
   person_id: number;
@@ -67,21 +76,35 @@ export function playerIndex(shots: Shot[]): PlayerSeason[] {
 }
 
 /**
- * Join regular-season advanced totals onto the index by stats.nba.com player id (both number).
- * Ids in `allTeams` get statsScope "all-teams".
+ * Join the regular-season stats onto the index by stats.nba.com player id (both number): the
+ * advanced totals row, plus points/FGA per game and total minutes from the base rows. Ids in
+ * `allTeams` get statsScope "all-teams".
  */
 export function withStats(players: PlayerSeason[], rows: PlayerStatsRow[], allTeams: ReadonlySet<number> = new Set()): PlayerSeason[] {
-  const byId = new Map(
-    rows
-      .filter((r) => r.season_type === "regular-season" && r.measure_type === "advanced" && r.per_mode === "totals")
-      .map((r) => [r.player_id, r]),
-  );
+  const pick = (measure: string, mode: string) =>
+    new Map(rows.filter((r) => r.season_type === "regular-season" && r.measure_type === measure && r.per_mode === mode).map((r) => [r.player_id, r]));
+  const advanced = pick("advanced", "totals");
+  const perGame = pick("base", "pergame");
+  const totals = pick("base", "totals");
   return players.map((p) => {
-    const r = byId.get(p.person_id);
+    const r = advanced.get(p.person_id);
     if (!r) return p;
     const { gp, min, fga, fg_pct, efg_pct, ts_pct, usg_pct, pie } = r;
-    const statsScope = allTeams.has(p.person_id) ? "all-teams" : "matching";
-    return { ...p, player_name: r.player_name, stats: { gp, min, fga, fg_pct, efg_pct, ts_pct, usg_pct, pie }, statsScope };
+    const pg = perGame.get(p.person_id);
+    const stats: PlayerStats = {
+      gp,
+      min,
+      fga,
+      fg_pct,
+      efg_pct,
+      ts_pct,
+      usg_pct,
+      pie,
+      pts_pg: pg?.pts ?? null,
+      fga_pg: pg?.fga ?? null,
+      min_total: totals.get(p.person_id)?.min ?? null,
+    };
+    return { ...p, player_name: r.player_name, stats, statsScope: allTeams.has(p.person_id) ? "all-teams" : "matching" };
   });
 }
 

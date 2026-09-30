@@ -84,16 +84,17 @@ export function Leaderboards({ boards, netsTeamId, seasonQuery }: { boards: Boar
           </thead>
           <tbody>
             {board.rows.map(row)}
-            {nets.length > 0 && (
-              <tr>
-                <td colSpan={7} className="pt-3 pb-1 text-xs text-muted">
-                  Nets further down
-                </td>
-              </tr>
-            )}
-            {nets.map(row)}
           </tbody>
         </table>
+        {/* A heading between tables, not a colSpan row: a fixed-layout table would grow a column for it. */}
+        {nets.length > 0 && (
+          <>
+            <p className="pt-3 pb-1 text-xs text-muted">Nets further down</p>
+            <table className="w-full table-fixed text-sm">
+              <tbody>{nets.map(row)}</tbody>
+            </table>
+          </>
+        )}
       </div>
       {moreNets.length > 0 && (
         <details className="overflow-x-auto">

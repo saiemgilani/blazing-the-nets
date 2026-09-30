@@ -284,7 +284,7 @@ export type PlayerGame = GameInfo & ShootingLine;
  * date order, so each game is looked up in `games` (from `teamGames`) under the team he shot for;
  * a game missing there throws, so callers catch it per page rather than show a wrong order.
  */
-export function playerGames(shots: ShotLite[], games: ReadonlyMap<string, GameInfo>): PlayerGame[] {
+export function playerGames(shots: (ShotLite & Pick<Shot, "team_id">)[], games: ReadonlyMap<string, GameInfo>): PlayerGame[] {
   const byGame = new Map<string, { team_id: number; fg: FieldGoals }>();
   for (const s of shots) {
     let g = byGame.get(s.game_id);

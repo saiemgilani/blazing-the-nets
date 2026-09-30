@@ -114,7 +114,7 @@ export interface PlayerPageData {
 }
 
 /** Date-ordered games, or null (logged) when a game is missing from the logs, so the page still renders. */
-function gamesOrNull(shots: ShotLite[], logs: GameLogRow[] | null, personId: number): PlayerGame[] | null {
+function gamesOrNull(shots: Shot[], logs: GameLogRow[] | null, personId: number): PlayerGame[] | null {
   if (!logs) return null;
   try {
     return playerGames(shots, teamGames(logs));
@@ -133,7 +133,7 @@ export function assemblePlayerPage(data: SeasonData, personId: number, headshot:
   const roster = teamRoster(data, player.team_id);
   const i = roster.findIndex((p) => p.person_id === personId);
   const shots = mine.map(toLite);
-  const games = gamesOrNull(shots, logs, personId);
+  const games = gamesOrNull(mine, logs, personId);
   const line = shootingLine(mine);
   return {
     season: data.season,
@@ -302,7 +302,7 @@ export function seasonPlayerGames(data: SeasonData, logs: GameLogRow[]): PlayerG
   const out: PlayerGames[] = [];
   for (const [person_id, shots] of byPlayer) {
     try {
-      const pg = playerGames(shots.map(toLite), games);
+      const pg = playerGames(shots, games);
       const lastGame = pg[pg.length - 1];
       const lastShot = shots.find((s) => s.game_id === lastGame.game_id) ?? shots[0];
       out.push({ person_id, name: names.get(person_id) ?? lastShot.player_name, team_id: lastShot.team_id, team: lastShot.team_tricode, games: pg });

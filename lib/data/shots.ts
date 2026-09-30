@@ -30,12 +30,15 @@ export const ShotRow = z.object({
 
 export type Shot = z.output<typeof ShotRow>;
 
-/** The fields the aggregations read; what the player page ships to the browser for re-filtering. */
-export type ShotLite = Pick<Shot, "game_id" | "team_id" | "x_legacy" | "y_legacy" | "shot_distance" | "shot_value" | "shot_result">;
+/**
+ * The fields the aggregations read; what the player page ships to the browser for re-filtering.
+ * No team_id: the browser gets his games already placed (playerGames runs on the server).
+ */
+export type ShotLite = Pick<Shot, "game_id" | "x_legacy" | "y_legacy" | "shot_distance" | "shot_value" | "shot_result">;
 
 export function toLite(s: Shot): ShotLite {
-  const { game_id, team_id, x_legacy, y_legacy, shot_distance, shot_value, shot_result } = s;
-  return { game_id, team_id, x_legacy, y_legacy, shot_distance, shot_value, shot_result };
+  const { game_id, x_legacy, y_legacy, shot_distance, shot_value, shot_result } = s;
+  return { game_id, x_legacy, y_legacy, shot_distance, shot_value, shot_result };
 }
 
 export type SeasonType = "regular" | "playoffs" | "all";

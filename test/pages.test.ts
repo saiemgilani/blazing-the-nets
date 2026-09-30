@@ -79,7 +79,7 @@ test("player page data for the fixture's busiest player", () => {
   // Explorer: the shots and games the browser re-filters, in date order.
   const ex = page.explorer;
   assert.equal(ex.shots.length, mine.length);
-  assert.deepEqual(Object.keys(ex.shots[0]).sort(), ["game_id", "shot_distance", "shot_result", "shot_value", "team_id", "x_legacy", "y_legacy"]);
+  assert.deepEqual(Object.keys(ex.shots[0]).sort(), ["game_id", "shot_distance", "shot_result", "shot_value", "x_legacy", "y_legacy"], "no team_id: the browser never reads it");
   assert.ok(ex.games && ex.games.length > 0);
   assert.equal(ex.games.reduce((a, g) => a + g.attempts, 0), mine.length);
   assert.equal(versusOpponents(ex.games).reduce((a, r) => a + r.attempts, 0), mine.length, "the browser's versus bars cover every shot");

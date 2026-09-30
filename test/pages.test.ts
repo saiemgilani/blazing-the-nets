@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { parseSeason } from "../lib/data/seasons.ts";
 import { NETS_TEAM_ID } from "../lib/data/teams.ts";
 import { assemblePlayerPage, assembleTeamPage, playerRows, seasonData } from "../lib/pageData.ts";
-import { internalPath } from "../lib/routes.ts";
+import { internalPath, isInternalPath } from "../lib/routes.ts";
 import { fixtureShots } from "./helpers.ts";
 
 const shots = await fixtureShots();
@@ -30,6 +30,15 @@ test("public URLs rewrite onto the internal season routes", () => {
   assert.equal(internalPath("/teams", q("")), "/teams/list/current");
   assert.equal(internalPath("/about", q("")), null);
   assert.equal(internalPath("/players/abc", q("")), null);
+});
+
+test("internal routes (noindex) are told apart from public ones", () => {
+  for (const p of ["/home/current", "/players/list/2026/BKN", "/players/1629008/current", "/players/1629008/2025/opengraph-image", "/teams/list/current", "/teams/1610612751/2026"]) {
+    assert.ok(isInternalPath(p), p);
+  }
+  for (const p of ["/", "/players", "/players/1629008", "/teams", "/teams/1610612751", "/about", "/sitemap.xml"]) {
+    assert.ok(!isInternalPath(p), p);
+  }
 });
 
 test("player page data for the fixture's busiest player", () => {

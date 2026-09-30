@@ -1,4 +1,5 @@
-export default function Loading() {
+/** Skeleton for routes that cannot 404 (a loading boundary above a page that 404s turns it into a 200). */
+export function PageLoading() {
   return (
     <div role="status" className="animate-pulse space-y-4">
       <div className="h-8 w-64 rounded bg-surface" />

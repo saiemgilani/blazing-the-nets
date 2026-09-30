@@ -33,7 +33,8 @@ const publicPath = (id: number, season: number, isCurrent: boolean) => `/players
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { page, season, isCurrent } = await resolve(params);
-  if (!page) return { title: "Player not found" };
+  // notFound() here runs before the page streams, so an unknown id is a real 404 despite loading.tsx.
+  if (!page) notFound();
   const { player, line } = page;
   const label = seasonLabel(season);
   return {

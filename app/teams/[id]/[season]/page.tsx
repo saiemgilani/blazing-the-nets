@@ -28,7 +28,8 @@ async function resolve(params: Params) {
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { page, season, isCurrent } = await resolve(params);
-  if (!page) return { title: "Team not found" };
+  // notFound() here runs before the page streams, so an unknown id is a real 404 despite loading.tsx.
+  if (!page) notFound();
   const label = seasonLabel(season);
   return {
     title: `${page.team.name}, ${label}`,

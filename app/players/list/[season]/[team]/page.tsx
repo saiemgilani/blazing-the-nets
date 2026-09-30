@@ -8,13 +8,23 @@ import { playerRows, readSeasonData, seasonOptions, teamRoster } from "@/lib/pag
 
 // Served at /players?season=&team= (proxy.ts). team is a tricode or ALL; default BKN.
 export const revalidate = 21600;
-export const metadata: Metadata = { title: "Players", alternates: { canonical: "/players" } };
+type Params = Promise<{ season: string; team: string }>;
+
+/** An unknown team is a real 404: notFound() here runs before the page streams. */
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const [{ season: param, team }, seasons] = await Promise.all([params, listSeasons()]);
+  if (team !== "ALL") {
+    const data = await readSeasonData(parseSeason(param, seasons));
+    if (!teamsFromShots(data.shots).some((t) => t.tricode === team)) notFound();
+  }
+  return { title: "Players", alternates: { canonical: "/players" } };
+}
 
 export function generateStaticParams() {
   return [{ season: "current", team: "BKN" }];
 }
 
-export default async function Players({ params }: { params: Promise<{ season: string; team: string }> }) {
+export default async function Players({ params }: { params: Params }) {
   const [{ season: param, team }, seasons] = await Promise.all([params, listSeasons()]);
   const season = parseSeason(param, seasons);
   const data = await readSeasonData(season);

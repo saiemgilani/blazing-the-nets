@@ -24,3 +24,8 @@ export function internalPath(pathname: string, query: URLSearchParams): string |
   const m = /^\/(players|teams)\/(\d{1,10})$/.exec(path);
   return m ? `/${m[1]}/${m[2]}/${season}` : null;
 }
+
+/** The internal routes themselves, reachable directly: the proxy marks them X-Robots-Tag: noindex. */
+export function isInternalPath(pathname: string): boolean {
+  return /^\/(home\/[^/]+|players\/list\/.+|teams\/list\/.+|(players|teams)\/\d+\/[^/]+)(\/.*)?$/.test(pathname);
+}

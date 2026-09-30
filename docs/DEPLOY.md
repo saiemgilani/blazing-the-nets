@@ -53,7 +53,8 @@ redeployed and it built (63/63 pages in 53 s).
 
 Also check **Settings → Functions**:
 
-- **Fluid compute should be on.** On Hobby, Fluid compute gives functions a 300 s maximum
+- **Fluid compute is on** (switched on 2026-09-30 through the project API, `resourceConfig.fluid`;
+  it applies from the next deployment). On Hobby, Fluid compute gives functions a 300 s maximum
   duration and 2 GB of memory. Without it the Hobby default is 10 s (60 s at most).
 - **Why it matters.** A cold player page builds the season-picker index (about 3.6 s measured
   locally, two release files at a time, alongside the page data). A season page reads a whole
@@ -175,8 +176,8 @@ Wait until step 6 passes from more than one network, for at least a day and idea
   leaders. Every other player, and every past season, renders on its first request, which takes a few seconds while the release files are read, then
   is cached for 6 hours. Each new deploy starts that cache over. A slow first click after a
   deploy is expected, not an outage.
-- **Function limits.** If Fluid compute is off, a cold season page can hit the 10 s Hobby default
-  and return a 504. Turn Fluid compute on (step 1) rather than raising `maxDuration` per route.
+- **Function limits.** If Fluid compute were ever turned off, a cold season page could hit the 10 s Hobby default
+  and return a 504. Keep Fluid compute on (step 1) rather than raising `maxDuration` per route.
 - **Preview protection.** Scripted checks against preview URLs get 401 or a login page when
   Deployment Protection is on. It does not affect the production domain.
 - **Pushing to master too early.** Until the rebuild branch is merged, `master` still has the

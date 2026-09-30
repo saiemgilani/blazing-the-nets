@@ -47,14 +47,15 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
 }
 
 export default async function PlayerPage({ params }: { params: Params }) {
+  // The season picker's index (cold: one shots file per season) builds alongside the page data.
+  const seasonIndex = readPlayerSeasons().catch(() => null);
   const { page, season, seasons, current, q } = await resolve(params);
   if (!page) notFound();
   const { player, line, prev, next } = page;
   const stats = player.stats;
   // Only seasons he took a regular-season shot in (others would 404); all of them if the index fails.
-  const hisSeasons = await readPlayerSeasons()
-    .then((index) => index.get(player.person_id) ?? [season])
-    .catch(() => seasons);
+  const index = await seasonIndex;
+  const hisSeasons = index ? (index.get(player.person_id) ?? [season]) : seasons;
   const options = seasonOptions(seasons.filter((s) => hisSeasons.includes(s) || s === season));
   return (
     <div className="space-y-6">

@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { AssetMissingError, openAsset, timedFetch } from "../lib/data/releases.ts";
+import { readFileSync } from "node:fs";
+import { AssetMissingError, openAsset, readColumns, timedFetch } from "../lib/data/releases.ts";
+import { fixtureShots } from "./helpers.ts";
 
 /** Swap global fetch for a scripted one for the length of `run`. */
 async function withFetch(script: (() => Response | Promise<Response>)[], run: () => Promise<void>): Promise<number> {
@@ -88,4 +90,13 @@ test("openAsset: the size from a 206's Content-Range, the whole body on a 200, 4
   await withFetch([() => new Response("no", { status: 403 })], async () => {
     await assert.rejects(openAsset("tag", "a.parquet"), (e) => !(e instanceof AssetMissingError) && /HTTP 403/.test(String(e)), "a 403 is a failure, not a missing asset");
   });
+});
+
+test("readColumns: flat arrays in row order, the same values the validated rows hold", async () => {
+  const bytes = new Uint8Array(readFileSync(new URL("./fixtures/shots_2026_bkn_2000.parquet", import.meta.url)));
+  const [people, games] = await readColumns(bytes.buffer, ["person_id", "game_id"]);
+  const rows = await fixtureShots();
+  assert.equal(people.length, 2000);
+  assert.deepEqual(people.map(Number), rows.map((r) => r.person_id));
+  assert.deepEqual(games, rows.map((r) => r.game_id));
 });

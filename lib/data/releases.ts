@@ -1,4 +1,4 @@
-import { asyncBufferFromUrl, parquetMetadataAsync, parquetReadObjects, type AsyncBuffer } from "hyparquet";
+import { asyncBufferFromUrl, parquetMetadataAsync, parquetRead, parquetReadObjects, type AsyncBuffer } from "hyparquet";
 import { compressors } from "hyparquet-compressors";
 import { z } from "zod";
 
@@ -114,6 +114,27 @@ export async function parseParquet<S extends z.ZodObject>(file: AsyncBuffer, row
   const metadata = await parquetMetadataAsync(file, { initialFetchSize: 1 << 16 });
   const raw = await parquetReadObjects({ file, metadata, columns: Object.keys(row.shape), compressors });
   return z.array(row).parse(raw);
+}
+
+/**
+ * The named columns as flat, unvalidated arrays in row order (INT64 as bigint): no row objects and
+ * no zod, for internal reads of a few columns across many files.
+ */
+export async function readColumns(file: AsyncBuffer, columns: string[]): Promise<unknown[][]> {
+  const metadata = await parquetMetadataAsync(file, { initialFetchSize: 1 << 16 });
+  const out = columns.map(() => new Array<unknown>(Number(metadata.num_rows)));
+  // onChunk without onComplete: hyparquet hands over decoded column chunks and never builds rows.
+  await parquetRead({
+    file,
+    metadata,
+    columns,
+    compressors,
+    onChunk: ({ columnName, columnData, rowStart }) => {
+      const column = out[columns.indexOf(columnName)];
+      for (let i = 0; i < columnData.length; i++) column[rowStart + i] = columnData[i];
+    },
+  });
+  return out;
 }
 
 /**

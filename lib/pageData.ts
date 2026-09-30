@@ -6,8 +6,7 @@ import { scatterPoints } from "./data/scatter.ts";
 import type { ScatterPoint } from "./scatterMetrics.ts";
 import { PLAYER_STATS_TAG, PlayerStatsRow, seasonPlayers, type PlayerSeason } from "./data/players.ts";
 import { rankSummaries, type RankSummary } from "./data/ranks.ts";
-import { z } from "zod";
-import { int64, memo, openAsset, parseParquet, readParquet } from "./data/releases.ts";
+import { memo, openAsset, readColumns, readParquet } from "./data/releases.ts";
 import { readHeadshots } from "./data/rosters.ts";
 import { listSeasons, seasonLabel } from "./data/seasons.ts";
 import { readGameLogs, readShots, SHOTS_TAG, shotsAsset, toLite, type GameLogRow, type Shot, type ShotLite } from "./data/shots.ts";
@@ -46,24 +45,36 @@ export function readSeasonData(season: number): Promise<SeasonData> {
   });
 }
 
-const PersonGameRow = z.object({ person_id: int64, game_id: z.string() });
+/**
+ * Who shot in each past season, for the life of the process (a few hundred ids a season).
+ * ponytail: a republished past season shows up on the next deploy; key by the asset's updated_at if that matters.
+ */
+const pastShooters = new Map<number, Set<number>>();
+
+/** Everyone with a regular-season shot: two columns, unvalidated (an internal read, ids only). */
+async function seasonShooters(season: number): Promise<Set<number>> {
+  const [people, games] = await readColumns(await openAsset(SHOTS_TAG, shotsAsset(season)), ["person_id", "game_id"]);
+  const ids = new Set<number>();
+  for (let i = 0; i < people.length; i++) if (String(games[i]).startsWith("002")) ids.add(Number(people[i]));
+  return ids;
+}
 
 /**
  * person_id -> the listed seasons he took a regular-season shot in (for the player page's season
- * picker). Two columns of every season's shots file, read outside the release LRU so they do not
- * evict whole seasons; built once per process per 6 h.
+ * picker). Read outside the release LRU so it does not evict whole seasons, one season at a time
+ * (all at once peaked near 400 MB), past seasons once per process and the current one per 6 h.
  */
 export function readPlayerSeasons(): Promise<Map<number, number[]>> {
   return memo("player-seasons", "all", async () => {
     const seasons = await listSeasons();
-    const perSeason = await Promise.all(
-      seasons.map(async (season) => {
-        const rows = await parseParquet(await openAsset(SHOTS_TAG, shotsAsset(season)), PersonGameRow);
-        return [season, new Set(rows.filter((r) => r.game_id.startsWith("002")).map((r) => r.person_id))] as const;
-      }),
-    );
+    const current = seasons[seasons.length - 1];
     const index = new Map<number, number[]>();
-    for (const [season, ids] of perSeason) {
+    for (const season of seasons) {
+      let ids = pastShooters.get(season);
+      if (!ids) {
+        ids = await seasonShooters(season);
+        if (season !== current) pastShooters.set(season, ids);
+      }
       for (const id of ids) {
         const list = index.get(id);
         if (list) list.push(season);

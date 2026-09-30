@@ -58,7 +58,9 @@ export const RETRY_DELAY_MS = 500;
 /**
  * fetch with a fresh AbortSignal.timeout per attempt (a shared signal would expire for later
  * calls) and one retry, after a short backoff, on a network error or a 5xx. Never on a 4xx: a 404
- * is an answer ("not in the release"), not a failure.
+ * is an answer ("not in the release"), not a failure. A successful body is read here, inside the
+ * retry and the timeout (hyparquet reads range bodies after the call returns, where a connection
+ * reset mid-body would not be retried), and handed back buffered.
  */
 export async function timedFetch(
   input: RequestInfo | URL,
@@ -68,6 +70,10 @@ export async function timedFetch(
   for (let attempt = 0; ; attempt++) {
     try {
       const res = await fetch(input, { ...options, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+      if (res.ok) {
+        const body = await res.arrayBuffer();
+        return new Response([204, 205].includes(res.status) ? null : body, { status: res.status, statusText: res.statusText, headers: res.headers });
+      }
       if (res.status < 500 || attempt >= retries) return res;
       await res.body?.cancel();
     } catch (e) {

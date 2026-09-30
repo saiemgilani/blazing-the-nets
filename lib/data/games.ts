@@ -27,7 +27,10 @@ export function teamGames(rows: GameLogRow[]): Map<string, GameInfo> {
   for (const r of rows) byGame.set(r.game_id, [...(byGame.get(r.game_id) ?? []), r]);
   const out = new Map<string, GameInfo>();
   for (const [gameId, pair] of byGame) {
-    if (pair.length !== 2) continue; // ponytail: a half-logged game has no opponent; it drops out of per-game views
+    // ponytail: a half-logged game has no opponent and is left out. For a player who shot in it,
+    // playerGames then throws ("no game log"), which the player page turns into "per-game views
+    // unavailable" for that season rather than a chart missing one game.
+    if (pair.length !== 2) continue;
     const neutral = pair.every((r) => !r.matchup.includes(" vs. "));
     for (const [me, them] of [pair, [pair[1], pair[0]]]) {
       out.set(gameKey(gameId, me.team_id), {

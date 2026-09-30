@@ -17,7 +17,8 @@
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "node --test --experimental-strip-types test/*.test.ts",
-    "check": "npm run lint && npm run typecheck && npm run test && npm run build"
+    "check": "npm run lint && npm run typecheck && npm run test && npm run build",
+    "screenshots": "node scripts/screenshots.mjs"
   },
   "dependencies": {
     "d3-array": "^3.2.4",

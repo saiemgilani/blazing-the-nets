@@ -7,7 +7,7 @@ import { scatterPoints } from "./data/scatter.ts";
 import type { ScatterPoint } from "./scatterMetrics.ts";
 import { PLAYER_STATS_TAG, PlayerStatsRow, seasonPlayers, type PlayerSeason } from "./data/players.ts";
 import { rankSummaries, type RankSummary } from "./data/ranks.ts";
-import { memo, openAsset, readColumns, readParquet } from "./data/releases.ts";
+import { AssetMissingError, memo, openAsset, readColumns, readParquet } from "./data/releases.ts";
 import { readHeadshots } from "./data/rosters.ts";
 import { listSeasons, parseSeason, seasonLabel } from "./data/seasons.ts";
 import { readGameLogs, readShots, SHOTS_TAG, shotsAsset, toLite, type GameLogRow, type Shot, type ShotLite } from "./data/shots.ts";
@@ -362,20 +362,25 @@ export function seasonPlayerGames(data: SeasonData, logs: GameLogRow[]): PlayerG
 
 export interface LeadersData {
   season: number;
-  boards: Boards;
-  players: number;
-  /** Server time to build every board from the season's shots and logs. */
-  computeMs: number;
+  /** null when the release has no game logs for the season: windows need game dates. */
+  boards: Boards | null;
 }
 
-/** The rolling leaderboards for a season, built once per process per 6 h (the heaviest computation). */
+/**
+ * The rolling leaderboards for a season, built once per process per 6 h (the heaviest computation).
+ * A season whose game-logs file is not in the release has no boards (the page says so); any other
+ * failure still throws.
+ */
 export function readLeaders(season: number): Promise<LeadersData> {
   return memo("leaders", String(season), async () => {
-    const [data, logs] = await Promise.all([readSeasonData(season), readGameLogs(season)]);
-    const t0 = performance.now();
-    const players = seasonPlayerGames(data, logs);
-    const boards = leaderBoards(players, NETS_TEAM_ID);
-    return { season, boards, players: players.length, computeMs: Math.round(performance.now() - t0) };
+    const [data, logs] = await Promise.all([
+      readSeasonData(season),
+      readGameLogs(season).catch((e: unknown) => {
+        if (e instanceof AssetMissingError) return null;
+        throw e;
+      }),
+    ]);
+    return { season, boards: logs ? leaderBoards(seasonPlayerGames(data, logs), NETS_TEAM_ID) : null };
   });
 }
 

@@ -32,7 +32,14 @@ export default async function Leaders({ params }: { params: Params }) {
         <h1 className="font-display text-3xl font-bold">Rolling leaders, {seasonLabel(season)}</h1>
         <QuerySelect label="Season" name="season" value={String(season)} options={seasonOptions(seasons)} basePath="/leaders" defaults={{ season: String(current) }} />
       </header>
-      <Leaderboards boards={data.boards} netsTeamId={NETS_TEAM_ID} seasonQuery={q} />
+      {data.boards ? (
+        <Leaderboards boards={data.boards} netsTeamId={NETS_TEAM_ID} seasonQuery={q} />
+      ) : (
+        <p className="rounded-lg border border-line bg-surface p-4 text-sm text-muted">
+          The release has no game logs for {seasonLabel(season)}, and rolling windows need game dates, so there are no
+          leaderboards for this season.
+        </p>
+      )}
     </div>
   );
 }

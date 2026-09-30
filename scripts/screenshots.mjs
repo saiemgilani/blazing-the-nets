@@ -3,7 +3,7 @@
 //   BASE_URL=http://localhost:3000 node scripts/screenshots.mjs
 // Uses Playwright's bundled Chromium; PW_CHANNEL=msedge (or chrome) uses an installed browser.
 // Output: img/visual/<page>-<width>-<scheme>.png (git-ignored), plus for the player page a hex
-// hover shot and the Zones view. PAGES="player=/players/1629008,team=/teams/1610612751" overrides.
+// hover shot, the Zones view and a brushed date window. PAGES="player=/players/1629008,team=/teams/1610612751" overrides.
 import { mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
@@ -30,7 +30,7 @@ try {
         const file = `${outDir}${name}-${width}-${colorScheme}.png`;
         await page.screenshot({ path: file, fullPage: true });
         if (name === "player") {
-          const hex = page.locator("svg[role=img]").first();
+          const hex = page.locator("svg[aria-label$='shot chart']").first();
           if (width === widths[widths.length - 1]) {
             // Hexes are drawn smallest first, so the last one in the hex layer is the busiest.
             const busiest = await hex.locator("g > g:nth-of-type(2) > path").last().boundingBox();
@@ -40,6 +40,20 @@ try {
           await page.getByRole("button", { name: "Zones" }).click();
           await page.mouse.move(0, 0);
           await hex.screenshot({ path: `${outDir}${name}-zones-${width}-${colorScheme}.png` });
+        }
+        if (name === "player" && width === widths[widths.length - 1]) {
+          // A brushed date window: reload, drag across the middle of the game timeline.
+          await page.goto(base + path, { waitUntil: "networkidle" });
+          const timeline = page.locator("svg[aria-label*='game timeline']");
+          const box = await timeline.boundingBox();
+          if (box) {
+            await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.4);
+            await page.mouse.down();
+            await page.mouse.move(box.x + box.width * 0.62, box.y + box.height * 0.4, { steps: 8 });
+            await page.mouse.up();
+            await page.waitForTimeout(400);
+            await page.screenshot({ path: `${outDir}${name}-brushed-${width}-${colorScheme}.png`, fullPage: true });
+          }
         }
         console.log(`${res?.status()} ${file}${errors.length ? `  ERRORS: ${errors.join(" | ")}` : ""}`);
         await context.close();

@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Dashboard } from "@/components/Dashboard.tsx";
+import { Card } from "@/components/Card.tsx";
+import { VersusChart } from "@/components/charts/VersusChart.tsx";
+import { PlayerExplorer } from "@/components/PlayerExplorer.tsx";
+import { RankLists } from "@/components/RankLists.tsx";
 import { Headshot } from "@/components/Headshot.tsx";
 import { QuerySelect } from "@/components/QuerySelect.tsx";
 import { listSeasons, parseSeason, seasonLabel } from "@/lib/data/seasons.ts";
@@ -83,7 +86,18 @@ export default async function PlayerPage({ params }: { params: Params }) {
         </div>
       </header>
 
-      <Dashboard data={page.dashboard} subject={`${player.player_name} ${seasonLabel(season)}`} />
+      <RankLists ranks={page.ranks} personId={player.person_id} season={season} />
+
+      <PlayerExplorer data={page.explorer} subject={`${player.player_name} ${seasonLabel(season)}`} />
+
+      {page.versus && (
+        <Card title="Versus each opponent">
+          <VersusChart
+            data={{ rows: page.versus, leagueFgPct: page.explorer.league.fgPct }}
+            title={`${player.player_name} attempts and FG% against each opponent`}
+          />
+        </Card>
+      )}
 
       <nav aria-label={`${player.team_tricode} players`} className="flex justify-between gap-4 text-sm">
         {prev ? (

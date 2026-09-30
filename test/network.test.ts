@@ -68,6 +68,8 @@ test("real release files: shots 2026 -> Nets -> one player", { skip }, async (t)
   t.diagnostic(`season-stats parity: ${leaguePlayers.length} players, ${off} attempt(s) off in total`);
 
   const logs = await readGameLogs(2026);
+  const neutral = [...teamGames(logs).values()].filter((g) => g.venue === "neutral");
+  assert.deepEqual([...new Set(neutral.map((g) => g.game_id))].sort(), ["0022500147", "0022500578", "0022500602", "0022501229", "0022501230"], "the five 2025-26 neutral-site games");
   const dates = gameDateMap(logs);
   assert.ok(new Set(all.map((s) => s.game_id)).size <= dates.size);
   assert.ok(all.every((s) => dates.has(s.game_id)), "every shot game has a date");

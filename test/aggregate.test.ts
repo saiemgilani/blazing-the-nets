@@ -188,3 +188,31 @@ test("a game whose two rows both read @ is neutral for both sides", () => {
   const normal = teamGames([row(1610612751, "BKN", "BKN vs. SAS", "W"), row(1610612759, "SAS", "SAS @ BKN", "L")]);
   assert.deepEqual([...normal.values()].map((g) => g.venue), ["home", "away"]);
 });
+
+/** The five 2025-26 games whose two log rows both read "@" (copied from player_game_logs_2026). */
+const NEUTRAL_2026 = [
+  ["0022500147", 1610612765, "DET", "2025-11-01", "DET @ DAL", "W"],
+  ["0022500147", 1610612742, "DAL", "2025-11-01", "DAL @ DET", "L"],
+  ["0022501229", 1610612753, "ORL", "2025-12-13", "ORL @ NYK", "L"],
+  ["0022501229", 1610612752, "NYK", "2025-12-13", "NYK @ ORL", "W"],
+  ["0022501230", 1610612760, "OKC", "2025-12-13", "OKC @ SAS", "L"],
+  ["0022501230", 1610612759, "SAS", "2025-12-13", "SAS @ OKC", "W"],
+  ["0022500578", 1610612763, "MEM", "2026-01-15", "MEM @ ORL", "L"],
+  ["0022500578", 1610612753, "ORL", "2026-01-15", "ORL @ MEM", "W"],
+  ["0022500602", 1610612763, "MEM", "2026-01-18", "MEM @ ORL", "W"],
+  ["0022500602", 1610612753, "ORL", "2026-01-18", "ORL @ MEM", "L"],
+] as const;
+
+test("the real 2025-26 neutral-site games (both rows '@') are neutral for both teams", () => {
+  const rows = NEUTRAL_2026.map(([game_id, team_id, team_abbreviation, game_date, matchup, wl]) => ({ game_id, team_id, team_abbreviation, game_date, matchup, wl }));
+  const games = [...teamGames(rows).values()];
+  assert.equal(games.length, 10);
+  assert.ok(games.every((g) => g.venue === "neutral"));
+  assert.deepEqual(
+    games.filter((g) => g.date === "2026-01-18").map((g) => [g.team_id, g.opponent, g.win]),
+    [
+      [1610612763, "ORL", true],
+      [1610612753, "MEM", false],
+    ],
+  );
+});

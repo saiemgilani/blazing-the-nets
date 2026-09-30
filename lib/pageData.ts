@@ -59,23 +59,43 @@ async function seasonShooters(season: number): Promise<Set<number>> {
   return ids;
 }
 
+/** Files the season index reads at once: all eleven peaked near 400 MB, one at a time took 5 s cold. */
+export const SEASON_INDEX_CONCURRENCY = 2;
+
+/** `fn` over `items` with at most `limit` calls in flight; results in input order. */
+export async function mapLimit<T, R>(items: readonly T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const out = new Array<R>(items.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const i = next++;
+      out[i] = await fn(items[i]);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
+}
+
 /**
  * person_id -> the listed seasons he took a regular-season shot in (for the player page's season
- * picker). Read outside the release LRU so it does not evict whole seasons, one season at a time
- * (all at once peaked near 400 MB), past seasons once per process and the current one per 6 h.
+ * picker). Read outside the release LRU so it does not evict whole seasons, two files at a time,
+ * past seasons once per process and the current one per 6 h.
  */
 export function readPlayerSeasons(): Promise<Map<number, number[]>> {
   return memo("player-seasons", "all", async () => {
     const seasons = await listSeasons();
     const current = seasons[seasons.length - 1];
-    const index = new Map<number, number[]>();
-    for (const season of seasons) {
+    const perSeason = await mapLimit(seasons, SEASON_INDEX_CONCURRENCY, async (season) => {
       let ids = pastShooters.get(season);
       if (!ids) {
         ids = await seasonShooters(season);
         if (season !== current) pastShooters.set(season, ids);
       }
-      for (const id of ids) {
+      return ids;
+    });
+    const index = new Map<number, number[]>();
+    for (const [i, season] of seasons.entries()) {
+      for (const id of perSeason[i]) {
         const list = index.get(id);
         if (list) list.push(season);
         else index.set(id, [season]);

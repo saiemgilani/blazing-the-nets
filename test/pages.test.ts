@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { nextSeasonReady, parseSeason, probeNextSeason, type ShotGameRow } from "../lib/data/seasons.ts";
 import { versusOpponents } from "../lib/data/aggregate.ts";
 import { NETS_TEAM_ID, TEAMS } from "../lib/data/teams.ts";
-import { assemblePlayerPage, assembleTeamPage, playerRows, seasonData } from "../lib/pageData.ts";
+import { assemblePlayerPage, assembleTeamPage, mapLimit, playerRows, SEASON_INDEX_CONCURRENCY, seasonData } from "../lib/pageData.ts";
 import { playerHref, seasonQuery, withParams } from "../lib/links.ts";
 import { internalPath, isInternalPath, isOgImagePath } from "../lib/routes.ts";
 import { LAST_KNOWN_SEASON } from "../lib/seasonRange.ts";
@@ -156,4 +156,20 @@ test("only the OG image is served straight from an internal path", () => {
   assert.ok(!isOgImagePath("/players/1629008/current"));
   assert.ok(!isOgImagePath("/players/1629008/..%2F..%2Fabout"));
   assert.ok(isInternalPath("/players/1629008/..%2F..%2Fabout"), "crafted internal paths are internal (so they 404)");
+});
+
+test("the season index reads at most two files at once, and keeps season order", async () => {
+  assert.equal(SEASON_INDEX_CONCURRENCY, 2);
+  let inFlight = 0;
+  let peak = 0;
+  const seasons = [2016, 2017, 2018, 2019, 2020, 2021, 2022];
+  const out = await mapLimit(seasons, SEASON_INDEX_CONCURRENCY, async (season) => {
+    peak = Math.max(peak, ++inFlight);
+    await new Promise((resolve) => setTimeout(resolve, (2023 - season) * 2)); // later seasons finish first
+    inFlight -= 1;
+    return season * 10;
+  });
+  assert.equal(peak, 2);
+  assert.deepEqual(out, seasons.map((s) => s * 10));
+  assert.deepEqual(await mapLimit([], 2, async () => 1), []);
 });

@@ -27,6 +27,8 @@ export interface HexBin extends Split {
   x: number;
   y: number;
   meanDistance: number;
+  /** The zone most of the hex's attempts fall in. */
+  zone: Zone;
 }
 
 /** d3-hexbin over the legacy frame; `radiusTenths` = 10 is a 1 ft hex. */
@@ -37,8 +39,32 @@ export function hexbinShots(shots: Shot[], radiusTenths: number): HexBin[] {
     .radius(radiusTenths)(shots);
   return bins.map((b) => {
     let distance = 0;
-    for (const s of b) distance += s.shot_distance;
-    return { x: b.x || 0, y: b.y || 0, ...tally(b), meanDistance: distance / b.length };
+    const zones = new Map<Zone, number>();
+    for (const s of b) {
+      distance += s.shot_distance;
+      const z = zoneOf(s);
+      zones.set(z, (zones.get(z) ?? 0) + 1);
+    }
+    const zone = [...zones].reduce((a, c) => (c[1] > a[1] ? c : a))[0];
+    // `|| 0` folds d3-hexbin's -0 centres into 0 so equal hexes share one key.
+    return { x: b.x || 0, y: b.y || 0, ...tally(b), meanDistance: distance / b.length, zone };
+  });
+}
+
+export interface HexVsLeague extends HexBin {
+  leagueFgPct: number | null;
+}
+
+/**
+ * Player hexes with the league FG% of the same hex: the same radius gives the same centres. A hex
+ * the league took fewer than `minLeague` shots from falls back to the league FG% of its zone.
+ */
+export function hexesVsLeague(player: Shot[], league: Shot[], radiusTenths: number, minLeague = 25): HexVsLeague[] {
+  const leagueHexes = new Map(hexbinShots(league, radiusTenths).map((h) => [`${h.x},${h.y}`, h]));
+  const zones = statsByZone(league);
+  return hexbinShots(player, radiusTenths).map((h) => {
+    const l = leagueHexes.get(`${h.x},${h.y}`);
+    return { ...h, leagueFgPct: l && l.attempts >= minLeague ? l.fgPct : zones[h.zone].fgPct };
   });
 }
 

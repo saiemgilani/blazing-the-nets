@@ -104,3 +104,19 @@ export function courtLines(v: Viewport): CourtLine[] {
     },
   ];
 }
+
+/** Zone boundaries for `zoneOf`: restricted arc, paint, three-point line and the corner breaks. */
+export function zoneLines(v: Viewport): CourtLine[] {
+  const keep = new Set(["restricted-area", "paint", "three-point-line"]);
+  const breaks = [-1, 1].map((side) => ({
+    name: side < 0 ? "corner-break-left" : "corner-break-right",
+    d: path(
+      [
+        { x: side * COURT.threeCornerX, y: THREE_BREAK_Y },
+        { x: side * COURT.halfWidth, y: THREE_BREAK_Y },
+      ],
+      v,
+    ),
+  }));
+  return [...courtLines(v).filter((l) => keep.has(l.name)), ...breaks];
+}

@@ -38,3 +38,10 @@ export async function listSeasons(): Promise<number[]> {
 export function seasonLabel(endYear: number): string {
   return `${endYear - 1}-${String(endYear % 100).padStart(2, "0")}`;
 }
+
+/** A `?season=` value (or path segment): a listed season, else the current (last) one. */
+export function parseSeason(param: string | string[] | undefined, seasons: number[]): number {
+  const raw = Array.isArray(param) ? param[0] : param;
+  const year = raw !== undefined && /^\d{4}$/.test(raw) ? Number(raw) : NaN;
+  return seasons.includes(year) ? year : seasons[seasons.length - 1];
+}

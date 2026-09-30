@@ -22,6 +22,52 @@ function tally(shots: Pick<Shot, "shot_result">[]): Split {
   return split(shots.length, makes);
 }
 
+/** Field goals with the three-point part, the inputs to FG%, eFG% and 3P%. */
+export interface FieldGoals {
+  attempts: number;
+  makes: number;
+  fg3a: number;
+  fg3m: number;
+}
+
+export interface ShootingLine extends FieldGoals {
+  fgPct: number | null;
+  /** (FGM + 0.5 * 3PM) / FGA */
+  efgPct: number | null;
+  fg3Pct: number | null;
+}
+
+export function lineOf(fg: FieldGoals): ShootingLine {
+  const { attempts, makes, fg3a, fg3m } = fg;
+  return {
+    ...fg,
+    fgPct: attempts ? makes / attempts : null,
+    efgPct: attempts ? (makes + 0.5 * fg3m) / attempts : null,
+    fg3Pct: fg3a ? fg3m / fg3a : null,
+  };
+}
+
+export function countFieldGoals(shots: Pick<Shot, "shot_result" | "shot_value">[]): FieldGoals {
+  const fg = { attempts: 0, makes: 0, fg3a: 0, fg3m: 0 };
+  for (const s of shots) addShot(fg, s);
+  return fg;
+}
+
+/** Add one shot to running field-goal counts. */
+export function addShot(fg: FieldGoals, s: Pick<Shot, "shot_result" | "shot_value">): void {
+  fg.attempts += 1;
+  if (made(s)) fg.makes += 1;
+  if (s.shot_value === 3) {
+    fg.fg3a += 1;
+    if (made(s)) fg.fg3m += 1;
+  }
+}
+
+/** Shooting line straight from shots. */
+export function shootingLine(shots: Pick<Shot, "shot_result" | "shot_value">[]): ShootingLine {
+  return lineOf(countFieldGoals(shots));
+}
+
 export interface HexBin extends Split {
   /** Hex centre, legacy frame. */
   x: number;
@@ -75,16 +121,29 @@ export interface HexVsLeague extends HexBin {
   leagueFgPct: number | null;
 }
 
+/** The league's hexes (keyed by centre) and zone rates, computed once per season and radius. */
+export interface LeagueHexIndex {
+  radius: number;
+  hexes: Map<string, HexBin>;
+  zones: Record<Zone, Split>;
+}
+
+export function leagueHexIndex(league: Shot[], radiusTenths: number): LeagueHexIndex {
+  return {
+    radius: radiusTenths,
+    hexes: new Map(hexbinShots(league, radiusTenths).map((h) => [`${h.x},${h.y}`, h])),
+    zones: statsByZone(league),
+  };
+}
+
 /**
  * Player hexes with the league FG% of the same hex: the same radius gives the same centres. A hex
  * the league took fewer than `minLeague` shots from falls back to the league FG% of its zone.
  */
-export function hexesVsLeague(player: Shot[], league: Shot[], radiusTenths: number, minLeague = LEAGUE_PRIOR_ATTEMPTS): HexVsLeague[] {
-  const leagueHexes = new Map(hexbinShots(league, radiusTenths).map((h) => [`${h.x},${h.y}`, h]));
-  const zones = statsByZone(league);
-  return hexbinShots(player, radiusTenths).map((h) => {
-    const l = leagueHexes.get(`${h.x},${h.y}`);
-    return { ...h, leagueFgPct: l && l.attempts >= minLeague ? l.fgPct : zones[h.zone].fgPct };
+export function hexesVsLeague(player: Shot[], league: LeagueHexIndex, minLeague = LEAGUE_PRIOR_ATTEMPTS): HexVsLeague[] {
+  return hexbinShots(player, league.radius).map((h) => {
+    const l = league.hexes.get(`${h.x},${h.y}`);
+    return { ...h, leagueFgPct: l && l.attempts >= minLeague ? l.fgPct : league.zones[h.zone].fgPct };
   });
 }
 

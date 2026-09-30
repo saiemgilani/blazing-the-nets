@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { fgPctByDistance, hexesVsLeague, LEAGUE_PRIOR_ATTEMPTS, shrunkDiff, statsBySide, vsLeague, ZONES } from "../lib/data/aggregate.ts";
+import { fgPctByDistance, hexesVsLeague, LEAGUE_PRIOR_ATTEMPTS, leagueHexIndex, shrunkDiff, statsBySide, vsLeague, ZONES } from "../lib/data/aggregate.ts";
 import { THREE_BREAK_Y, toSvgLength, zoneAreas, zoneLines } from "../lib/data/court.ts";
 import { courtViewport } from "../lib/charts/court.ts";
 import { barLayout, DISTANCE_BARS_VIEWBOX } from "../lib/charts/distanceBars.ts";
@@ -45,7 +45,7 @@ test("colours shrink toward the league with a 25-attempt prior: 1/1 reads near 0
 test("hex marks stay in the court viewport, sized by a capped sqrt scale, rim hex at the bottom centre", () => {
   const radius = 15;
   const v = courtViewport();
-  const { marks, cap, size } = layoutHexes(hexesVsLeague(mine, league, radius), radius, v);
+  const { marks, cap, size } = layoutHexes(hexesVsLeague(mine, leagueHexIndex(league, radius)), radius, v);
   assert.ok(marks.length > 20);
   assert.ok(marks.every((m) => m.cx >= -1 && m.cx <= v.width + 1 && m.cy >= 0 && m.cy <= v.height + 1));
   assert.ok(marks.every((m, i) => i === 0 || marks[i - 1].hex.attempts <= m.hex.attempts), "drawn smallest first");
@@ -56,9 +56,9 @@ test("hex marks stay in the court viewport, sized by a capped sqrt scale, rim he
 });
 
 test("hexes carry the league FG% of the same hex (or the zone when the league hex is thin)", () => {
-  const hexes = hexesVsLeague(mine, league, 15, 1);
+  const hexes = hexesVsLeague(mine, leagueHexIndex(league, 15), 1);
   assert.ok(hexes.every((h) => h.leagueFgPct !== null && h.leagueFgPct >= 0 && h.leagueFgPct <= 1));
-  const self = hexesVsLeague(league, league, 15, 1);
+  const self = hexesVsLeague(league, leagueHexIndex(league, 15), 1);
   assert.ok(self.every((h) => h.leagueFgPct === h.fgPct), "a player compared with himself has zero diff");
 });
 

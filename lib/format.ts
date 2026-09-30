@@ -12,3 +12,6 @@ export const fmtInt = (v: number | null | undefined) => (v === null || v === und
 
 /** 32.46 -> "32.5". */
 export const fmtDec = (v: number | null | undefined, digits = 1) => (v === null || v === undefined ? "n/a" : v.toFixed(digits));
+
+/** Case- and accent-folded text for search boxes: "Dëmin" matches "demin". */
+export const foldText = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();

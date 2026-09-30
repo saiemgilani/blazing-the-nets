@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { int64, readParquet } from "./releases.ts";
+import { addShot, type FieldGoals } from "./aggregate.ts";
 import { readShots, type Shot } from "./shots.ts";
 
 export const PLAYER_STATS_TAG = "nba_stats_player_season_stats";
@@ -30,15 +31,13 @@ export type PlayerStatsRow = z.output<typeof PlayerStatsRow>;
 
 export type PlayerStats = Pick<PlayerStatsRow, "gp" | "min" | "fga" | "fg_pct" | "efg_pct" | "ts_pct" | "usg_pct" | "pie">;
 
-export interface PlayerSeason {
+export interface PlayerSeason extends FieldGoals {
   person_id: number;
   /** Full name from the season stats when available; the shots file only has the family name. */
   player_name: string;
   /** Team with the most attempts in the shots given (a traded player's primary team). */
   team_id: number;
   team_tricode: string;
-  attempts: number;
-  makes: number;
   stats: PlayerStats | null;
   /**
    * "matching": `stats` cover the same games as attempts/makes. "all-teams": the player shot for
@@ -50,19 +49,18 @@ export interface PlayerSeason {
 
 /** One row per shooter, sorted by attempts (desc). Pass one team's shots for that team's roster. */
 export function playerIndex(shots: Shot[]): PlayerSeason[] {
-  const byPlayer = new Map<number, { name: string; attempts: number; makes: number; teams: Map<number, [string, number]> }>();
+  const byPlayer = new Map<number, { name: string; fg: FieldGoals; teams: Map<number, [string, number]> }>();
   for (const s of shots) {
     let p = byPlayer.get(s.person_id);
-    if (!p) byPlayer.set(s.person_id, (p = { name: s.player_name, attempts: 0, makes: 0, teams: new Map() }));
-    p.attempts += 1;
-    if (s.shot_result === "Made") p.makes += 1;
+    if (!p) byPlayer.set(s.person_id, (p = { name: s.player_name, fg: { attempts: 0, makes: 0, fg3a: 0, fg3m: 0 }, teams: new Map() }));
+    addShot(p.fg, s);
     const t = p.teams.get(s.team_id);
     p.teams.set(s.team_id, [s.team_tricode, (t?.[1] ?? 0) + 1]);
   }
   return [...byPlayer]
     .map(([person_id, p]) => {
       const [team_id, [team_tricode]] = [...p.teams].reduce((a, b) => (b[1][1] > a[1][1] ? b : a));
-      const row: PlayerSeason = { person_id, player_name: p.name, team_id, team_tricode, attempts: p.attempts, makes: p.makes, stats: null, statsScope: "matching" };
+      const row: PlayerSeason = { person_id, player_name: p.name, team_id, team_tricode, ...p.fg, stats: null, statsScope: "matching" };
       return row;
     })
     .sort((a, b) => b.attempts - a.attempts || a.person_id - b.person_id);

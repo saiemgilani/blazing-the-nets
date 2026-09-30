@@ -207,10 +207,16 @@ export interface RosterRow {
   pie: number | null;
 }
 
-export function rosterRows(data: SeasonData, teamId: number, headshots: ReadonlyMap<number, string>): RosterRow[] {
-  return teamRoster(data, teamId).map((p) => {
-    const shots = data.shots.filter((s) => s.person_id === p.person_id && s.team_id === teamId);
-    const zones = statsByZone(shots);
+/** The roster table's rows from the team's shots (grouped by player in one pass) and its roster. */
+export function rosterRows(teamShots: Shot[], roster: PlayerSeason[], headshots: ReadonlyMap<number, string>): RosterRow[] {
+  const byPlayer = new Map<number, Shot[]>();
+  for (const s of teamShots) {
+    const list = byPlayer.get(s.person_id);
+    if (list) list.push(s);
+    else byPlayer.set(s.person_id, [s]);
+  }
+  return roster.map((p) => {
+    const zones = statsByZone(byPlayer.get(p.person_id) ?? []);
     const line = lineOf(p);
     const st = p.stats;
     return {
@@ -244,17 +250,22 @@ export interface TeamPageData {
   dashboard: DashboardData;
 }
 
-export function assembleTeamPage(data: SeasonData, teamId: number, headshots: ReadonlyMap<number, string> = new Map()): TeamPageData | null {
+export function assembleTeamPage(
+  data: SeasonData,
+  teamId: number,
+  headshots: ReadonlyMap<number, string> = new Map(),
+  roster: PlayerSeason[] = teamRoster(data, teamId),
+): TeamPageData | null {
   const shots = data.shots.filter((s) => s.team_id === teamId);
   const team = teamsFromShots(shots)[0] ?? teamById(teamId);
   if (shots.length === 0 || !team) return null;
-  return { season: data.season, team, line: shootingLine(shots), roster: rosterRows(data, teamId, headshots), dashboard: buildDashboard(shots, data.league) };
+  return { season: data.season, team, line: shootingLine(shots), roster: rosterRows(shots, roster, headshots), dashboard: buildDashboard(shots, data.league) };
 }
 
 export async function loadTeamPage(season: number, teamId: number): Promise<TeamPageData | null> {
   const data = await readSeasonData(season);
-  const headshots = await readHeadshots(season, teamRoster(data, teamId));
-  return assembleTeamPage(data, teamId, headshots);
+  const roster = teamRoster(data, teamId);
+  return assembleTeamPage(data, teamId, await readHeadshots(season, roster), roster);
 }
 
 /** Each team's shooting line for the season, keyed by team_id. */

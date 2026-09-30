@@ -1,4 +1,4 @@
-import type { PlayerGame } from "./data/aggregate.ts";
+import { versusOpponents, type OpponentLine, type PlayerGame } from "./data/aggregate.ts";
 import type { ShotLite } from "./data/shots.ts";
 
 /** The player page's game filters: preset selections, a date window, and the shots they keep. */
@@ -64,4 +64,23 @@ export function visibleGames<G extends Pick<PlayerGame, "game_id" | "date">>(gam
 
 export function shotsForGames(shots: ShotLite[], gameIds: ReadonlySet<string>): ShotLite[] {
   return shots.filter((s) => gameIds.has(s.game_id));
+}
+
+/**
+ * What every chart below the game filters is built from: the visible games (null when the
+ * per-game views are unavailable), their shots, and the versus-opponent rows, all following the
+ * same selection and date window.
+ */
+export function selectedView(
+  data: { games: PlayerGame[] | null; shots: ShotLite[]; league: { fgPct: number | null } },
+  selected: ReadonlySet<string>,
+  window: DateWindow,
+): { view: PlayerGame[] | null; shots: ShotLite[]; versus: { rows: OpponentLine[]; leagueFgPct: number | null } | null } {
+  if (!data.games) return { view: null, shots: data.shots, versus: null };
+  const view = visibleGames(data.games, selected, window);
+  return {
+    view,
+    shots: shotsForGames(data.shots, new Set(view.map((g) => g.game_id))),
+    versus: { rows: versusOpponents(view), leagueFgPct: data.league.fgPct },
+  };
 }

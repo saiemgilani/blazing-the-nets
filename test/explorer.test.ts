@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { gameLabel, stripLayout } from "../lib/charts/gameStrip.ts";
+import { gameLabel, stripKeydown, stripLayout } from "../lib/charts/gameStrip.ts";
 import { rollingDomain } from "../lib/charts/rollingChart.ts";
-import { brushOutcome, snapWindow } from "../lib/charts/timeline.ts";
+import { brushEndHandler, brushOutcome, snapWindow } from "../lib/charts/timeline.ts";
 import { lineOf, playerGames } from "../lib/data/aggregate.ts";
 import { teamGames } from "../lib/data/games.ts";
 import type { PlayerSeason, PlayerStats } from "../lib/data/players.ts";
 import { metricValue, RANK_MIN_FG3A, rankSummaries, rankTable } from "../lib/data/ranks.ts";
-import { GAME_PRESETS, inWindow, presetGames, shotsForGames, visibleGames, withTypedDate, isIsoDate } from "../lib/selection.ts";
+import { GAME_PRESETS, inWindow, presetGames, selectedView, shotsForGames, visibleGames, withTypedDate, isIsoDate } from "../lib/selection.ts";
+import { toLite } from "../lib/data/shots.ts";
 import { fixtureGameLogs, fixtureShots } from "./helpers.ts";
 
 const shots = await fixtureShots();
@@ -149,4 +150,52 @@ test("the game strip wraps by width; the rolling axis pads and clamps", () => {
   assert.deepEqual(rollingDomain(points, 0.45), [0.3, 0.6]);
   assert.deepEqual(rollingDomain([], null), [0, 1]);
   assert.deepEqual(rollingDomain([{ ...points[0], fgPct: 0.98, efgPct: 1 }], null), [0.9, 1]);
+});
+
+test("brush wiring: the end listener clears a brush over no game, ignores its own moves, reports the window", () => {
+  const time = (d: string) => new Date(`${d}T00:00:00Z`);
+  // Pixels are days since the first game, so the gap between two games is easy to brush.
+  const day0 = time(games[0].date).getTime();
+  const invert = (px: number) => new Date(day0 + px * 86_400_000);
+  const px = (d: string) => (time(d).getTime() - day0) / 86_400_000;
+  let cleared = 0;
+  const reported: unknown[] = [];
+  const onEnd = brushEndHandler(games, invert, () => (cleared += 1), (w) => reported.push(w));
+  const gap = games.findIndex((g, i) => i > 0 && px(g.date) - px(games[i - 1].date) >= 3);
+  assert.ok(gap > 0, "the fixture has a gap of 3+ days between games");
+  onEnd({ sourceEvent: {}, selection: [px(games[gap - 1].date) + 0.5, px(games[gap].date) - 0.5] });
+  assert.deepEqual([cleared, reported], [1, [null]], "no game inside: the brush is cleared and no window reported");
+  onEnd({ sourceEvent: {}, selection: [px(games[2].date), px(games[5].date)] });
+  assert.deepEqual([cleared, reported.at(-1)], [1, [games[2].date, games[5].date]]);
+  onEnd({ selection: null });
+  assert.equal(reported.length, 2, "a programmatic move (no sourceEvent) is not the viewer's");
+  onEnd({ sourceEvent: {}, selection: null });
+  assert.deepEqual([cleared, reported.at(-1)], [1, null], "a click clears the window; nothing left to clear");
+});
+
+test("strip wiring: Enter and Space toggle the cell's game and stop Space from scrolling; other keys do nothing", () => {
+  const toggled: string[] = [];
+  const onKey = stripKeydown((id) => toggled.push(id));
+  let prevented = 0;
+  const key = (k: string) => ({ key: k, preventDefault: () => (prevented += 1) });
+  for (const k of ["Enter", " ", "a", "Tab", "ArrowRight"]) onKey(key(k), { game: games[0] });
+  assert.deepEqual(toggled, [games[0].game_id, games[0].game_id]);
+  assert.equal(prevented, 2);
+});
+
+test("the versus bars follow the selection and the date window, like the other charts", () => {
+  const data = { games, shots: shots.map(toLite), league: { fgPct: 0.47 } };
+  const all = new Set(games.map((g) => g.game_id));
+  const total = (v: ReturnType<typeof selectedView>) => v.versus?.rows.reduce((a, r) => a + r.attempts, 0);
+  const full = selectedView(data, all, null);
+  assert.equal(total(full), shots.length);
+  const window: [string, string] = [games[3].date, games[7].date];
+  const part = selectedView(data, all, window);
+  assert.equal(total(part), part.shots.length, "versus counts exactly the window's shots");
+  assert.ok(part.shots.length < shots.length && part.view?.every((g) => inWindow(g.date, window)));
+  const home = new Set(presetGames(games, "home"));
+  assert.equal(total(selectedView(data, home, null)), games.filter((g) => home.has(g.game_id)).reduce((a, g) => a + g.attempts, 0));
+  assert.deepEqual(selectedView(data, new Set(), null).versus?.rows, [], "None: no bars");
+  const noLogs = selectedView({ ...data, games: null }, all, window);
+  assert.deepEqual([noLogs.view, noLogs.versus, noLogs.shots.length], [null, null, shots.length], "no game logs: every shot, no versus");
 });

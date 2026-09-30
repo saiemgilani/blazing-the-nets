@@ -1,5 +1,5 @@
 import { max } from "d3-array";
-import { brushX, type D3BrushEvent } from "d3-brush";
+import { brushX } from "d3-brush";
 import { scaleLinear, scaleUtc } from "d3-scale";
 import { select } from "d3-selection";
 import type { PlayerGame } from "../data/aggregate.ts";
@@ -40,6 +40,26 @@ export function brushOutcome(games: Pick<PlayerGame, "date">[], range: [Date, Da
   if (!range) return { window: null, clear: false };
   const window = snapWindow(games, range[0], range[1]);
   return { window, clear: window === null };
+}
+
+/**
+ * The brush's "end" listener: ignores programmatic moves (no sourceEvent), snaps the viewer's
+ * selection to games, clears a brush that covers none (`clear` moves it to null, which is itself
+ * programmatic), and reports the window. `invert` maps a pixel to a date.
+ */
+export function brushEndHandler(
+  games: Pick<PlayerGame, "date">[],
+  invert: (px: number) => Date,
+  clear: () => void,
+  onBrush: (window: DateWindow) => void,
+): (event: { sourceEvent?: unknown; selection: unknown }) => void {
+  return (event) => {
+    if (!event.sourceEvent) return; // programmatic moves (re-applying the window) are not the viewer's
+    const sel = event.selection as [number, number] | null;
+    const { window, clear: mustClear } = brushOutcome(games, sel && [invert(sel[0]), invert(sel[1])]);
+    if (mustClear) clear();
+    onBrush(window);
+  };
 }
 
 export function describeTimeline(games: PlayerGame[], window: DateWindow): string {
@@ -89,13 +109,15 @@ export function renderTimeline(svg: SVGSVGElement, games: PlayerGame[], { width,
       [M.left, M.top],
       [width - M.right, bottom],
     ])
-    .on("end", (event: D3BrushEvent<unknown>) => {
-      if (!event.sourceEvent) return; // programmatic moves (re-applying the window) are not the viewer's
-      const sel = event.selection as [number, number] | null;
-      const { window: snapped, clear } = brushOutcome(games, sel && [x.invert(sel[0]), x.invert(sel[1])]);
-      if (clear) brushG.call(brush.move, null); // programmatic, so this handler ignores it
-      onBrush(snapped);
-    });
+    .on(
+      "end",
+      brushEndHandler(
+        games,
+        (px) => x.invert(px),
+        () => brushG.call(brush.move, null),
+        onBrush,
+      ),
+    );
   const brushG = root.append("g");
   brushG.call(brush);
   brushG.select(".selection").style("fill", TOKENS.accent).style("fill-opacity", 0.2).style("stroke", TOKENS.accent);

@@ -9,15 +9,14 @@ import { Card } from "./Card.tsx";
 import { Dashboard } from "./Dashboard.tsx";
 import { MobileCollapse } from "./MobileCollapse.tsx";
 import { buildDashboard } from "@/lib/dashboard.ts";
-import { rollingLines, shootingLine, versusOpponents } from "@/lib/data/aggregate.ts";
+import { rollingLines, shootingLine } from "@/lib/data/aggregate.ts";
 import { fmtDate, fmtInt, fmtPct } from "@/lib/format.ts";
 import type { ExplorerData } from "@/lib/pageData.ts";
 import {
   GAME_PRESETS,
   PRESET_LABELS,
   presetGames,
-  shotsForGames,
-  visibleGames,
+  selectedView,
   withTypedDate,
   type DateWindow,
   type GamePreset,
@@ -64,11 +63,9 @@ export function PlayerExplorer({ data, subject }: { data: ExplorerData; subject:
       })
     : undefined;
 
-  const view = useMemo(() => (games ? visibleGames(games, selected, dateWindow) : null), [games, selected, dateWindow]);
-  const shots = useMemo(() => (view ? shotsForGames(data.shots, new Set(view.map((g) => g.game_id))) : data.shots), [view, data.shots]);
+  const { view, shots, versus } = useMemo(() => selectedView(data, selected, dateWindow), [data, selected, dateWindow]);
   const dashboard = useMemo(() => buildDashboard(shots, data.league), [shots, data.league]);
   const rolling = useMemo(() => ({ points: view ? rollingLines(view, n) : [], seasonFgPct: data.seasonFgPct, n }), [view, n, data.seasonFgPct]);
-  const versus = useMemo(() => (view ? { rows: versusOpponents(view), leagueFgPct: data.league.fgPct } : null), [view, data.league.fgPct]);
   const line = shootingLine(shots);
   const neutral = games ? games.filter((g) => g.venue === "neutral").length : 0;
   const empty = view !== null && view.length === 0;

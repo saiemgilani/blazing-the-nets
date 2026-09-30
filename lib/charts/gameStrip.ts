@@ -50,6 +50,15 @@ export function gameLabel(g: PlayerGame): string {
   return `${fmtDate(g.date)} ${where} ${g.opponent}${g.win === null ? "" : g.win ? ", win" : ", loss"}, ${g.makes} of ${g.attempts} FG`;
 }
 
+/** A cell's keyboard handler: Enter or Space toggles the game (Space would otherwise scroll the page). */
+export function stripKeydown(onToggle: (gameId: string) => void) {
+  return (event: Pick<KeyboardEvent, "key" | "preventDefault">, cell: Pick<StripCell, "game">) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    onToggle(cell.game.game_id);
+  };
+}
+
 export function describeGames(data: GameStripData, selected: ReadonlySet<string>): string {
   const n = data.games.filter((g) => selected.has(g.game_id)).length;
   return `${data.games.length} games in date order, ${n} selected; each game's FG% against his season FG% of ${fmtPct(data.seasonFgPct)}.`;
@@ -98,11 +107,7 @@ export function renderGameStrip(svg: SVGSVGElement, data: GameStripData, opts: G
   };
   rects
     .on("click", (_, c) => onToggle(c.game.game_id))
-    .on("keydown", (event: KeyboardEvent, c) => {
-      if (event.key !== "Enter" && event.key !== " ") return;
-      event.preventDefault(); // Space would scroll the page
-      onToggle(c.game.game_id);
-    })
+    .on("keydown", stripKeydown(onToggle))
     .on("pointerenter", (_, c) => show(c))
     .on("focus", function (_, c) {
       select(this).style("stroke", TOKENS.accent).style("stroke-width", 2);

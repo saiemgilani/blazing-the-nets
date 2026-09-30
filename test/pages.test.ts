@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { nextSeasonReady, parseSeason, probeNextSeason, type ShotGameRow } from "../lib/data/seasons.ts";
 import { versusOpponents } from "../lib/data/aggregate.ts";
 import { NETS_TEAM_ID, TEAMS } from "../lib/data/teams.ts";
-import { assemblePlayerPage, assembleTeamPage, mapLimit, playerRows, SEASON_INDEX_CONCURRENCY, seasonData } from "../lib/pageData.ts";
+import { assemblePlayerPage, assembleTeamPage, mapLimit, playerRows, SEASON_INDEX_CONCURRENCY, seasonData, seasonPlayerGames } from "../lib/pageData.ts";
 import { playerHref, seasonQuery, withParams } from "../lib/links.ts";
 import { internalPath, isInternalPath, isOgImagePath } from "../lib/routes.ts";
 import { LAST_KNOWN_SEASON } from "../lib/seasonRange.ts";
@@ -172,4 +172,21 @@ test("the season index reads at most two files at once, and keeps season order",
   assert.equal(peak, 2);
   assert.deepEqual(out, seasons.map((s) => s * 10));
   assert.deepEqual(await mapLimit([], 2, async () => 1), []);
+});
+
+test("seasonPlayerGames: every shooter mapped (name, latest team, dated games); a game the logs lack skips only its shooters", () => {
+  const all = seasonPlayerGames(data, logs);
+  assert.equal(all.length, data.players.length, "every shooter in the fixture has games");
+  for (const p of all) {
+    const season = data.players.find((q) => q.person_id === p.person_id);
+    assert.equal(p.name, season?.player_name);
+    assert.deepEqual([p.team_id, p.team], [NETS_TEAM_ID, "BKN"]);
+    assert.deepEqual(p.games.map((g) => g.date), p.games.map((g) => g.date).sort());
+    assert.equal(p.games.reduce((a, g) => a + g.attempts, 0), shots.filter((s) => s.person_id === p.person_id).length);
+  }
+  const dropped = logs[0].game_id;
+  const inDropped = new Set(shots.filter((s) => s.game_id === dropped).map((s) => s.person_id));
+  const partial = seasonPlayerGames(data, logs.filter((r) => r.game_id !== dropped));
+  assert.ok(inDropped.size > 0 && inDropped.size < all.length);
+  assert.deepEqual(partial.map((p) => p.person_id).sort(), all.map((p) => p.person_id).filter((id) => !inDropped.has(id)).sort(), "only the players who shot in that game drop out");
 });

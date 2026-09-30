@@ -45,6 +45,7 @@ try {
           // A brushed date window: reload, drag across the middle of the game timeline.
           await page.goto(base + path, { waitUntil: "networkidle" });
           const timeline = page.locator("svg[aria-label*='game timeline']");
+          await timeline.scrollIntoViewIfNeeded(); // mouse coordinates are viewport-relative
           const box = await timeline.boundingBox();
           if (box) {
             await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.4);

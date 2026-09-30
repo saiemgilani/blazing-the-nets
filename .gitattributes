@@ -1,0 +1,8 @@
+* text=auto eol=lf
+*.parquet binary
+*.png binary
+*.ico binary
+*.pdf binary
+*.jpg binary
+*.ai binary
+*.eps binary

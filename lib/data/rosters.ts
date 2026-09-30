@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { readPlayers } from "./players.ts";
 import { readParquet } from "./releases.ts";
 
 export const ROSTERS_TAG = "espn_nba_rosters";
@@ -42,13 +43,17 @@ export function normalizeName(name: string): string {
 /**
  * stats.nba.com person_id -> ESPN headshot URL. ESPN and stats.nba.com ids are different
  * namespaces: bridge by the crosswalk first, then by normalised full name when that name is
- * unique in the ESPN rows. Players matched by neither get no entry.
+ * unique both in the ESPN rows and among `seasonNames` (every NBA player name of the season;
+ * defaults to `players`). Players matched by neither get no entry.
  */
 export function bridgeHeadshots(
   players: { person_id: number; player_name: string }[],
   athletes: EspnAthleteRow[],
   crosswalk: CrosswalkRow[],
+  seasonNames: string[] = players.map((p) => p.player_name),
 ): Map<number, string> {
+  const nbaNameCount = new Map<string, number>();
+  for (const n of seasonNames) nbaNameCount.set(normalizeName(n), (nbaNameCount.get(normalizeName(n)) ?? 0) + 1);
   const href = new Map<string, string>();
   const byName = new Map<string, string | null>();
   for (const a of athletes) {
@@ -62,7 +67,9 @@ export function bridgeHeadshots(
   const out = new Map<number, string>();
   for (const p of players) {
     // person_id is an integer, so String() is exact (no "123.0").
-    const athleteId = viaCrosswalk.get(String(p.person_id)) ?? byName.get(normalizeName(p.player_name));
+    const name = normalizeName(p.player_name);
+    const byUniqueName = nbaNameCount.get(name) === 1 ? byName.get(name) : undefined;
+    const athleteId = viaCrosswalk.get(String(p.person_id)) ?? byUniqueName;
     const url = athleteId ? href.get(athleteId) : undefined;
     if (url) out.set(p.person_id, url);
   }
@@ -84,6 +91,9 @@ export async function readHeadshots(
     readParquet(PLAYER_CORE_TAG, `player_core_${season}.parquet`, EspnAthleteRow, optional),
     readParquet(CROSSWALK_TAG, `nba_player_crosswalk_${season}.parquet`, CrosswalkRow, optional),
   ]);
-  const athletes = core.length > 0 ? core : await readParquet(ROSTERS_TAG, `rosters_${season}.parquet`, EspnAthleteRow, optional);
-  return bridgeHeadshots(players, athletes, xw);
+  const [athletes, league] = await Promise.all([
+    core.length > 0 ? core : readParquet(ROSTERS_TAG, `rosters_${season}.parquet`, EspnAthleteRow, optional),
+    readPlayers(season),
+  ]);
+  return bridgeHeadshots(players, athletes, xw, league.map((p) => p.player_name));
 }

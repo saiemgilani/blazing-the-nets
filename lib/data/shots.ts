@@ -44,3 +44,26 @@ export function filterSeasonType(shots: Shot[], seasonType: SeasonType): Shot[] 
 export async function readShots(season: number, seasonType: SeasonType = "regular"): Promise<Shot[]> {
   return filterSeasonType(await readParquet(SHOTS_TAG, shotsAsset(season), ShotRow), seasonType);
 }
+
+export const GAME_LOGS_TAG = "nba_stats_player_game_logs";
+
+/**
+ * `nba_stats_player_game_logs/player_game_logs_<endYear>.parquet` is one row per team per game;
+ * only the date matters here. game_id order is NOT date order (NBA Cup group games carry low ids
+ * but are played in November), so anything per-game sorts by this date.
+ */
+export const GameDateRow = z.object({
+  game_id: z.string(),
+  game_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
+export type GameDateRow = z.output<typeof GameDateRow>;
+
+export function gameDateMap(rows: GameDateRow[]): Map<string, string> {
+  return new Map(rows.map((r) => [r.game_id, r.game_date]));
+}
+
+/** game_id -> "YYYY-MM-DD" for every game of the season (regular season and playoffs). */
+export async function readGameDates(season: number): Promise<Map<string, string>> {
+  return gameDateMap(await readParquet(GAME_LOGS_TAG, `player_game_logs_${season}.parquet`, GameDateRow));
+}

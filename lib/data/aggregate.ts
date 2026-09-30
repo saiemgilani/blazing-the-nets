@@ -31,12 +31,17 @@ export interface HexBin extends Split {
   zone: Zone;
 }
 
-/** d3-hexbin over the legacy frame; `radiusTenths` = 10 is a 1 ft hex. */
+/** Inside the sidelines and in front of the baseline; the release has a few impossible points (2001-02: x = -16398). */
+export function onCourt(s: Pick<Shot, "x_legacy" | "y_legacy">): boolean {
+  return Math.abs(s.x_legacy) <= COURT.halfWidth && s.y_legacy >= COURT.baselineY;
+}
+
+/** d3-hexbin over the legacy frame; `radiusTenths` = 10 is a 1 ft hex. Off-court coordinates are dropped. */
 export function hexbinShots(shots: Shot[], radiusTenths: number): HexBin[] {
   const bins = hexbin<Shot>()
     .x((s) => s.x_legacy)
     .y((s) => s.y_legacy)
-    .radius(radiusTenths)(shots);
+    .radius(radiusTenths)(shots.filter(onCourt));
   return bins.map((b) => {
     let distance = 0;
     const zones = new Map<Zone, number>();
@@ -69,14 +74,17 @@ export function hexesVsLeague(player: Shot[], league: Shot[], radiusTenths: numb
 }
 
 export interface DistanceBin extends Split {
-  /** Bin start in feet. */
+  /**
+   * First foot in the bin. The release's shot_distance is ROUNDED feet, so a 1-ft bin is centred
+   * on this value (it holds true distances in [d - 0.5, d + 0.5)).
+   */
   distance: number;
   /** Share of the attempts within `maxFt`. */
   share: number;
 }
 
 /**
- * FG% by `shot_distance` (whole feet) in `binFt` bins from 0 to `maxFt`; longer attempts are left
+ * FG% by `shot_distance` (rounded feet) in `binFt` bins from 0 to `maxFt`; longer attempts are left
  * out, as on the 2021 site. Run it on league shots for the league curve.
  */
 export function fgPctByDistance(shots: Shot[], binFt = 1, maxFt = 35): DistanceBin[] {
@@ -98,10 +106,13 @@ export interface DistanceVsLeague extends DistanceBin {
   diff: number | null;
 }
 
-/** Align a player's distance bins with the league's (same binFt/maxFt) and take the difference. */
+/** Pair a player's distance bins with the league's and take the difference; the bins must match exactly. */
 export function vsLeague(player: DistanceBin[], league: DistanceBin[]): DistanceVsLeague[] {
+  if (player.length !== league.length || player.some((b, i) => b.distance !== league[i].distance)) {
+    throw new Error("vsLeague: player and league bins differ (use the same binFt and maxFt)");
+  }
   return player.map((b, i) => {
-    const leagueFgPct = league[i]?.fgPct ?? null;
+    const leagueFgPct = league[i].fgPct;
     return { ...b, leagueFgPct, diff: b.fgPct !== null && leagueFgPct !== null ? b.fgPct - leagueFgPct : null };
   });
 }
@@ -114,16 +125,18 @@ export interface SideBin {
 }
 
 /**
- * Left / centre / right of the hoop by distance. Left is x < 0 (the left of the chart with the hoop
- * at the bottom, the 2021 site's convention); centre is within the rim's width, |x| <= 7.5.
+ * Left / centre / right of the hoop by distance. Left is x < -centreHalfWidth (the left of the
+ * chart with the hoop at the bottom), right is x > centreHalfWidth, centre is in between. The
+ * default 0 keeps the 2021 split (x < 0 left, x > 0 right); x == 0 lands in centre, where the 2021
+ * site dropped it. A wider band (e.g. 7.5, the rim) moves ~20% of attempts into centre.
  */
-export function statsBySide(shots: Shot[], binFt = 1, maxFt = 35): SideBin[] {
+export function statsBySide(shots: Shot[], binFt = 1, maxFt = 35, centreHalfWidth = 0): SideBin[] {
   const n = Math.floor(maxFt / binFt) + 1;
   const acc = Array.from({ length: n }, () => ({ left: [0, 0], centre: [0, 0], right: [0, 0] }));
   for (const s of shots) {
     if (s.shot_distance > maxFt) continue;
     const bin = acc[Math.floor(s.shot_distance / binFt)];
-    const side = Math.abs(s.x_legacy) <= COURT.rimRadius ? bin.centre : s.x_legacy < 0 ? bin.left : bin.right;
+    const side = s.x_legacy < -centreHalfWidth ? bin.left : s.x_legacy > centreHalfWidth ? bin.right : bin.centre;
     side[0] += 1;
     if (made(s)) side[1] += 1;
   }
@@ -174,12 +187,16 @@ export function statsByZone(shots: Shot[]): Record<Zone, Split> {
 
 export interface GamePoint extends Split {
   game_id: string;
+  game_date: string;
   /** The trailing `window` games ending at this one (fewer at the start of the season). */
   rolling: Split;
 }
 
-/** Per-game FG with a trailing N-game window, in game_id order (stats.nba.com ids run in schedule order). */
-export function rollingByGame(shots: Shot[], window: number): GamePoint[] {
+/**
+ * Per-game FG with a trailing N-game window, in date order (then game_id). game_id order is not
+ * date order, so dates come from `readGameDates`; a game without a date throws.
+ */
+export function rollingByGame(shots: Shot[], window: number, gameDates: ReadonlyMap<string, string>): GamePoint[] {
   const games = new Map<string, [number, number]>();
   for (const s of shots) {
     const g = games.get(s.game_id) ?? [0, 0];
@@ -187,14 +204,19 @@ export function rollingByGame(shots: Shot[], window: number): GamePoint[] {
     if (made(s)) g[1] += 1;
     games.set(s.game_id, g);
   }
-  const ordered = [...games].sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
-  return ordered.map(([game_id, [attempts, makes]], i) => {
+  const dated = [...games].map(([id, g]) => {
+    const date = gameDates.get(id);
+    if (date === undefined) throw new Error(`rollingByGame: no date for game ${id}`);
+    return [id, g, date] as const;
+  });
+  const ordered = dated.sort((a, b) => a[2].localeCompare(b[2]) || a[0].localeCompare(b[0]));
+  return ordered.map(([game_id, [attempts, makes], game_date], i) => {
     let wa = 0;
     let wm = 0;
     for (let j = Math.max(0, i - window + 1); j <= i; j++) {
       wa += ordered[j][1][0];
       wm += ordered[j][1][1];
     }
-    return { game_id, ...split(attempts, makes), rolling: split(wa, wm) };
+    return { game_id, game_date, ...split(attempts, makes), rolling: split(wa, wm) };
   });
 }

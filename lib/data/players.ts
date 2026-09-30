@@ -40,6 +40,12 @@ export interface PlayerSeason {
   attempts: number;
   makes: number;
   stats: PlayerStats | null;
+  /**
+   * "matching": `stats` cover the same games as attempts/makes. "all-teams": the player shot for
+   * more than one team this season and the row is scoped to one team, so `stats` are his season
+   * totals across teams (label them so) while attempts/makes are this team's only.
+   */
+  statsScope: "matching" | "all-teams";
 }
 
 /** One row per shooter, sorted by attempts (desc). Pass one team's shots for that team's roster. */
@@ -56,13 +62,17 @@ export function playerIndex(shots: Shot[]): PlayerSeason[] {
   return [...byPlayer]
     .map(([person_id, p]) => {
       const [team_id, [team_tricode]] = [...p.teams].reduce((a, b) => (b[1][1] > a[1][1] ? b : a));
-      return { person_id, player_name: p.name, team_id, team_tricode, attempts: p.attempts, makes: p.makes, stats: null };
+      const row: PlayerSeason = { person_id, player_name: p.name, team_id, team_tricode, attempts: p.attempts, makes: p.makes, stats: null, statsScope: "matching" };
+      return row;
     })
     .sort((a, b) => b.attempts - a.attempts || a.person_id - b.person_id);
 }
 
-/** Join regular-season advanced totals onto the index by stats.nba.com player id (both number). */
-export function withStats(players: PlayerSeason[], rows: PlayerStatsRow[]): PlayerSeason[] {
+/**
+ * Join regular-season advanced totals onto the index by stats.nba.com player id (both number).
+ * Ids in `allTeams` get statsScope "all-teams".
+ */
+export function withStats(players: PlayerSeason[], rows: PlayerStatsRow[], allTeams: ReadonlySet<number> = new Set()): PlayerSeason[] {
   const byId = new Map(
     rows
       .filter((r) => r.season_type === "regular-season" && r.measure_type === "advanced" && r.per_mode === "totals")
@@ -72,8 +82,25 @@ export function withStats(players: PlayerSeason[], rows: PlayerStatsRow[]): Play
     const r = byId.get(p.person_id);
     if (!r) return p;
     const { gp, min, fga, fg_pct, efg_pct, ts_pct, usg_pct, pie } = r;
-    return { ...p, player_name: r.player_name, stats: { gp, min, fga, fg_pct, efg_pct, ts_pct, usg_pct, pie } };
+    const statsScope = allTeams.has(p.person_id) ? "all-teams" : "matching";
+    return { ...p, player_name: r.player_name, stats: { gp, min, fga, fg_pct, efg_pct, ts_pct, usg_pct, pie }, statsScope };
   });
+}
+
+/**
+ * The season's shooters with stats, league-wide or for one team. For one team, a player who also
+ * shot for another team keeps his season stats but is marked statsScope "all-teams".
+ */
+export function seasonPlayers(shots: Shot[], stats: PlayerStatsRow[], teamId?: number): PlayerSeason[] {
+  if (teamId === undefined) return withStats(playerIndex(shots), stats);
+  const teamsByPlayer = new Map<number, Set<number>>();
+  for (const s of shots) {
+    const teams = teamsByPlayer.get(s.person_id) ?? new Set<number>();
+    teams.add(s.team_id);
+    teamsByPlayer.set(s.person_id, teams);
+  }
+  const traded = new Set([...teamsByPlayer].filter(([, teams]) => teams.size > 1).map(([id]) => id));
+  return withStats(playerIndex(shots.filter((s) => s.team_id === teamId)), stats, traded);
 }
 
 /** Regular-season shooters for a season (optionally one team), enriched with season stats. */
@@ -82,6 +109,5 @@ export async function readPlayers(season: number, teamId?: number): Promise<Play
     readShots(season, "regular"),
     readParquet(PLAYER_STATS_TAG, `player_season_stats_${season}.parquet`, PlayerStatsRow),
   ]);
-  const scoped = teamId === undefined ? shots : shots.filter((s) => s.team_id === teamId);
-  return withStats(playerIndex(scoped), stats);
+  return seasonPlayers(shots, stats, teamId);
 }

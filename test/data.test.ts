@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { playerIndex, withStats, type PlayerStatsRow } from "../lib/data/players.ts";
+import { playerIndex, seasonPlayers, withStats, type PlayerStatsRow } from "../lib/data/players.ts";
 import { memo, releaseUrl, REVALIDATE_SECONDS } from "../lib/data/releases.ts";
 import { bridgeHeadshots, normalizeName } from "../lib/data/rosters.ts";
 import { FIRST_SEASON, LAST_KNOWN_SEASON, seasonLabel, siteSeasons } from "../lib/data/seasons.ts";
@@ -102,6 +102,39 @@ test("withStats joins the regular-season advanced totals row by player id", () =
   assert.equal(withStats(playerIndex([{ ...shot(0, 0, 2, true), person_id: 2 }]), [row("advanced", 900)])[0].stats, null);
 });
 
+test("a traded player's team row keeps season stats but says they cover all his teams", () => {
+  // Mikal Bridges 2022-23 shape: 3 attempts for team 1 (Suns), 2 for team 2 (Nets); stats are season totals.
+  const bridges = (team_id: number, made: boolean) => ({ ...shot(0, 0, 2, made), person_id: 7, team_id, team_tricode: team_id === 1 ? "PHX" : "BKN" });
+  const stayer = { ...shot(0, 0, 2, true), person_id: 8, team_id: 2, team_tricode: "BKN" };
+  const shots = [bridges(1, true), bridges(1, true), bridges(1, false), bridges(2, true), bridges(2, false), stayer];
+  const row = (player_id: number, fga: number): PlayerStatsRow => ({
+    player_id,
+    player_name: `P${player_id}`,
+    season_type: "regular-season",
+    measure_type: "advanced",
+    per_mode: "totals",
+    gp: 80,
+    min: 30,
+    fga,
+    fg_pct: 0.5,
+    efg_pct: 0.5,
+    ts_pct: 0.5,
+    usg_pct: 0.2,
+    pie: 0.1,
+  });
+  const stats = [row(7, 5), row(8, 1)];
+
+  const nets = seasonPlayers(shots, stats, 2);
+  const b = nets.find((p) => p.person_id === 7);
+  assert.ok(b);
+  assert.deepEqual([b.attempts, b.stats?.fga, b.statsScope], [2, 5, "all-teams"]);
+  assert.equal(nets.find((p) => p.person_id === 8)?.statsScope, "matching");
+
+  const league = seasonPlayers(shots, stats);
+  const all = league.find((p) => p.person_id === 7);
+  assert.deepEqual([all?.attempts, all?.stats?.fga, all?.statsScope, all?.team_tricode], [5, 5, "matching", "PHX"]);
+});
+
 test("names fold case, accents, punctuation and suffixes", () => {
   assert.equal(normalizeName("Nikola Jokić"), "nikola jokic");
   assert.equal(normalizeName("Michael Porter Jr."), "michael porter");
@@ -127,5 +160,10 @@ test("headshots bridge by crosswalk first, then by a unique name", () => {
   assert.deepEqual([...out], [
     [1, "https://a.espncdn.com/10.png"],
     [2, "https://a.espncdn.com/20.png"],
+  ]);
+  // Two NBA players of the season share "Beta Two": no name match for either (the crosswalk still wins).
+  const seasonNames = ["Alpha One", "Beta Two Jr.", "Beta Two", "Same Name", "No Photo"];
+  assert.deepEqual([...bridgeHeadshots(players, athletes, [{ nba_player_id: "1", espn_athlete_id: "10" }], seasonNames)], [
+    [1, "https://a.espncdn.com/10.png"],
   ]);
 });

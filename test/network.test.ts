@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { fgPctByDistance, hexbinShots, statsByZone } from "../lib/data/aggregate.ts";
+import { fgPctByDistance, hexbinShots, rollingByGame, statsByZone } from "../lib/data/aggregate.ts";
 import { readPlayers } from "../lib/data/players.ts";
 import { openAsset, parseParquet } from "../lib/data/releases.ts";
 import { readHeadshots } from "../lib/data/rosters.ts";
 import { listSeasons } from "../lib/data/seasons.ts";
-import { ShotRow, filterSeasonType, shotsAsset, SHOTS_TAG } from "../lib/data/shots.ts";
+import { ShotRow, filterSeasonType, readGameDates, shotsAsset, SHOTS_TAG } from "../lib/data/shots.ts";
 import { NETS_TEAM_ID, readTeams } from "../lib/data/teams.ts";
 
 const skip = process.env.BN_NETWORK_TESTS === "1" ? false : "set BN_NETWORK_TESTS=1 to read the real release files";
@@ -45,6 +45,26 @@ test("real release files: shots 2026 -> Nets -> one player", { skip }, async (t)
   assert.ok(nets.length > 5000);
   assert.ok(nets.every((s) => s.team_tricode === "BKN"));
 
+  // Shots-derived totals must agree with the published season stats: this catches filter, dedup
+  // and scope bugs. Exact in 2016/2020/2022; at most one attempt off in 2024/2026.
+  const leaguePlayers = await readPlayers(2026);
+  let off = 0;
+  for (const p of leaguePlayers) {
+    const st = p.stats;
+    assert.ok(st && st.fga !== null && st.fg_pct !== null, `no stats for ${p.player_name}`);
+    const gap = Math.abs(p.attempts - st.fga);
+    assert.ok(gap <= 1, `${p.player_name}: ${p.attempts} attempts vs fga ${st.fga}`);
+    off += gap;
+    // fg_pct is published to 3 decimals; one extra attempt moves FG% by up to 1/fga.
+    const tolerance = gap === 0 ? 0.002 : 1 / st.fga + 0.0005;
+    assert.ok(Math.abs(p.makes / p.attempts - st.fg_pct) <= tolerance, `${p.player_name}: ${p.makes}/${p.attempts} vs ${st.fg_pct}`);
+  }
+  t.diagnostic(`season-stats parity: ${leaguePlayers.length} players, ${off} attempt(s) off in total`);
+
+  const dates = await readGameDates(2026);
+  assert.ok(new Set(all.map((s) => s.game_id)).size <= dates.size);
+  assert.ok(all.every((s) => dates.has(s.game_id)), "every shot game has a date");
+
   const teams = await readTeams(2026);
   assert.equal(teams.length, 30);
   assert.equal(teams.find((tm) => tm.team_id === NETS_TEAM_ID)?.tricode, "BKN");
@@ -79,4 +99,7 @@ test("real release files: shots 2026 -> Nets -> one player", { skip }, async (t)
       `zones ${Object.entries(zones).map(([z, v]) => `${z} ${v.makes}/${v.attempts}`).join(", ")}`,
   );
   assert.ok(median >= 215 && median <= 245, `corner |x| median ${median}`);
+  const games = rollingByGame(mine, 10, dates);
+  assert.equal(games.length, top.stats?.gp);
+  assert.deepEqual(games.map((g) => g.game_date), games.map((g) => g.game_date).sort());
 });

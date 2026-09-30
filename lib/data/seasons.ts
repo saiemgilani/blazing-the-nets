@@ -1,4 +1,4 @@
-import { memo, releaseUrl, REVALIDATE_SECONDS } from "./releases.ts";
+import { memo, releaseUrl, REVALIDATE_SECONDS, timedFetch } from "./releases.ts";
 import { SHOTS_TAG, shotsAsset } from "./shots.ts";
 
 /** First season the site lists (2015-16). The data layer reads any year the release has. */
@@ -16,7 +16,7 @@ export function siteSeasons(nextSeasonPublished: boolean): number[] {
 
 /** HEAD the next season's shots asset: 200 -> published, 404 -> not yet, anything else throws. */
 async function nextSeasonPublished(): Promise<boolean> {
-  const res = await fetch(releaseUrl(SHOTS_TAG, shotsAsset(LAST_KNOWN_SEASON + 1)), {
+  const res = await timedFetch(releaseUrl(SHOTS_TAG, shotsAsset(LAST_KNOWN_SEASON + 1)), {
     method: "HEAD",
     next: { revalidate: REVALIDATE_SECONDS },
   });

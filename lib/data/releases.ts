@@ -49,6 +49,14 @@ export function memo<T>(group: string, key: string, load: () => Promise<T>, now:
 
 const init = { next: { revalidate: REVALIDATE_SECONDS } } satisfies RequestInit;
 
+/** Per-request timeout. */
+export const FETCH_TIMEOUT_MS = 20_000;
+
+/** fetch with a fresh AbortSignal.timeout per call (a shared signal would expire for later calls). */
+export function timedFetch(input: string | URL | Request, options?: RequestInit): Promise<Response> {
+  return fetch(input, { ...options, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+}
+
 /**
  * A byte-range view of a release asset: one HEAD for the size (404 -> AssetMissingError), then
  * `Range` GETs for the footer and the column chunks actually read. The download URL redirects to
@@ -56,12 +64,12 @@ const init = { next: { revalidate: REVALIDATE_SECONDS } } satisfies RequestInit;
  */
 export async function openAsset(tag: string, asset: string): Promise<AsyncBuffer> {
   const url = releaseUrl(tag, asset);
-  const head = await fetch(url, { ...init, method: "HEAD" });
+  const head = await timedFetch(url, { ...init, method: "HEAD" });
   if (head.status === 404) throw new AssetMissingError(`${tag}/${asset}: not in the release`);
   if (!head.ok) throw new Error(`${tag}/${asset}: HEAD ${head.status}`);
   const byteLength = Number(head.headers.get("content-length"));
   if (!(byteLength > 0)) throw new Error(`${tag}/${asset}: no content-length`);
-  return asyncBufferFromUrl({ url, byteLength, requestInit: init });
+  return asyncBufferFromUrl({ url, byteLength, requestInit: init, fetch: timedFetch });
 }
 
 /**

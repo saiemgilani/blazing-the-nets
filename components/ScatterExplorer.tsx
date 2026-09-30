@@ -73,7 +73,7 @@ export function ScatterExplorer({ points, subject }: { points: ScatterPoint[]; s
       <ScatterChart points={points} x={x} y={y} faces={faces} filter={filter} resetKey={resetKey} title={`${subject}: ${SCATTER_INFO[y].label} against ${SCATTER_INFO[x].label}`} />
       <p className="text-sm text-muted">
         Players with 100+ FGA. <span className="text-accent">Nets</span> in orange with names, others in their team colours; dashed lines are
-        the league medians. Scroll or pinch to zoom, drag to pan. Season stats where the release has them, shots otherwise.
+        the league medians. Scroll the wheel or pinch to zoom; drag (two fingers on a touch screen) to pan. Season stats where the release has them, shots otherwise.
       </p>
     </div>
   );

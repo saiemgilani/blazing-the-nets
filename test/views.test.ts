@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { paddedDomain, scatterLayout } from "../lib/charts/scatterChart.ts";
+import { paddedDomain, scatterLayout, zoomFilter } from "../lib/charts/scatterChart.ts";
 import { lineOf, type PlayerGame } from "../lib/data/aggregate.ts";
 import { leaderBoards, leaderboard, minAttempts, minThrees, windowLine, type PlayerGames } from "../lib/data/leaders.ts";
 import type { PlayerSeason } from "../lib/data/players.ts";
@@ -142,4 +142,15 @@ test("roster table: click sorts (same column flips), j/k/h/l move and clamp, s s
   ];
   assert.deepEqual(sortRows(rows, "desc", (r) => r.v).map((r) => r.name), ["d", "b", "c", "a"]);
   assert.deepEqual(sortRows(rows, "asc", (r) => r.v).map((r) => r.name), ["b", "c", "d", "a"], "missing values stay last");
+});
+
+test("scatter zoom: one finger scrolls the page, two fingers zoom; mouse as d3's default", () => {
+  const touch = (n: number) => ({ type: "touchstart", touches: { length: n } }) as unknown as Event;
+  assert.equal(zoomFilter(touch(1)), false);
+  assert.equal(zoomFilter(touch(2)), true);
+  const mouse = (type: string, extra: Partial<MouseEvent> = {}) => ({ type, ctrlKey: false, button: 0, ...extra }) as unknown as Event;
+  assert.equal(zoomFilter(mouse("mousedown")), true);
+  assert.equal(zoomFilter(mouse("wheel", { ctrlKey: true })), true, "ctrl+wheel (trackpad pinch) zooms");
+  assert.equal(zoomFilter(mouse("mousedown", { ctrlKey: true })), false);
+  assert.equal(zoomFilter(mouse("mousedown", { button: 2 })), false);
 });

@@ -70,6 +70,17 @@ export function describeScatter(points: ScatterPoint[], x: ScatterMetric, y: Sca
   return `${visible.length} players with 100+ FGA, ${SCATTER_INFO[y].label} against ${SCATTER_INFO[x].label}; medians ${fmtMetric(x, medianX)} and ${fmtMetric(y, medianY)}. Nets: ${nets.join("; ")}.`;
 }
 
+/**
+ * d3-zoom's default filter, except that a touch gesture needs two fingers: a one-finger swipe on
+ * the plot scrolls the page instead of panning a chart that may not even be zoomed in. Mouse wheel
+ * and drag are unchanged.
+ */
+export function zoomFilter(event: Event): boolean {
+  if (event.type === "touchstart") return (event as TouchEvent).touches.length > 1;
+  const e = event as MouseEvent;
+  return (!e.ctrlKey || e.type === "wheel") && !e.button;
+}
+
 export function renderScatter(svg: SVGSVGElement, points: ScatterPoint[], opts: ScatterOptions): () => void {
   const { width: W, x: xm, y: ym, faces, canvas } = opts;
   const q = foldText(opts.filter.trim());
@@ -215,6 +226,7 @@ export function renderScatter(svg: SVGSVGElement, points: ScatterPoint[], opts: 
   };
 
   const zoomer = zoom<SVGRectElement, unknown>()
+    .filter(zoomFilter)
     .scaleExtent([1, 20])
     .extent([
       [M.left, M.top],
@@ -245,6 +257,8 @@ export function renderScatter(svg: SVGSVGElement, points: ScatterPoint[], opts: 
     })
     .on("pointerleave", () => tip.hide());
   overlay.call(zoomer);
+  // One finger scrolls the page (the filter leaves it alone); two fingers pinch and pan the plot.
+  select(svg).style("touch-action", "pan-y");
   draw(opts.transform);
   overlay.call(zoomer.transform, opts.transform);
 

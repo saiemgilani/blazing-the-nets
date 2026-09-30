@@ -1,5 +1,5 @@
 import { buildDashboard, leagueContext, type DashboardData, type LeagueContext } from "./dashboard.ts";
-import { lineOf, playerGames, shootingLine, statsByZone, versusOpponents, type OpponentLine, type PlayerGame, type ShootingLine } from "./data/aggregate.ts";
+import { lineOf, playerGames, shootingLine, statsByZone, type PlayerGame, type ShootingLine } from "./data/aggregate.ts";
 import { teamGames } from "./data/games.ts";
 import { leaderBoards, type Boards, type PlayerGames } from "./data/leaders.ts";
 import { scatterPoints } from "./data/scatter.ts";
@@ -100,8 +100,6 @@ export interface PlayerPageData {
   dashboard: DashboardData;
   explorer: ExplorerData;
   ranks: RankSummary[];
-  /** By opponent, most attempts first; null when the per-game views are unavailable. */
-  versus: OpponentLine[] | null;
 }
 
 /** Date-ordered games, or null (logged) when a game is missing from the logs, so the page still renders. */
@@ -137,7 +135,6 @@ export function assemblePlayerPage(data: SeasonData, personId: number, headshot:
     dashboard: buildDashboard(shots, data.league),
     explorer: { shots, games, league: data.league, seasonFgPct: line.fgPct },
     ranks: rankSummaries(data.players, personId),
-    versus: games ? versusOpponents(games) : null,
   };
 }
 

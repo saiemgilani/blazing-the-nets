@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { nextSeasonReady, parseSeason, probeNextSeason, type ShotGameRow } from "../lib/data/seasons.ts";
+import { versusOpponents } from "../lib/data/aggregate.ts";
 import { NETS_TEAM_ID, TEAMS } from "../lib/data/teams.ts";
 import { assemblePlayerPage, assembleTeamPage, playerRows, seasonData } from "../lib/pageData.ts";
 import { playerHref, seasonQuery, withParams } from "../lib/links.ts";
@@ -81,12 +82,11 @@ test("player page data for the fixture's busiest player", () => {
   assert.deepEqual(Object.keys(ex.shots[0]).sort(), ["game_id", "shot_distance", "shot_result", "shot_value", "team_id", "x_legacy", "y_legacy"]);
   assert.ok(ex.games && ex.games.length > 0);
   assert.equal(ex.games.reduce((a, g) => a + g.attempts, 0), mine.length);
-  assert.ok(page.versus && page.versus.reduce((a, r) => a + r.attempts, 0) === mine.length);
+  assert.equal(versusOpponents(ex.games).reduce((a, r) => a + r.attempts, 0), mine.length, "the browser's versus bars cover every shot");
   assert.equal(page.ranks.length, 5);
   // Without game logs (or with a game missing from them) the per-game views are unavailable, not a 500.
   const noLogs = assemblePlayerPage(data, top.person_id, null, null);
   assert.equal(noLogs?.explorer.games, null);
-  assert.equal(noLogs?.versus, null);
   const partial = assemblePlayerPage(data, top.person_id, null, logs.slice(2));
   assert.equal(partial?.explorer.games, null);
 });

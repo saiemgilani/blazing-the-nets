@@ -15,8 +15,7 @@ export const PRESET_LABELS: Record<GamePreset, string> = {
   losses: "Losses",
 };
 
-/** Game ids a preset selects. */
-/** Home and Away leave out neutral-site games; the page says how many there are. */
+/** Game ids a preset selects. Home and Away leave out neutral-site games; the page says how many there are. */
 export function presetGames(games: Pick<PlayerGame, "game_id" | "venue" | "win">[], preset: GamePreset): string[] {
   const keep: Record<GamePreset, (g: Pick<PlayerGame, "venue" | "win">) => boolean> = {
     all: () => true,
@@ -31,6 +30,18 @@ export function presetGames(games: Pick<PlayerGame, "game_id" | "venue" | "win">
 
 /** An inclusive [first, last] "YYYY-MM-DD" window, or null for the whole season. */
 export type DateWindow = [string, string] | null;
+
+/**
+ * The window two date fields describe (the keyboard route to the brush): an empty field is that end
+ * of the season, reversed dates are swapped, and a window covering the whole season is no window.
+ */
+export function windowFromInputs(from: string, to: string, first: string, last: string): DateWindow {
+  const valid = (d: string) => /^\d{4}-\d{2}-\d{2}$/.test(d);
+  const a = valid(from) ? from : first;
+  const b = valid(to) ? to : last;
+  const [lo, hi] = a <= b ? [a, b] : [b, a];
+  return lo <= first && hi >= last ? null : [lo, hi];
+}
 
 export function inWindow(date: string, window: DateWindow): boolean {
   return window === null || (date >= window[0] && date <= window[1]);

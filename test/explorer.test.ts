@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { stripLayout } from "../lib/charts/gameStrip.ts";
+import { gameLabel, stripLayout } from "../lib/charts/gameStrip.ts";
 import { rollingDomain } from "../lib/charts/rollingChart.ts";
-import { snapWindow } from "../lib/charts/timeline.ts";
+import { brushOutcome, snapWindow } from "../lib/charts/timeline.ts";
 import { lineOf, playerGames } from "../lib/data/aggregate.ts";
 import { teamGames } from "../lib/data/games.ts";
 import type { PlayerSeason, PlayerStats } from "../lib/data/players.ts";
 import { metricValue, RANK_MIN_FG3A, rankSummaries, rankTable } from "../lib/data/ranks.ts";
-import { GAME_PRESETS, inWindow, presetGames, shotsForGames, visibleGames } from "../lib/selection.ts";
+import { GAME_PRESETS, inWindow, presetGames, shotsForGames, visibleGames, windowFromInputs } from "../lib/selection.ts";
 import { fixtureGameLogs, fixtureShots } from "./helpers.ts";
 
 const shots = await fixtureShots();
@@ -86,12 +86,13 @@ test("selection presets: home, away and neutral split the season; neutral is in 
   assert.deepEqual(presetGames(mixed, "wins"), ["a", "c"]);
 });
 
-test("selection presets on real games: home/away and wins/losses partition every game", () => {
+test("selection presets on real games: home/away/neutral and wins/losses partition every game", () => {
   assert.equal(games.length, 24);
   const ids = (p: (typeof GAME_PRESETS)[number]) => new Set(presetGames(games, p));
   assert.equal(ids("all").size, 24);
   assert.equal(ids("none").size, 0);
-  assert.equal(ids("home").size + ids("away").size, 24);
+  const neutral = games.filter((g) => g.venue === "neutral").length;
+  assert.equal(ids("home").size + ids("away").size + neutral, 24, "neutral-site games are in neither Home nor Away");
   assert.equal(ids("wins").size + ids("losses").size, games.filter((g) => g.win !== null).length);
   assert.ok([...ids("home")].every((id) => !ids("away").has(id)));
   assert.deepEqual([ids("home").size, ids("wins").size], [13, 6]);
@@ -110,10 +111,27 @@ test("the date window is inclusive and combines with the selection", () => {
   assert.equal(shotsForGames(shots, new Set()).length, 0);
 });
 
-test("a brush snaps to the first and last game inside it, or clears", () => {
+test("a brush snaps to the first and last game inside it; one over no game is cleared, not left drawn", () => {
   const d = (s: string) => new Date(`${s}T00:00:00Z`);
   assert.deepEqual(snapWindow(games, d(games[2].date), d(games[5].date)), [games[2].date, games[5].date]);
   assert.equal(snapWindow(games, d("2020-01-01"), d("2020-02-01")), null);
+  assert.deepEqual(brushOutcome(games, [d(games[2].date), d(games[5].date)]), { window: [games[2].date, games[5].date], clear: false });
+  const gap = [{ date: "2026-02-12" }, { date: "2026-02-19" }]; // the All-Star break
+  assert.deepEqual(brushOutcome(gap, [d("2026-02-13"), d("2026-02-18")]), { window: null, clear: true });
+  assert.deepEqual(brushOutcome(gap, null), { window: null, clear: false }, "a click that clears the brush");
+});
+
+test("the date fields: empty ends are the season's, reversed dates swap, the whole season is no window", () => {
+  const [first, last] = ["2025-10-22", "2026-04-12"];
+  assert.deepEqual(windowFromInputs("2025-12-01", "", first, last), ["2025-12-01", last]);
+  assert.deepEqual(windowFromInputs("", "2026-01-31", first, last), [first, "2026-01-31"]);
+  assert.deepEqual(windowFromInputs("2026-02-01", "2025-12-01", first, last), ["2025-12-01", "2026-02-01"]);
+  assert.equal(windowFromInputs("", "", first, last), null);
+  assert.equal(windowFromInputs(first, last, first, last), null);
+  assert.equal(windowFromInputs("2025-10-01", "2026-05-01", first, last), null, "wider than the season");
+  assert.deepEqual(windowFromInputs("12/01/2025", "2026-01-31", first, last), [first, "2026-01-31"], "a malformed date is an empty field");
+  const g = games[0];
+  assert.ok(gameLabel(g).endsWith(` ${g.opponent}${g.win === null ? "" : g.win ? ", win" : ", loss"}, ${g.makes} of ${g.attempts} FG`), gameLabel(g));
 });
 
 test("the game strip wraps by width; the rolling axis pads and clamps", () => {

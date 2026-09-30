@@ -28,5 +28,5 @@ export function GameStrip({
         : undefined,
     [data, selected, dateWindow, onToggle, width, scheme, isFirstDraw],
   );
-  return <ChartSvg ref={ref} viewBox={GAME_STRIP_VIEWBOX} title={title} desc={describeGames(data, selected)} />;
+  return <ChartSvg ref={ref} viewBox={GAME_STRIP_VIEWBOX} title={title} desc={describeGames(data, selected)} role="group" />;
 }

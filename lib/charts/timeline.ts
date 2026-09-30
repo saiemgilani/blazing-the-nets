@@ -31,6 +31,17 @@ export function snapWindow(games: Pick<PlayerGame, "date">[], from: Date, to: Da
   return inside.length ? [inside[0].date, inside[inside.length - 1].date] : null;
 }
 
+/**
+ * What a finished brush gesture means: the snapped window, and whether the drawn brush must be
+ * cleared. A brush over dates with no game (the All-Star break) snaps to no window; left drawn it
+ * would look applied while every game still counts.
+ */
+export function brushOutcome(games: Pick<PlayerGame, "date">[], range: [Date, Date] | null): { window: DateWindow; clear: boolean } {
+  if (!range) return { window: null, clear: false };
+  const window = snapWindow(games, range[0], range[1]);
+  return { window, clear: window === null };
+}
+
 export function describeTimeline(games: PlayerGame[], window: DateWindow): string {
   if (!games.length) return "No games.";
   const span = `${fmtDate(games[0].date)} to ${fmtDate(games[games.length - 1].date)}`;
@@ -81,9 +92,12 @@ export function renderTimeline(svg: SVGSVGElement, games: PlayerGame[], { width,
     .on("end", (event: D3BrushEvent<unknown>) => {
       if (!event.sourceEvent) return; // programmatic moves (re-applying the window) are not the viewer's
       const sel = event.selection as [number, number] | null;
-      onBrush(sel ? snapWindow(games, x.invert(sel[0]), x.invert(sel[1])) : null);
+      const { window: snapped, clear } = brushOutcome(games, sel && [x.invert(sel[0]), x.invert(sel[1])]);
+      if (clear) brushG.call(brush.move, null); // programmatic, so this handler ignores it
+      onBrush(snapped);
     });
-  const brushG = root.append("g").call(brush);
+  const brushG = root.append("g");
+  brushG.call(brush);
   brushG.select(".selection").style("fill", TOKENS.accent).style("fill-opacity", 0.2).style("stroke", TOKENS.accent);
   if (window) brushG.call(brush.move, [x(time(window[0])) - 3, x(time(window[1])) + 3]);
 

@@ -45,7 +45,8 @@ const button = (active: boolean) =>
  * j/k and h/l to move the focus, / to search, per game or totals, and a headshot column.
  */
 export function RosterTable({ rows, seasonQuery }: { rows: RosterRow[]; seasonQuery: string }) {
-  const [state, dispatch] = useReducer(tableReducer, { sortKey: "fga", sortDir: "desc", row: 0, col: KEYS.indexOf("fga") });
+  // row -1: no row is outlined until the first j/k (the first j lands on row 0).
+  const [state, dispatch] = useReducer(tableReducer, { sortKey: "fga", sortDir: "desc", row: -1, col: KEYS.indexOf("fga") });
   const [mode, setMode] = useState<Mode>("totals");
   const [photos, setPhotos] = useState<Photos>("photos");
   const [filter, setFilter] = useState("");

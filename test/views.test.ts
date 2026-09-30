@@ -5,7 +5,7 @@ import { lineOf, type PlayerGame } from "../lib/data/aggregate.ts";
 import { leaderBoards, leaderboard, minAttempts, minThrees, windowLine, type PlayerGames } from "../lib/data/leaders.ts";
 import type { PlayerSeason } from "../lib/data/players.ts";
 import { scatterPoints, scatterValues } from "../lib/data/scatter.ts";
-import { median, parseMetric, pointValue, randomPair, SCATTER_DEFAULT, SCATTER_METRICS, smallHeadshot } from "../lib/scatterMetrics.ts";
+import { median, parseMetric, pointValue, randomPair, SCATTER_DEFAULT, SCATTER_METRICS, smallHeadshot, surname } from "../lib/scatterMetrics.ts";
 import { hotkey, sortRows, tableReducer, type TableState } from "../lib/table.ts";
 
 test("scatter metrics: only whitelisted names parse; defaults are PTS/g and eFG%", () => {
@@ -20,6 +20,7 @@ test("scatter metrics: only whitelisted names parse; defaults are PTS/g and eFG%
   assert.equal(median([3, 1, 2]), 2);
   assert.equal(median([4, 1, 2, 3]), 2.5);
   assert.equal(median([]), null);
+  assert.deepEqual(["Michael Porter Jr.", "Gary Payton II", "Marvin Bagley III", "Day'Ron Sharpe", "Nene", "Tim Hardaway Jr"].map(surname), ["Porter", "Payton", "Bagley", "Sharpe", "Nene", "Hardaway"]);
   assert.equal(
     smallHeadshot("https://a.espncdn.com/i/headshots/nba/players/full/4278104.png"),
     "https://a.espncdn.com/combiner/i?img=%2Fi%2Fheadshots%2Fnba%2Fplayers%2Ffull%2F4278104.png&w=96&h=70",
@@ -128,6 +129,8 @@ test("roster table: click sorts (same column flips), j/k/h/l move and clamp, s s
   assert.deepEqual([s.row, s.col], [1, 1]);
   s = move(s, "s");
   assert.deepEqual([s.sortKey, s.sortDir], ["min", "desc"]);
+  assert.equal(move({ ...start, row: -1 }, "j").row, 0, "from no focus, j lands on the first row");
+  assert.equal(move({ ...start, row: -1 }, "k").row, 0);
   assert.equal(hotkey("/", 3, keys), "search");
   assert.equal(hotkey("x", 3, keys), null);
   assert.deepEqual(tableReducer(start, { type: "move", dRow: 1, dCol: 0, rows: 0, cols: 4 }).row, 0, "no rows: stays at 0");

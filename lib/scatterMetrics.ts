@@ -41,6 +41,13 @@ export function pointValue(p: Pick<ScatterPoint, "v">, metric: ScatterMetric): n
   return p.v[SCATTER_METRICS.indexOf(metric)] ?? null;
 }
 
+/** The name a dot is labelled with: the surname, skipping generational suffixes ("Porter", not "Jr."). */
+export function surname(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  while (parts.length > 1 && /^(jr|sr|ii|iii|iv|v)\.?$/i.test(parts[parts.length - 1])) parts.pop();
+  return parts[parts.length - 1];
+}
+
 export function median(values: number[]): number | null {
   if (!values.length) return null;
   const s = [...values].sort((a, b) => a - b);

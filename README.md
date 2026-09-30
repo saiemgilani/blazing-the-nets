@@ -88,6 +88,9 @@ season-stats file exists; until then the previous season stays current.
   reads the release files over the network).
 - `npm test` reads committed fixtures only; `BN_NETWORK_TESTS=1 npm test` also reads the real
   release files.
+- Against a running build (`npm run build && npm start`): `node scripts/probe-routes.mjs` checks
+  status codes and `node scripts/probe-ui.mjs` checks keyboard, touch and brush wiring in a
+  browser (both exit 1 on a failed check; set `BASE_URL` if not `http://localhost:3000`).
 - `npm run screenshots` takes full-page screenshots (390 and 1280 px, light and dark) into the
   git-ignored `img/visual/`. It needs a running build (`npm run build && npm start`, then set
   `BASE_URL` if it is not `http://localhost:3000`) and a Playwright browser

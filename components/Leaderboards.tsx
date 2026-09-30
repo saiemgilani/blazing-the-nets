@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { LEADER_LABELS, LEADER_METRICS, LEADER_WINDOWS, minAttempts, minThrees, type Boards, type LeaderMetric, type LeaderRow, type LeaderWindow } from "@/lib/data/leaders.ts";
+import { ACTIVE_DAYS, LEADER_LABELS, LEADER_METRICS, LEADER_WINDOWS, minAttempts, minThrees, type Boards, type LeaderMetric, type LeaderRow, type LeaderWindow } from "@/lib/data/leaders.ts";
 import { fmtDate, fmtInt, fmtPct, fmtPts } from "@/lib/format.ts";
 import { playerHref } from "@/lib/links.ts";
 
@@ -30,6 +30,8 @@ export function Leaderboards({ boards, netsTeamId, seasonQuery }: { boards: Boar
         <Link href={playerHref(r.person_id, seasonQuery)} prefetch={false} className="underline decoration-muted/60 underline-offset-2 hover:decoration-accent">
           {r.name}
         </Link>
+        {/* The Window column is hidden on phones; its end date still shows how current the row is. */}
+        <span className="block text-xs font-normal text-muted md:hidden">last game {fmtDate(r.window.to)}</span>
       </td>
       <td className={`${W.team} py-1.5 pr-3 text-muted`}>{r.team}</td>
       <td className={`${W.value} py-1.5 pr-3 text-right tabular-nums`}>{value(r)}</td>
@@ -52,18 +54,18 @@ export function Leaderboards({ boards, netsTeamId, seasonQuery }: { boards: Boar
           </button>
         ))}
       </div>
-      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Board">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Board">
         {LEADER_METRICS.map((m) => (
-          <button key={m} type="button" role="tab" aria-selected={metric === m} onClick={() => setMetric(m)} className={button(metric === m)}>
+          <button key={m} type="button" aria-pressed={metric === m} onClick={() => setMetric(m)} className={button(metric === m)}>
             {LEADER_LABELS[m]}
           </button>
         ))}
       </div>
       <p className="text-sm text-muted">
-        Each player&apos;s latest {n} games (a full {n}-game window), {minAttempts(n)}+ FGA in it
+        Each player&apos;s last {n} games with a field-goal attempt (a full {n}-game window), {minAttempts(n)}+ FGA in it
         {metric === "fg3Pct" ? ` and ${minThrees(n)}+ threes` : ""}.{" "}
         {metric === "improved" ? "Most improved: window eFG% minus his season eFG%. " : ""}
-        {board.eligible} players qualify.
+        Active shooters only: last game within {ACTIVE_DAYS} days of the season&apos;s latest game. {board.eligible} players qualify.
       </p>
       <div className="overflow-x-auto">
         <table className="w-full table-fixed text-sm">
@@ -73,13 +75,13 @@ export function Leaderboards({ boards, netsTeamId, seasonQuery }: { boards: Boar
               <th scope="col" className="py-2 pr-3 font-normal">Player</th>
               <th scope="col" className={`${W.team} py-2 pr-3 font-normal`}>Team</th>
               <th scope="col" className={`${W.value} py-2 pr-3 text-right font-normal`}>{metric === "improved" ? "eFG% gain" : LEADER_LABELS[metric]}</th>
-              <th scope="col" className={`${W.window} hidden py-2 pr-3 text-right font-normal sm:table-cell`}>Window</th>
+              <th scope="col" className={`${W.window} hidden py-2 pr-3 text-right font-normal sm:table-cell`}>{metric === "fg3Pct" ? "3P" : "FG"}</th>
               {metric === "improved" && (
                 <th scope="col" className={`${W.season} hidden py-2 pr-3 text-right font-normal sm:table-cell`}>
                   Season eFG%
                 </th>
               )}
-              <th scope="col" className={`${W.games} hidden py-2 text-right font-normal md:table-cell`}>Games</th>
+              <th scope="col" className={`${W.games} hidden py-2 text-right font-normal md:table-cell`}>Window</th>
             </tr>
           </thead>
           <tbody>

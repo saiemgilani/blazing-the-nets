@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { paddedDomain, scatterLayout, zoomFilter } from "../lib/charts/scatterChart.ts";
 import { lineOf, type PlayerGame } from "../lib/data/aggregate.ts";
-import { leaderBoards, leaderboard, minAttempts, minThrees, windowLine, type PlayerGames } from "../lib/data/leaders.ts";
+import { ACTIVE_DAYS, activeSince, leaderBoards, leaderboard, minAttempts, minThrees, topRows, windowLine, type PlayerGames } from "../lib/data/leaders.ts";
 import type { PlayerSeason } from "../lib/data/players.ts";
 import { scatterPoints, scatterValues } from "../lib/data/scatter.ts";
 import { median, parseMetric, pointValue, randomPair, SCATTER_DEFAULT, SCATTER_METRICS, smallHeadshot, surname } from "../lib/scatterMetrics.ts";
@@ -75,7 +75,15 @@ const game = (attempts: number, makes: number, fg3a = 0, fg3m = 0): PlayerGame =
     ...lineOf({ attempts, makes, fg3a, fg3m }),
   };
 };
-const player = (id: number, games: PlayerGame[]): PlayerGames => ({ person_id: id, name: `P${id}`, team_id: id === 1 ? 1610612751 : 1, team: id === 1 ? "BKN" : "AAA", games });
+/** A player whose i-th game is on day i of the season (so everyone's latest games line up). */
+const dayOf = (i: number) => new Date(Date.UTC(2025, 10, 1 + i)).toISOString().slice(0, 10);
+const player = (id: number, games: PlayerGame[], team_id = id === 1 ? 1610612751 : 1): PlayerGames => ({
+  person_id: id,
+  name: `P${id}`,
+  team_id,
+  team: team_id === 1610612751 ? "BKN" : "AAA",
+  games: games.map((g, i) => ({ ...g, date: dayOf(i) })),
+});
 
 test("leaderboards: a full N-game window, 5N attempts and 3N threes to qualify", () => {
   assert.deepEqual([minAttempts(5), minThrees(5), minAttempts(20)], [25, 15, 100]);
@@ -155,4 +163,28 @@ test("scatter zoom: one finger scrolls the page, two fingers zoom; mouse as d3's
   assert.equal(zoomFilter(mouse("wheel", { ctrlKey: true })), true, "ctrl+wheel (trackpad pinch) zooms");
   assert.equal(zoomFilter(mouse("mousedown", { ctrlKey: true })), false);
   assert.equal(zoomFilter(mouse("mousedown", { button: 2 })), false);
+});
+
+test("leaderboards: active shooters only, ties kept whole at the cut, the Nets below the top rows", () => {
+  // Everyone plays 30 games on days 0..29; "gone" stopped on day 10 and "edge" on day 15 (14 days before 29).
+  const full = (id: number, games: number, makes: number, team?: number) => player(id, Array.from({ length: games }, () => game(10, makes)), team);
+  const gone = full(2, 11, 9);
+  const edge = full(3, 16, 8);
+  const players = [full(1, 30, 4, 1), gone, edge, full(4, 30, 5), full(5, 30, 5), full(6, 30, 3, 1610612751), full(7, 30, 2, 1610612751)];
+  assert.equal(activeSince(players), dayOf(29 - ACTIVE_DAYS));
+  assert.equal(activeSince([]), null);
+  const ids = (rows: { person_id: number }[]) => rows.map((r) => r.person_id);
+  assert.ok(ids(leaderboard(players, 5, "fgPct")).includes(2), "without a cutoff the inactive shooter ranks first");
+  const board = leaderboard(players, 5, "fgPct", activeSince(players));
+  assert.ok(!ids(board).includes(2), "a window that ended more than 14 days before the latest game is dropped");
+  assert.ok(ids(board).includes(3), "exactly 14 days before is still active");
+  // Ranks: 3 (80%), then 4 and 5 tied at 50%, then 1, 6, 7.
+  assert.deepEqual(board.map((r) => r.rank), [1, 2, 2, 4, 5, 6]);
+  assert.deepEqual(ids(topRows(board, 2)), [3, 4, 5], "a tie straddling the cut is kept whole");
+  assert.deepEqual(ids(topRows(board, 3)), [3, 4, 5]);
+  assert.deepEqual(topRows([], 15), []);
+  const boards = leaderBoards(players, 1610612751, 2);
+  assert.deepEqual(ids(boards[5].fgPct.rows), [3, 4, 5]);
+  assert.deepEqual(ids(boards[5].fgPct.also), [6, 7], "the Nets ranked below the top rows, in rank order");
+  assert.equal(boards[5].fgPct.eligible, 6);
 });

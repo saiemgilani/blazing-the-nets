@@ -19,6 +19,22 @@ export const LEADER_LABELS: Record<LeaderMetric, string> = {
 export const minAttempts = (n: number) => 5 * n;
 export const minThrees = (n: number) => 3 * n;
 
+/** Active shooters only (R-BN-27): a window ending more than this many days before the season's latest game is dropped. */
+export const ACTIVE_DAYS = 14;
+
+/** The earliest window end that still counts as active: the season's latest game minus ACTIVE_DAYS. */
+export function activeSince(players: PlayerGames[]): string | null {
+  let latest = "";
+  for (const p of players) {
+    const d = p.games[p.games.length - 1]?.date;
+    if (d && d > latest) latest = d;
+  }
+  if (!latest) return null;
+  const t = new Date(`${latest}T00:00:00Z`);
+  t.setUTCDate(t.getUTCDate() - ACTIVE_DAYS);
+  return t.toISOString().slice(0, 10);
+}
+
 export interface PlayerGames {
   person_id: number;
   name: string;
@@ -34,7 +50,7 @@ export interface WindowLine extends FieldGoals {
   to: string;
 }
 
-/** The player's last `n` games (fewer if he played fewer), pooled. */
+/** The player's last `n` games with a field-goal attempt (fewer if he has fewer), pooled. */
 export function windowLine(games: PlayerGame[], n: number): WindowLine | null {
   const last = games.slice(-n);
   if (!last.length) return null;
@@ -63,15 +79,17 @@ export interface LeaderRow {
 }
 
 /**
- * One board: eligible players ranked on `metric` over their last `n` games (competition ranking:
- * ties share a rank). A full window is required (n games played) so a 5-game rookie is not
- * compared with a 20-game window.
+ * One board: eligible players ranked on `metric` over their last `n` games with a field-goal
+ * attempt (competition ranking: ties share a rank). A full window is required (n such games) so a
+ * 5-game rookie is not compared with a 20-game window; with `since`, a window that ended before
+ * that date (an inactive shooter) is left out.
  */
-export function leaderboard(players: PlayerGames[], n: number, metric: LeaderMetric): LeaderRow[] {
+export function leaderboard(players: PlayerGames[], n: number, metric: LeaderMetric, since: string | null = null): LeaderRow[] {
   const rows: Omit<LeaderRow, "rank">[] = [];
   for (const p of players) {
     const w = windowLine(p.games, n);
     if (!w || w.games < n || w.attempts < minAttempts(n)) continue;
+    if (since !== null && w.to < since) continue;
     const line = lineOf(w);
     let value: number | null;
     let seasonEfg: number | null = null;
@@ -101,14 +119,23 @@ export interface Board {
 
 export type Boards = Record<LeaderWindow, Record<LeaderMetric, Board>>;
 
-/** Every window x metric board, top `top` rows each, plus the highlighted team's other rows. */
+/** The first `top` rows, extended to the end of a tie group that straddles the cut. */
+export function topRows(ranked: LeaderRow[], top: number): LeaderRow[] {
+  let end = Math.min(top, ranked.length);
+  while (end > 0 && end < ranked.length && ranked[end].rank === ranked[end - 1].rank) end++;
+  return ranked.slice(0, end);
+}
+
+/** Every window x metric board of active shooters, top `top` rows each (ties kept whole), plus the highlighted team's other rows. */
 export function leaderBoards(players: PlayerGames[], highlightTeamId: number, top = 15): Boards {
+  const since = activeSince(players);
   const out = {} as Boards;
   for (const n of LEADER_WINDOWS) {
     out[n] = {} as Record<LeaderMetric, Board>;
     for (const metric of LEADER_METRICS) {
-      const all = leaderboard(players, n, metric);
-      out[n][metric] = { rows: all.slice(0, top), also: all.slice(top).filter((r) => r.team_id === highlightTeamId), eligible: all.length };
+      const all = leaderboard(players, n, metric, since);
+      const rows = topRows(all, top);
+      out[n][metric] = { rows, also: all.slice(rows.length).filter((r) => r.team_id === highlightTeamId), eligible: all.length };
     }
   }
   return out;

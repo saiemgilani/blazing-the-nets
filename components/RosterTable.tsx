@@ -59,27 +59,46 @@ export function RosterTable({ rows, seasonQuery }: { rows: RosterRow[]; seasonQu
     return sortRows(kept, state.sortDir, (r) => column.value(r, mode));
   }, [rows, filter, state.sortKey, state.sortDir, mode]);
 
+  // The cursor row's player link is the table's one tab stop (roving tabindex); j/k move real focus
+  // along the links, so Enter opens the player and screen readers hear the name.
+  const cursor = Math.min(Math.max(state.row, 0), shown.length - 1);
+
+  useEffect(() => {
+    // The filter shrank the list under the cursor: clamp it (a move of zero clamps).
+    if (state.row > shown.length - 1) dispatch({ type: "move", dRow: 0, dCol: 0, rows: shown.length, cols: KEYS.length });
+  }, [state.row, shown.length]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
+      const target = e.target instanceof HTMLElement ? e.target : null;
+      const inTable = !!target && !!table.current?.contains(target);
       if (target && ["INPUT", "SELECT", "TEXTAREA"].includes(target.tagName)) {
         if (e.key === "Escape") target.blur();
         return;
       }
+      // Keys typed on a button or on a link outside the table are that control's, not hotkeys.
+      if (target && (target.tagName === "BUTTON" || (target.tagName === "A" && !inTable))) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const action = hotkey(e.key, shown.length, KEYS);
       if (!action) return;
       e.preventDefault();
-      if (action === "search") search.current?.focus();
-      else dispatch(action);
+      if (action === "search") return search.current?.focus();
+      if (action.type !== "move") return dispatch(action);
+      // Move from the focused row if there is one (a re-sort moves it), else from the cursor.
+      const focused = inTable ? Number(target?.closest("tr")?.dataset.row ?? NaN) : NaN;
+      const move = { ...action, from: Number.isNaN(focused) ? state.row : focused };
+      dispatch(move);
+      if (move.dRow !== 0) {
+        // Rows do not reorder on a move, so the next row's link is already in the DOM.
+        const next = tableReducer(state, move).row;
+        const link = table.current?.querySelector<HTMLAnchorElement>(`tr[data-row="${next}"] a`);
+        link?.focus({ preventScroll: true });
+        link?.scrollIntoView({ block: "nearest" });
+      }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [shown.length]);
-
-  useEffect(() => {
-    table.current?.querySelector(`[data-row="${state.row}"]`)?.scrollIntoView({ block: "nearest" });
-  }, [state.row]);
+  }, [shown.length, state]);
 
   return (
     <div className="space-y-3">
@@ -110,13 +129,13 @@ export function RosterTable({ rows, seasonQuery }: { rows: RosterRow[]; seasonQu
             </button>
           ))}
         </div>
-        <span className="hidden text-xs md:inline">Keys: j/k rows, h/l columns, s sort, / search</span>
+        <span className="hidden text-xs md:inline">Keys: j/k rows, Enter opens, h/l columns, s sort, / search</span>
       </div>
       <div className="overflow-x-auto">
         <table ref={table} className="w-full min-w-[56rem] text-xs tabular-nums">
           <thead className="text-muted">
             <tr>
-              <th scope="colgroup" colSpan={photos === "none" ? 1 : 2} />
+              <td colSpan={photos === "none" ? 1 : 2} />
               {GROUPS.map((g) => (
                 <th key={g} scope="colgroup" colSpan={COLUMNS.filter((c) => c.group === g).length} className="border-b border-line px-1 pb-1 text-center font-normal">
                   {g}
@@ -150,14 +169,19 @@ export function RosterTable({ rows, seasonQuery }: { rows: RosterRow[]; seasonQu
           </thead>
           <tbody>
             {shown.map((r, i) => (
-              <tr key={r.person_id} data-row={i} className={`border-b border-line/60 ${state.row === i ? "bg-surface outline outline-1 outline-accent" : ""}`}>
+              <tr key={r.person_id} data-row={i} className="border-b border-line/60 focus-within:bg-surface focus-within:outline focus-within:outline-1 focus-within:outline-accent">
                 {photos !== "none" && (
                   <td className="py-1 pr-1">
                     <Headshot src={photos === "photos" ? r.headshot : null} name={r.name} size={36} decorative />
                   </td>
                 )}
                 <th scope="row" className="py-1 pr-2 text-left font-normal">
-                  <Link href={playerHref(r.person_id, seasonQuery)} prefetch={false} className="underline decoration-muted/60 underline-offset-2 hover:decoration-accent">
+                  <Link
+                    href={playerHref(r.person_id, seasonQuery)}
+                    prefetch={false}
+                    tabIndex={i === cursor ? 0 : -1}
+                    className="underline decoration-muted/60 underline-offset-2 hover:decoration-accent focus:outline-none"
+                  >
                     {r.name}
                   </Link>
                   {r.acrossTeams && (

@@ -12,7 +12,8 @@ export interface TableState {
 
 export type TableAction =
   | { type: "sort"; key: string }
-  | { type: "move"; dRow: number; dCol: number; rows: number; cols: number }
+  /** `from`: the row to move from when it is not the stored cursor (the focused row after a re-sort). */
+  | { type: "move"; dRow: number; dCol: number; rows: number; cols: number; from?: number }
   | { type: "sortFocused"; keys: string[] };
 
 export function tableReducer(state: TableState, action: TableAction): TableState {
@@ -24,7 +25,7 @@ export function tableReducer(state: TableState, action: TableAction): TableState
         : { ...state, sortKey: action.key, sortDir: "desc" };
     case "move": {
       const clamp = (v: number, n: number) => Math.max(0, Math.min(Math.max(n - 1, 0), v));
-      return { ...state, row: clamp(state.row + action.dRow, action.rows), col: clamp(state.col + action.dCol, action.cols) };
+      return { ...state, row: clamp((action.from ?? state.row) + action.dRow, action.rows), col: clamp(state.col + action.dCol, action.cols) };
     }
     case "sortFocused": {
       const key = action.keys[state.col];

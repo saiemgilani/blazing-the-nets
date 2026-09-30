@@ -131,6 +131,8 @@ test("roster table: click sorts (same column flips), j/k/h/l move and clamp, s s
   assert.deepEqual([s.sortKey, s.sortDir], ["min", "desc"]);
   assert.equal(move({ ...start, row: -1 }, "j").row, 0, "from no focus, j lands on the first row");
   assert.equal(move({ ...start, row: -1 }, "k").row, 0);
+  assert.equal(tableReducer({ ...start, row: 0 }, { type: "move", dRow: 1, dCol: 0, rows: 5, cols: 4, from: 3 }).row, 4, "moves from the focused row, not the stored cursor");
+  assert.equal(tableReducer({ ...start, row: 9 }, { type: "move", dRow: 0, dCol: 0, rows: 1, cols: 4 }).row, 0, "a zero move clamps a cursor the filter left behind");
   assert.equal(hotkey("/", 3, keys), "search");
   assert.equal(hotkey("x", 3, keys), null);
   assert.deepEqual(tableReducer(start, { type: "move", dRow: 1, dCol: 0, rows: 0, cols: 4 }).row, 0, "no rows: stays at 0");

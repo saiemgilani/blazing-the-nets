@@ -1,7 +1,7 @@
 // Visual check: full-page screenshots at 390/768/1280 px in light and dark.
 //   BASE_URL=http://localhost:3000 PAGE_PATH="/players/1629008?season=2026" node scripts/screenshots.mjs
 // Uses Playwright's bundled Chromium; PW_CHANNEL=msedge (or chrome) uses an installed browser instead.
-// Output: img/visual/<name>-<width>-<scheme>.png (git-ignored), plus one hover shot of the hex chart.
+// Output: img/visual/<name>-<width>-<scheme>.png (git-ignored), a hex hover shot, and the Zones view at 390/1280.
 import { mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
@@ -31,6 +31,11 @@ try {
         const busiest = await hex.locator("g > g:nth-of-type(2) > path").last().boundingBox();
         if (busiest) await page.mouse.move(busiest.x + busiest.width / 2, busiest.y + busiest.height / 2);
         await hex.screenshot({ path: `${outDir}${name}-hover-${colorScheme}.png` });
+      }
+      if (width !== 768) {
+        await page.getByRole("button", { name: "Zones" }).click();
+        await page.mouse.move(0, 0);
+        await page.locator("svg").first().screenshot({ path: `${outDir}${name}-zones-${width}-${colorScheme}.png` });
       }
       console.log(`${file}${errors.length ? `  ERRORS: ${errors.join(" | ")}` : ""}`);
       await context.close();

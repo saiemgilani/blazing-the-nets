@@ -15,11 +15,22 @@ export const TOKENS = {
   accent: "var(--accent)",
 } as const;
 
+/**
+ * Charts render at their measured pixel width (viewBox = CSS pixels), so this is the on-screen
+ * text size at every breakpoint.
+ */
+export const FONT_PX = 11;
+/** Average advance of an 11 px sans character, for wrapping without measuring. */
+const CHAR_PX = 6.2;
+
 /** FG% minus league FG% saturates at +/-15 points. */
 export const DIFF_DOMAIN = 0.15;
 
-// ponytail: one place to flip the palette. RdBu reversed = above league red, below league blue.
-// The 2021 site ran the other way: red below league, green above (public/hex-shotchart.png).
+/** The colour key in words; every diff legend prints it. */
+export const DIFF_WORDS = "red: above league · blue: below";
+
+// ponytail: one place to flip the palette. RdBu reversed = above league red, below league blue
+// (colour-blind safe; the 2021 site's red-below / green-above scale was not).
 const diffScale = scaleDiverging<string>((t) => interpolateRdBu(1 - t))
   .domain([-DIFF_DOMAIN, 0, DIFF_DOMAIN])
   .clamp(true);
@@ -44,8 +55,44 @@ let nextId = 0;
 /** Unique ids for gradient defs; charts only render in the browser, so no SSR id clash. */
 export const uniqueId = (prefix: string) => `${prefix}-${++nextId}`;
 
-/** Horizontal FG%-vs-league legend: a gradient bar with -15 / 0 / +15 ticks and a caption. */
-export function drawDiffLegend(g: G, x: number, y: number, width: number): void {
+/** Greedy word wrap to `maxWidth` pixels at FONT_PX. */
+export function wrapText(text: string, maxWidth: number): string[] {
+  const perLine = Math.max(8, Math.floor(maxWidth / CHAR_PX));
+  const lines: string[] = [];
+  let line = "";
+  for (const word of text.split(" ")) {
+    if (line && line.length + 1 + word.length > perLine) {
+      lines.push(line);
+      line = word;
+    } else line = line ? `${line} ${word}` : word;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+const LINE_H = 15;
+
+/** Wrapped, muted text lines starting at (x, y); returns the height used. */
+export function drawNotes(g: G, x: number, y: number, maxWidth: number, notes: string[], anchor: "start" | "middle" = "start"): number {
+  const lines = notes.flatMap((n) => wrapText(n, maxWidth));
+  g.selectAll(null)
+    .data(lines)
+    .join("text")
+    .attr("x", x)
+    .attr("y", (_, i) => y + FONT_PX + i * LINE_H)
+    .attr("text-anchor", anchor)
+    .style("font-size", `${FONT_PX}px`)
+    .style("fill", TOKENS.muted)
+    .text((d) => d);
+  return lines.length * LINE_H;
+}
+
+/**
+ * Horizontal FG%-vs-league legend: gradient bar, -15 / 0 / +15 ticks, the key in words and any
+ * extra notes. Returns the height used.
+ */
+export function drawDiffLegend(g: G, x: number, y: number, maxWidth: number, notes: string[] = []): number {
+  const width = Math.min(maxWidth, 240);
   const id = uniqueId("bn-diff");
   const grad = g.append("defs").append("linearGradient").attr("id", id);
   grad
@@ -55,30 +102,24 @@ export function drawDiffLegend(g: G, x: number, y: number, width: number): void 
     .attr("offset", (t) => `${t * 100}%`)
     .attr("stop-color", (t) => diffColor((t * 2 - 1) * DIFF_DOMAIN));
   g.append("rect").attr("x", x).attr("y", y).attr("width", width).attr("height", 8).attr("rx", 2).style("fill", `url(#${id})`);
-  g.selectAll("text.tick")
+  g.selectAll(null)
     .data([-DIFF_DOMAIN, 0, DIFF_DOMAIN])
     .join("text")
-    .attr("class", "tick")
     .attr("x", (d) => x + ((d + DIFF_DOMAIN) / (2 * DIFF_DOMAIN)) * width)
-    .attr("y", y + 20)
-    .attr("text-anchor", "middle")
-    .style("font-size", "10px")
+    .attr("y", y + 8 + FONT_PX + 2)
+    .attr("text-anchor", (d) => (d < 0 ? "start" : d > 0 ? "end" : "middle"))
+    .style("font-size", `${FONT_PX}px`)
     .style("fill", TOKENS.muted)
     .text((d) => (d === 0 ? "0" : fmtPts(d)));
-  g.append("text")
-    .attr("x", x + width / 2)
-    .attr("y", y + 33)
-    .attr("text-anchor", "middle")
-    .style("font-size", "10px")
-    .style("fill", TOKENS.muted)
-    .text("FG% vs league (points)");
+  const used = 8 + FONT_PX + 6;
+  return used + drawNotes(g, x, y + used, maxWidth, ["FG% vs league (points)", DIFF_WORDS, ...notes]);
 }
 
 /** An in-SVG tooltip: a surface-coloured box of text lines, kept inside `width` x `height`. */
 export function tooltip(parent: G, width: number, height: number) {
   const g = parent.append("g").attr("pointer-events", "none").style("display", "none");
   const box = g.append("rect").attr("rx", 4).style("fill", TOKENS.surface).style("stroke", TOKENS.line);
-  const text = g.append("text").style("font-size", "11px").style("fill", TOKENS.fg);
+  const text = g.append("text").style("font-size", `${FONT_PX}px`).style("fill", TOKENS.fg);
   return {
     show(x: number, y: number, lines: string[]) {
       g.style("display", null);
@@ -94,7 +135,7 @@ export function tooltip(parent: G, width: number, height: number) {
       const w = bb.width + 16;
       const h = bb.height + 10;
       box.attr("width", w).attr("height", h);
-      const tx = x + 12 + w > width ? x - 12 - w : x + 12;
+      const tx = Math.max(0, x + 12 + w > width ? x - 12 - w : x + 12);
       const ty = Math.min(Math.max(0, y - h - 8), height - h);
       g.attr("transform", `translate(${tx},${ty})`);
     },
@@ -102,4 +143,9 @@ export function tooltip(parent: G, width: number, height: number) {
       g.style("display", "none");
     },
   };
+}
+
+/** Point the <svg> at the pixel box the chart was laid out in. */
+export function setViewBox(svg: SVGSVGElement, width: number, height: number): void {
+  svg.setAttribute("viewBox", `0 0 ${width} ${Math.ceil(height)}`);
 }

@@ -1,3 +1,5 @@
+import type { Zone } from "./aggregate.ts";
+
 /**
  * NBA half court in the legacy shot frame (`x_legacy`/`y_legacy`): tenths of a foot, hoop centre
  * at the origin, y growing toward half court, x in [-250, 250]. This module is the ONLY place
@@ -119,4 +121,52 @@ export function zoneLines(v: Viewport): CourtLine[] {
     ),
   }));
   return [...courtLines(v).filter((l) => keep.has(l.name)), ...breaks];
+}
+
+export interface ZoneArea {
+  zone: Zone;
+  /** Filled SVG path in pixels; paint and mid-range have holes, so fill them with fill-rule evenodd. */
+  d: string;
+  /** Where the zone's label goes, in pixels. */
+  label: Point;
+  /** Corner strips are narrow: set their label vertically. */
+  vertical: boolean;
+}
+
+/** The six `zoneOf` zones as fillable areas, cut off at the viewport top. */
+export function zoneAreas(v: Viewport): ZoneArea[] {
+  const { halfWidth: w, baselineY: base, laneHalfWidth: lane, freeThrowY: ft, threeCornerX: cx } = COURT;
+  const b = THREE_BREAK_Y;
+  const cornerAngle = Math.atan2(b, cx);
+  const rim = arc(0, 0, COURT.restrictedRadius, 0, 2 * Math.PI, 48);
+  const paint = [
+    { x: -lane, y: base },
+    { x: -lane, y: ft },
+    { x: lane, y: ft },
+    { x: lane, y: base },
+  ];
+  const insideThree = [{ x: -cx, y: base }, ...arc(0, 0, COURT.threeRadius, Math.PI - cornerAngle, cornerAngle, 64), { x: cx, y: base }];
+  const corner = (side: number) => [
+    { x: side * w, y: base },
+    { x: side * w, y: b },
+    { x: side * cx, y: b },
+    { x: side * cx, y: base },
+  ];
+  const aboveBreak = [
+    { x: -w, y: b },
+    { x: -w, y: v.top },
+    { x: w, y: v.top },
+    { x: w, y: b },
+    ...arc(0, 0, COURT.threeRadius, cornerAngle, Math.PI - cornerAngle, 64),
+  ];
+  const at = (x: number, y: number) => toSvg({ x, y }, v);
+  const cornerLabelX = (w + cx) / 2;
+  return [
+    { zone: "restricted_area", d: path(rim, v, true), label: at(0, 8), vertical: false },
+    { zone: "paint", d: path(paint, v, true) + path(rim, v, true), label: at(0, 95), vertical: false },
+    { zone: "mid_range", d: path(insideThree, v, true) + path(paint, v, true), label: at(0, 185), vertical: false },
+    { zone: "corner_3_left", d: path(corner(-1), v, true), label: at(-cornerLabelX, 20), vertical: true },
+    { zone: "corner_3_right", d: path(corner(1), v, true), label: at(cornerLabelX, 20), vertical: true },
+    { zone: "above_break_3", d: path(aboveBreak, v, true), label: at(0, 285), vertical: false },
+  ];
 }

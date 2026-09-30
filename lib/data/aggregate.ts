@@ -56,6 +56,21 @@ export function hexbinShots(shots: Shot[], radiusTenths: number): HexBin[] {
   });
 }
 
+/**
+ * League attempts behind a hex's league FG% before it falls back to the zone, and the prior
+ * (in attempts) that colours shrink toward the league rate with. One number for both.
+ */
+export const LEAGUE_PRIOR_ATTEMPTS = 25;
+
+/**
+ * FG% above/below the league rate L, shrunk toward L by a k-attempt prior:
+ * (makes + k*L) / (attempts + k) - L. A 1-for-1 hex reads near 0; 20-for-20 reads strongly hot.
+ * For colour only: tooltips and labels show the raw numbers.
+ */
+export function shrunkDiff(makes: number, attempts: number, league: number, k: number = LEAGUE_PRIOR_ATTEMPTS): number {
+  return (makes + k * league) / (attempts + k) - league;
+}
+
 export interface HexVsLeague extends HexBin {
   leagueFgPct: number | null;
 }
@@ -64,7 +79,7 @@ export interface HexVsLeague extends HexBin {
  * Player hexes with the league FG% of the same hex: the same radius gives the same centres. A hex
  * the league took fewer than `minLeague` shots from falls back to the league FG% of its zone.
  */
-export function hexesVsLeague(player: Shot[], league: Shot[], radiusTenths: number, minLeague = 25): HexVsLeague[] {
+export function hexesVsLeague(player: Shot[], league: Shot[], radiusTenths: number, minLeague = LEAGUE_PRIOR_ATTEMPTS): HexVsLeague[] {
   const leagueHexes = new Map(hexbinShots(league, radiusTenths).map((h) => [`${h.x},${h.y}`, h]));
   const zones = statsByZone(league);
   return hexbinShots(player, radiusTenths).map((h) => {

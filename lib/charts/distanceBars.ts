@@ -2,7 +2,8 @@ import { max } from "d3-array";
 import { scaleBand, scaleLinear } from "d3-scale";
 import { select } from "d3-selection";
 import type { DistanceBin } from "../data/aggregate.ts";
-import { fmtPct, motionMs, tooltip, TOKENS } from "./theme.ts";
+import { DEFAULT_WIDTH } from "./court.ts";
+import { fmtPct, FONT_PX, motionMs, setViewBox, tooltip, TOKENS } from "./theme.ts";
 
 export type BarMetric = "share" | "fgPct";
 
@@ -13,8 +14,11 @@ export interface DistanceBarsData {
   binFt: number;
 }
 
-export const DISTANCE_BARS_VIEWBOX = { width: 500, height: 250 };
-const M = { top: 24, right: 8, bottom: 34, left: 38 };
+const H = 250;
+const M = { top: 26, right: 8, bottom: 38, left: 40 };
+const CHAR_PX = 6.2;
+
+export const DISTANCE_BARS_VIEWBOX = { width: DEFAULT_WIDTH, height: H };
 
 export interface Bar {
   who: "player" | "league";
@@ -27,37 +31,40 @@ export interface Bar {
 
 export interface BarGroup {
   label: string;
+  /** Whether this group's label is printed (every n-th, so labels never collide). */
+  showLabel: boolean;
   x: number;
   width: number;
   bars: [Bar, Bar];
   player: DistanceBin;
-  league: DistanceBin | undefined;
+  league: DistanceBin;
 }
 
-const valueOf = (b: DistanceBin | undefined, metric: BarMetric) => (b === undefined ? null : metric === "share" ? b.share : b.fgPct);
+const valueOf = (b: DistanceBin, metric: BarMetric) => (metric === "share" ? b.share : b.fgPct);
 
 /** Grouped player/league bars per distance bin; FG% runs 0-100%, shares 0 to the largest share. */
-export function barLayout(data: DistanceBarsData, metric: BarMetric): { groups: BarGroup[]; yMax: number } {
-  const { width: W, height: H } = DISTANCE_BARS_VIEWBOX;
-  const yMax =
-    metric === "fgPct" ? 1 : (max([...data.player, ...data.league], (b) => b.share) ?? 0) * 1.1 || 0.1;
+export function barLayout(data: DistanceBarsData, metric: BarMetric, width: number = DEFAULT_WIDTH): { groups: BarGroup[]; yMax: number } {
+  if (data.player.length !== data.league.length) throw new Error("barLayout: player and league bins differ");
+  const yMax = metric === "fgPct" ? 1 : (max([...data.player, ...data.league], (b) => b.share) ?? 0) * 1.1 || 0.1;
   const x = scaleBand<number>()
     .domain(data.player.map((_, i) => i))
-    .range([M.left, W - M.right])
+    .range([M.left, width - M.right])
     .paddingInner(0.2);
   const inner = scaleBand<"player" | "league">().domain(["player", "league"]).range([0, x.bandwidth()]).padding(0.05);
   const y = scaleLinear().domain([0, yMax]).range([H - M.bottom, M.top]).clamp(true);
+  const label = (lo: number) => (data.binFt === 1 ? `${lo}` : `${lo}-${lo + data.binFt - 1}`);
+  const longest = Math.max(...data.player.map((b) => label(b.distance).length));
+  const every = Math.max(1, Math.ceil((longest * CHAR_PX + 8) / x.step()));
   const groups = data.player.map((player, i): BarGroup => {
     const league = data.league[i];
-    const bar = (who: "player" | "league", b: DistanceBin | undefined): Bar => {
+    const bar = (who: "player" | "league", b: DistanceBin): Bar => {
       const value = valueOf(b, metric);
       const top = y(value ?? 0);
       return { who, x: (x(i) ?? 0) + (inner(who) ?? 0), width: inner.bandwidth(), y: top, height: H - M.bottom - top, value };
     };
-    const lo = player.distance;
-    const hi = lo + data.binFt - 1;
     return {
-      label: data.binFt === 1 ? `${lo}` : `${lo}-${hi}`,
+      label: label(player.distance),
+      showLabel: i % every === 0,
       x: x(i) ?? 0,
       width: x.bandwidth(),
       bars: [bar("player", player), bar("league", league)],
@@ -68,13 +75,12 @@ export function barLayout(data: DistanceBarsData, metric: BarMetric): { groups: 
   return { groups, yMax };
 }
 
-export function renderDistanceBars(svg: SVGSVGElement, data: DistanceBarsData, opts: { metric: BarMetric }): () => void {
-  const { width: W, height: H } = DISTANCE_BARS_VIEWBOX;
+export function renderDistanceBars(svg: SVGSVGElement, data: DistanceBarsData, { metric, width: W }: { metric: BarMetric; width: number }): () => void {
   const root = select(svg).append("g");
-  const { groups, yMax } = barLayout(data, opts.metric);
+  const { groups, yMax } = barLayout(data, metric, W);
   const y = scaleLinear().domain([0, yMax]).range([H - M.bottom, M.top]);
 
-  const axes = root.append("g").style("font-size", "10px").style("fill", TOKENS.muted);
+  const axes = root.append("g").style("font-size", `${FONT_PX}px`).style("fill", TOKENS.muted);
   const ticks = y.ticks(4);
   axes
     .selectAll("line")
@@ -91,16 +97,16 @@ export function renderDistanceBars(svg: SVGSVGElement, data: DistanceBarsData, o
     .join("text")
     .attr("class", "y")
     .attr("x", M.left - 6)
-    .attr("y", (d) => y(d) + 3)
+    .attr("y", (d) => y(d) + 4)
     .attr("text-anchor", "end")
     .text((d) => `${Math.round(d * 100)}%`);
   axes
     .selectAll("text.x")
-    .data(groups.filter((_, i) => i % 2 === 0))
+    .data(groups.filter((g) => g.showLabel))
     .join("text")
     .attr("class", "x")
     .attr("x", (g) => g.x + g.width / 2)
-    .attr("y", H - M.bottom + 13)
+    .attr("y", H - M.bottom + FONT_PX + 4)
     .attr("text-anchor", "middle")
     .text((g) => g.label);
   axes
@@ -110,10 +116,17 @@ export function renderDistanceBars(svg: SVGSVGElement, data: DistanceBarsData, o
     .attr("text-anchor", "middle")
     .text("shot distance (ft)");
 
-  const legend = root.append("g").attr("transform", `translate(${W - M.right - 130},8)`).style("font-size", "10px");
+  const legend = root.append("g").attr("transform", `translate(${W - M.right - 132},10)`).style("font-size", `${FONT_PX}px`);
   (["player", "league"] as const).forEach((who, i) => {
-    legend.append("rect").attr("x", i * 66).attr("y", -7).attr("width", 9).attr("height", 9).style("fill", who === "player" ? TOKENS.accent : TOKENS.muted);
-    legend.append("text").attr("x", i * 66 + 13).attr("y", 1).style("fill", TOKENS.muted).text(who === "player" ? "Player" : "League");
+    legend
+      .append("rect")
+      .attr("x", i * 68)
+      .attr("y", -8)
+      .attr("width", 10)
+      .attr("height", 10)
+      .style("fill", who === "player" ? TOKENS.accent : TOKENS.muted)
+      .style("fill-opacity", who === "player" ? 1 : 0.55);
+    legend.append("text").attr("x", i * 68 + 14).attr("y", 1).style("fill", TOKENS.muted).text(who === "player" ? "Player" : "League");
   });
 
   const ms = motionMs(400);
@@ -142,16 +155,13 @@ export function renderDistanceBars(svg: SVGSVGElement, data: DistanceBarsData, o
     .attr("height", H - M.top - M.bottom)
     .style("fill", "transparent")
     .on("pointerenter", (_, g) => {
-      const line = (who: string, b: DistanceBin | undefined) =>
-        b === undefined
-          ? `${who}: n/a`
-          : opts.metric === "share"
-            ? `${who}: ${fmtPct(b.share)} of shots (${b.attempts})`
-            : `${who}: ${fmtPct(b.fgPct)} (${b.makes}/${b.attempts})`;
-      tip.show(g.x + g.width / 2, M.top + 30, [`${g.label} ft`, line("Player", g.player), line("League", g.league)]);
+      const line = (who: string, b: DistanceBin) =>
+        metric === "share" ? `${who}: ${fmtPct(b.share)} of shots (${b.attempts})` : `${who}: ${fmtPct(b.fgPct)} (${b.makes}/${b.attempts})`;
+      tip.show(g.x + g.width / 2, M.top + 40, [`${g.label} ft`, line("Player", g.player), line("League", g.league)]);
     })
     .on("pointerleave", () => tip.hide());
 
+  setViewBox(svg, W, H);
   return () => {
     bars.interrupt();
     root.remove();

@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { fgPctByDistance, hexesVsLeague, statsBySide, vsLeague } from "../lib/data/aggregate.ts";
-import { THREE_BREAK_Y, toSvgLength, zoneLines } from "../lib/data/court.ts";
+import { fgPctByDistance, hexesVsLeague, LEAGUE_PRIOR_ATTEMPTS, shrunkDiff, statsBySide, vsLeague, ZONES } from "../lib/data/aggregate.ts";
+import { THREE_BREAK_Y, toSvgLength, zoneAreas, zoneLines } from "../lib/data/court.ts";
 import { courtViewport } from "../lib/charts/court.ts";
 import { barLayout, DISTANCE_BARS_VIEWBOX } from "../lib/charts/distanceBars.ts";
-import { layoutHexes } from "../lib/charts/hexShotChart.ts";
-import { kernelSmooth, MIN_SUPPORT, signaturePoints } from "../lib/charts/shootingSignature.ts";
+import { colourDiff, layoutHexes } from "../lib/charts/hexShotChart.ts";
+import { kernelSmooth, ribbonEnd, RIBBON_MIN_ATTEMPTS, signaturePoints } from "../lib/charts/shootingSignature.ts";
 import { sideLayout } from "../lib/charts/sideChart.ts";
-import { diffColor, DIFF_DOMAIN, TOKENS } from "../lib/charts/theme.ts";
+import { diffColor, DIFF_DOMAIN, TOKENS, wrapText } from "../lib/charts/theme.ts";
 import { fixtureShots } from "./helpers.ts";
 
 const league = await fixtureShots();
@@ -28,6 +28,18 @@ test("diff colours: hot red, cold blue, near-white at 0, clamped, muted without 
   assert.ok(rgb(diffColor(0)).every((ch) => ch > 230), `0 should be near white: ${diffColor(0)}`);
   assert.equal(diffColor(0.4), diffColor(DIFF_DOMAIN));
   assert.equal(diffColor(null), TOKENS.muted);
+});
+
+test("colours shrink toward the league with a 25-attempt prior: 1/1 reads near 0, 20/20 strongly red", () => {
+  assert.equal(LEAGUE_PRIOR_ATTEMPTS, 25);
+  const one = colourDiff(1, 1, 0.6);
+  assert.ok(one !== null && Math.abs(one) < 0.02, `1/1 at a 60% hex: ${one}`);
+  assert.ok(rgb(diffColor(one)).every((ch) => ch > 200), `1/1 is near white: ${diffColor(one)}`);
+  const twenty = colourDiff(20, 20, 0.45);
+  assert.ok(twenty !== null && twenty > DIFF_DOMAIN, `20/20 at a 45% hex: ${twenty}`);
+  assert.equal(diffColor(twenty), diffColor(DIFF_DOMAIN), "20/20 is full red");
+  assert.equal(shrunkDiff(10, 20, 0.5), 0, "at the league rate the diff is 0");
+  assert.equal(colourDiff(3, 5, null), null);
 });
 
 test("hex marks stay in the court viewport, sized by a capped sqrt scale, rim hex at the bottom centre", () => {
@@ -57,16 +69,17 @@ test("kernel smoothing is a weighted local mean", () => {
   assert.equal(s[8], 0, "no weight in reach -> 0");
 });
 
-test("signature points every 0.25 ft; no support where the player has no attempts", () => {
-  const points = signaturePoints(vsLeague(fgPctByDistance(mine), fgPctByDistance(league)));
+test("signature points every 0.25 ft; the ribbon ends at the last foot with 5+ attempts", () => {
+  const bins = vsLeague(fgPctByDistance(mine), fgPctByDistance(league));
+  const points = signaturePoints(bins);
   assert.equal(points.length, 141);
   assert.equal(points[4].distance, 1);
-  const shotFeet = new Set(mine.map((s) => s.shot_distance));
-  for (const p of points.filter((q) => Number.isInteger(q.distance))) {
-    const near = [...shotFeet].some((d) => Math.abs(d - p.distance) <= 2);
-    if (!near) assert.ok(p.support < MIN_SUPPORT, `support at ${p.distance} ft`);
-  }
   assert.ok(points.every((p) => p.fgPct >= 0 && p.fgPct <= 1));
+  const end = ribbonEnd(bins);
+  assert.ok(end !== null);
+  assert.ok(bins[end].attempts >= RIBBON_MIN_ATTEMPTS);
+  assert.ok(bins.slice(end + 1).every((b) => b.attempts < RIBBON_MIN_ATTEMPTS));
+  assert.equal(ribbonEnd(bins.map((b) => ({ ...b, attempts: 4 }))), null);
 });
 
 test("distance bars: 12 three-foot groups, bars inside their band, FG% on a 0-1 axis", () => {
@@ -75,12 +88,12 @@ test("distance bars: 12 three-foot groups, bars inside their band, FG% on a 0-1 
   assert.equal(fg.yMax, 1);
   assert.equal(fg.groups.length, 12);
   assert.equal(fg.groups[0].label, "0-2");
-  const plot = DISTANCE_BARS_VIEWBOX.height - 34 - 24;
-  for (const g of fg.groups) {
-    for (const b of g.bars) {
-      assert.ok(b.x >= g.x - 1e-9 && b.x + b.width <= g.x + g.width + 1e-9);
-      if (b.value !== null) assert.ok(Math.abs(b.height - b.value * plot) < 1e-6);
-    }
+  const bars = fg.groups.flatMap((g) => g.bars.map((b) => ({ g, b })));
+  const pxPerUnit = Math.max(...bars.map(({ b }) => (b.value ? b.height / b.value : 0)));
+  assert.ok(pxPerUnit > 0 && pxPerUnit < DISTANCE_BARS_VIEWBOX.height);
+  for (const { g, b } of bars) {
+    assert.ok(b.x >= g.x - 1e-9 && b.x + b.width <= g.x + g.width + 1e-9);
+    if (b.value !== null) assert.ok(Math.abs(b.height - b.value * pxPerUnit) < 1e-6, "bar height is proportional to its value");
   }
   const share = barLayout(data, "share");
   assert.ok(share.yMax > Math.max(...data.player.map((b) => b.share)));
@@ -97,6 +110,27 @@ test("side bars mirror around the centre column and shares add to 1", () => {
   assert.ok(rights[0].x > leftEdge);
   const total = rows.flatMap((r) => r.bars).reduce((a, b) => a + (b.value ?? 0), 0);
   assert.ok(Math.abs(total - 1) < 1e-9, `shares sum to ${total}`);
+});
+
+test("zone areas: one per zone, labels inside the court, corners set vertically", () => {
+  const v = courtViewport(324);
+  const areas = zoneAreas(v);
+  assert.deepEqual(areas.map((a) => a.zone), [...ZONES]);
+  assert.ok(areas.every((a) => a.label.x > 0 && a.label.x < v.width && a.label.y > 0 && a.label.y < v.height));
+  assert.deepEqual(areas.filter((a) => a.vertical).map((a) => a.zone), ["corner_3_left", "corner_3_right"]);
+  assert.equal((areas[1].d.match(/Z/g) ?? []).length, 2, "the paint is the lane minus the restricted circle");
+});
+
+test("labels wrap to the width and bar labels never collide", () => {
+  assert.ok(wrapText("colour shrunk toward the league rate (25-attempt prior)", 300).every((l) => l.length * 6.2 <= 300));
+  for (const width of [324, 500, 700]) {
+    const data = { player: fgPctByDistance(mine, 1), league: fgPctByDistance(league, 1), binFt: 1 };
+    const shown = barLayout(data, "share", width).groups.filter((g) => g.showLabel);
+    for (let i = 1; i < shown.length; i++) {
+      const gap = shown[i].x - shown[i - 1].x;
+      assert.ok(gap >= shown[i].label.length * 6.2, `labels collide at ${width}px`);
+    }
+  }
 });
 
 test("zone outlines add the corner breaks at the arc height", () => {

@@ -1,21 +1,23 @@
 import { select } from "d3-selection";
 import { courtLines, viewport, zoneLines, type Viewport } from "../data/court.ts";
-import { TOKENS, type G } from "./theme.ts";
+import { setViewBox, TOKENS, type G } from "./theme.ts";
 
 /** Charts show the half court from the baseline up to 35 ft, hoop at the bottom (the 2021 orientation). */
 export const COURT_TOP = 350;
-export const COURT_WIDTH = 500;
+/** Layout width before the chart is measured (the server-rendered viewBox). */
+export const DEFAULT_WIDTH = 500;
 
-export function courtViewport(): Viewport {
-  return viewport(COURT_WIDTH, COURT_TOP);
+export function courtViewport(width: number = DEFAULT_WIDTH): Viewport {
+  return viewport(width, COURT_TOP);
 }
 
 export interface CourtOptions {
+  width: number;
   /** Outline the zones `zoneOf` uses, in the accent colour. */
   zones?: boolean;
 }
 
-export function drawCourt(g: G, v: Viewport, { zones = false }: CourtOptions = {}): void {
+export function drawCourt(g: G, v: Viewport, { zones = false }: { zones?: boolean } = {}): void {
   g.append("g")
     .attr("class", "court")
     .selectAll("path")
@@ -35,15 +37,18 @@ export function drawCourt(g: G, v: Viewport, { zones = false }: CourtOptions = {
     .join("path")
     .attr("d", (l) => l.d)
     .style("fill", "none")
-    .style("stroke", TOKENS.accent)
-    .style("stroke-width", 1.5)
+    .style("stroke", TOKENS.fg)
+    .style("stroke-opacity", 0.7)
+    .style("stroke-width", 1.25)
     .style("stroke-dasharray", "6 3");
 }
 
-export const COURT_VIEWBOX = { width: COURT_WIDTH, height: courtViewport().height };
+export const COURT_VIEWBOX = { width: DEFAULT_WIDTH, height: courtViewport().height };
 
-export function renderCourt(svg: SVGSVGElement, opts: CourtOptions = {}): () => void {
+export function renderCourt(svg: SVGSVGElement, { width, zones }: CourtOptions): () => void {
+  const v = courtViewport(width);
   const root = select(svg).append("g");
-  drawCourt(root, courtViewport(), opts);
+  drawCourt(root, v, { zones });
+  setViewBox(svg, v.width, v.height);
   return () => root.remove();
 }

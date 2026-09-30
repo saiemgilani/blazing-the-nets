@@ -1,14 +1,14 @@
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
-import { Court } from "@/components/charts/Court.tsx";
 import { DistanceBars } from "@/components/charts/DistanceBars.tsx";
 import { HexShotChart } from "@/components/charts/HexShotChart.tsx";
 import { ShootingSignature } from "@/components/charts/ShootingSignature.tsx";
 import { SideChart } from "@/components/charts/SideChart.tsx";
-import { fgPctByDistance, hexesVsLeague, statsBySide, vsLeague } from "@/lib/data/aggregate.ts";
+import { fgPctByDistance, hexesVsLeague, statsBySide, statsByZone, vsLeague, ZONES } from "@/lib/data/aggregate.ts";
 import { readPlayers } from "@/lib/data/players.ts";
 import { listSeasons, seasonLabel } from "@/lib/data/seasons.ts";
 import { readShots } from "@/lib/data/shots.ts";
+import type { HexShotChartData } from "@/lib/charts/hexShotChart.ts";
 
 // ponytail: temporary 2b harness for the six charts; Phase 2c replaces it with the real page.
 const HEX_RADIUS = 15; // tenths of a foot
@@ -40,7 +40,9 @@ export default async function PlayerPage({
   const player = players.find((p) => p.person_id === personId);
   if (mine.length === 0 || !player) notFound();
 
-  const hex = { hexes: hexesVsLeague(mine, league, HEX_RADIUS), radius: HEX_RADIUS };
+  const [playerZones, leagueZones] = [statsByZone(mine), statsByZone(league)];
+  const zones = Object.fromEntries(ZONES.map((z) => [z, { player: playerZones[z], league: leagueZones[z] }])) as HexShotChartData["zones"];
+  const hex: HexShotChartData = { hexes: hexesVsLeague(mine, league, HEX_RADIUS), radius: HEX_RADIUS, zones };
   const signature = vsLeague(fgPctByDistance(mine), fgPctByDistance(league));
   const bars = { player: fgPctByDistance(mine, BAR_BIN_FT), league: fgPctByDistance(league, BAR_BIN_FT), binFt: BAR_BIN_FT };
   const sides = { player: statsBySide(mine, BAR_BIN_FT), league: statsBySide(league, BAR_BIN_FT), binFt: BAR_BIN_FT };
@@ -71,9 +73,6 @@ export default async function PlayerPage({
         </Card>
         <Card title="Field goal percentage by side">
           <SideChart data={sides} metric="fgPct" title="FG% left, centre and right of the hoop" />
-        </Card>
-        <Card title="Zones">
-          <Court zones title="Court with the shot zones outlined" />
         </Card>
       </div>
     </div>

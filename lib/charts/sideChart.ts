@@ -4,7 +4,8 @@ import { select } from "d3-selection";
 import type { SideBin, Split } from "../data/aggregate.ts";
 import { DEFAULT_WIDTH } from "./court.ts";
 import type { BarMetric } from "./distanceBars.ts";
-import { fmtPct, FONT_PX, motionMs, setViewBox, tooltip, TOKENS } from "./theme.ts";
+import { fmtPct } from "../format.ts";
+import { FONT_PX, motionMs, setViewBox, tooltip, TOKENS } from "./theme.ts";
 
 /** `statsBySide` for the player and for the league, same `binFt`. */
 export interface SideChartData {

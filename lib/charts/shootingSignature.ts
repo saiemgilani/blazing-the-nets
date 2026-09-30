@@ -4,7 +4,8 @@ import { pointer, select } from "d3-selection";
 import { area, curveMonotoneX, line } from "d3-shape";
 import type { DistanceVsLeague } from "../data/aggregate.ts";
 import { DEFAULT_WIDTH } from "./court.ts";
-import { diffColor, drawDiffLegend, fmtPct, fmtPts, FONT_PX, motionMs, setViewBox, TOKENS, uniqueId, wrapText } from "./theme.ts";
+import { fmtPct, fmtPts } from "../format.ts";
+import { chartTheme, diffColor, drawDiffLegend, FONT_PX, motionMs, setViewBox, TOKENS, uniqueId, wrapText } from "./theme.ts";
 
 /** 1-ft bins 0..35 from `vsLeague(fgPctByDistance(player), fgPctByDistance(league))`. */
 export type ShootingSignatureData = DistanceVsLeague[];
@@ -70,6 +71,7 @@ export function signaturePoints(bins: ShootingSignatureData): SignaturePoint[] {
 
 export function renderShootingSignature(svg: SVGSVGElement, data: ShootingSignatureData, { width }: { width: number }): () => void {
   const W = width;
+  const theme = chartTheme(svg);
   const root = select(svg).append("g");
   const points = signaturePoints(data);
   const end = ribbonEnd(data);
@@ -133,7 +135,7 @@ export function renderShootingSignature(svg: SVGSVGElement, data: ShootingSignat
     .data(points.filter((_, i) => i % 2 === 0))
     .join("stop")
     .attr("offset", (p) => `${(p.distance / maxFt) * 100}%`)
-    .attr("stop-color", (p) => diffColor(p.diff));
+    .attr("stop-color", (p) => diffColor(p.diff, theme));
   const ribbon = root
     .append("path")
     .datum(player)
@@ -193,7 +195,7 @@ export function renderShootingSignature(svg: SVGSVGElement, data: ShootingSignat
     "dashed line: league FG%; ribbon width: share of shots",
     ...(end !== null && end < maxFt ? [`ribbon ends at ${end} ft (last foot with ${RIBBON_MIN_ATTEMPTS}+ attempts)`] : []),
   ];
-  const used = drawDiffLegend(legend, 0, 0, W - M.left - M.right, notes);
+  const used = drawDiffLegend(legend, 0, 0, W - M.left - M.right, theme, notes);
   setViewBox(svg, W, bottom + FONT_PX + 18 + used + 6);
 
   return () => {

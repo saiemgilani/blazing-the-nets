@@ -1,7 +1,8 @@
-import { scaleDiverging } from "d3-scale";
+import { scaleDiverging, scaleLinear } from "d3-scale";
 import { interpolateRdBu } from "d3-scale-chromatic";
 import type { Selection } from "d3-selection";
 import "d3-transition";
+import { fmtPts } from "../format.ts";
 
 export type G = Selection<SVGGElement, unknown, null, undefined>;
 
@@ -29,15 +30,33 @@ export const DIFF_DOMAIN = 0.15;
 /** The colour key in words; every diff legend prints it. */
 export const DIFF_WORDS = "red: above league · blue: below";
 
-// ponytail: one place to flip the palette. RdBu reversed = above league red, below league blue
-// (colour-blind safe; the 2021 site's red-below / green-above scale was not).
-const diffScale = scaleDiverging<string>((t) => interpolateRdBu(1 - t))
+export type ChartTheme = "light" | "dark";
+
+/**
+ * The colour scheme the page resolved to: app/globals.css sets --theme per scheme, so this follows
+ * prefers-color-scheme without calling matchMedia. Read it in the render (the effect), not at import.
+ */
+export function chartTheme(el: Element): ChartTheme {
+  return getComputedStyle(el).getPropertyValue("--theme").trim() === "dark" ? "dark" : "light";
+}
+
+// RdBu reversed = above league red, below league blue (colour-blind safe; the 2021 site's
+// red-below / green-above scale was not). Light mode keeps RdBu's near-white centre.
+const lightDiff = scaleDiverging<string>((t) => interpolateRdBu(1 - t))
   .domain([-DIFF_DOMAIN, 0, DIFF_DOMAIN])
   .clamp(true);
+// Dark mode: the centre is a neutral grey near the card surface (#151515), so an average mark
+// recedes and only real differences stand out; the ends are RdBu's mid blue and red.
+export const DARK_NEUTRAL = "#303030";
+const darkDiff = scaleLinear<string>()
+  .domain([-DIFF_DOMAIN, 0, DIFF_DOMAIN])
+  .range([interpolateRdBu(0.85), DARK_NEUTRAL, interpolateRdBu(0.15)])
+  .clamp(true);
 
-/** Colour for a FG% difference (fraction); null (no league figure) is the muted token. */
-export function diffColor(diff: number | null): string {
-  return diff === null ? TOKENS.muted : diffScale(diff);
+/** Colour for a FG% difference (fraction) in the given theme; null (no league figure) is the muted token. */
+export function diffColor(diff: number | null, theme: ChartTheme = "light"): string {
+  if (diff === null) return TOKENS.muted;
+  return theme === "dark" ? darkDiff(diff) : lightDiff(diff);
 }
 
 /** Transition length, 0 when the viewer asked for reduced motion (or outside a browser). */
@@ -46,10 +65,6 @@ export function motionMs(ms: number): number {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : ms;
 }
 
-export const fmtPct = (v: number | null, digits = 1) => (v === null ? "n/a" : `${(v * 100).toFixed(digits)}%`);
-
-/** Signed percentage points, e.g. +4.2. */
-export const fmtPts = (v: number) => `${v >= 0 ? "+" : "−"}${Math.abs(v * 100).toFixed(1)}`;
 
 let nextId = 0;
 /** Unique ids for gradient defs; charts only render in the browser, so no SSR id clash. */
@@ -91,7 +106,7 @@ export function drawNotes(g: G, x: number, y: number, maxWidth: number, notes: s
  * Horizontal FG%-vs-league legend: gradient bar, -15 / 0 / +15 ticks, the key in words and any
  * extra notes. Returns the height used.
  */
-export function drawDiffLegend(g: G, x: number, y: number, maxWidth: number, notes: string[] = []): number {
+export function drawDiffLegend(g: G, x: number, y: number, maxWidth: number, theme: ChartTheme, notes: string[] = []): number {
   const width = Math.min(maxWidth, 240);
   const id = uniqueId("bn-diff");
   const grad = g.append("defs").append("linearGradient").attr("id", id);
@@ -100,7 +115,7 @@ export function drawDiffLegend(g: G, x: number, y: number, maxWidth: number, not
     .data([0, 0.25, 0.5, 0.75, 1])
     .join("stop")
     .attr("offset", (t) => `${t * 100}%`)
-    .attr("stop-color", (t) => diffColor((t * 2 - 1) * DIFF_DOMAIN));
+    .attr("stop-color", (t) => diffColor((t * 2 - 1) * DIFF_DOMAIN, theme));
   g.append("rect").attr("x", x).attr("y", y).attr("width", width).attr("height", 8).attr("rx", 2).style("fill", `url(#${id})`);
   g.selectAll(null)
     .data([-DIFF_DOMAIN, 0, DIFF_DOMAIN])

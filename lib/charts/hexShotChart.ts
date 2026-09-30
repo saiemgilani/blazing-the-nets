@@ -6,7 +6,8 @@ import { pointer, select, type Selection } from "d3-selection";
 import { LEAGUE_PRIOR_ATTEMPTS, shrunkDiff, type HexVsLeague, type Split, type Zone } from "../data/aggregate.ts";
 import { toSvg, toSvgLength, zoneAreas, type Viewport } from "../data/court.ts";
 import { courtViewport, DEFAULT_WIDTH, drawCourt } from "./court.ts";
-import { diffColor, drawDiffLegend, drawNotes, fmtPct, fmtPts, FONT_PX, motionMs, setViewBox, tooltip, TOKENS, type G } from "./theme.ts";
+import { fmtPct, fmtPts } from "../format.ts";
+import { chartTheme, diffColor, drawDiffLegend, drawNotes, FONT_PX, motionMs, setViewBox, tooltip, TOKENS, type ChartTheme, type G } from "./theme.ts";
 
 export interface ZoneComparison {
   player: Split;
@@ -64,6 +65,7 @@ export function layoutHexes(
   hexes: HexVsLeague[],
   radius: number,
   v: Viewport,
+  theme: ChartTheme = "light",
 ): { marks: HexMark[]; cap: number; size: ScalePower<number, number> } {
   const cap = Math.max(2, Math.ceil(quantile(hexes, 0.95, (h) => h.attempts) ?? 2));
   const size = scaleSqrt().domain([0, cap]).range([0, toSvgLength(radius, v)]).clamp(true);
@@ -71,7 +73,7 @@ export function layoutHexes(
     .filter((h) => h.y <= v.top)
     .map((hex) => {
       const p = toSvg(hex, v);
-      return { hex, cx: p.x, cy: p.y, r: size(hex.attempts), fill: diffColor(colourDiff(hex.makes, hex.attempts, hex.leagueFgPct)) };
+      return { hex, cx: p.x, cy: p.y, r: size(hex.attempts), fill: diffColor(colourDiff(hex.makes, hex.attempts, hex.leagueFgPct), theme) };
     })
     .sort((a, b) => a.hex.attempts - b.hex.attempts);
   return { marks, cap, size };
@@ -91,7 +93,7 @@ const label = (g: G, text: string, y = 0): Selection<SVGTextElement, unknown, nu
     .style("stroke-linejoin", "round")
     .style("paint-order", "stroke");
 
-function drawZones(root: G, data: HexShotChartData, v: Viewport, tip: ReturnType<typeof tooltip>): void {
+function drawZones(root: G, data: HexShotChartData, v: Viewport, theme: ChartTheme, tip: ReturnType<typeof tooltip>): void {
   const areas = zoneAreas(v);
   root
     .append("g")
@@ -102,7 +104,7 @@ function drawZones(root: G, data: HexShotChartData, v: Viewport, tip: ReturnType
     .attr("fill-rule", "evenodd")
     .style("fill", (a) => {
       const z = data.zones[a.zone];
-      return diffColor(colourDiff(z.player.makes, z.player.attempts, z.league.fgPct));
+      return diffColor(colourDiff(z.player.makes, z.player.attempts, z.league.fgPct), theme);
     })
     .style("fill-opacity", 0.85)
     .on("pointermove", (event: PointerEvent, a) => {
@@ -132,15 +134,16 @@ function drawZones(root: G, data: HexShotChartData, v: Viewport, tip: ReturnType
 
 export function renderHexShotChart(svg: SVGSVGElement, data: HexShotChartData, { width, mode }: HexShotChartOptions): () => void {
   const v = courtViewport(width);
+  const theme = chartTheme(svg);
   const root = select(svg).append("g");
   const shape = hexbin();
   let hexes: ReturnType<typeof root.selectAll<SVGPathElement, HexMark>> | null = null;
 
   if (mode === "zones") {
-    drawZones(root, data, v, tooltip(root, v.width, v.height));
+    drawZones(root, data, v, theme, tooltip(root, v.width, v.height));
   } else {
     drawCourt(root, v);
-    const { marks, cap, size } = layoutHexes(data.hexes, data.radius, v);
+    const { marks, cap, size } = layoutHexes(data.hexes, data.radius, v, theme);
     const ms = motionMs(500);
     hexes = root
       .append("g")
@@ -189,7 +192,7 @@ export function renderHexShotChart(svg: SVGSVGElement, data: HexShotChartData, {
 
     // Legend rows: colour key first, then the size key.
     const legend = root.append("g").attr("transform", `translate(12,${v.height + 12})`);
-    const used = drawDiffLegend(legend, 0, 0, width - 24, [SHRINK_NOTE]);
+    const used = drawDiffLegend(legend, 0, 0, width - 24, theme, [SHRINK_NOTE]);
     const steps = [1, Math.max(2, Math.round(cap / 2)), cap];
     const key = legend.append("g").attr("transform", `translate(0,${used + 8})`);
     steps.forEach((n, i) => {
@@ -210,7 +213,7 @@ export function renderHexShotChart(svg: SVGSVGElement, data: HexShotChartData, {
 
   if (mode === "zones") {
     const legend = root.append("g").attr("transform", `translate(12,${v.height + 12})`);
-    const used = drawDiffLegend(legend, 0, 0, width - 24, [SHRINK_NOTE]);
+    const used = drawDiffLegend(legend, 0, 0, width - 24, theme, [SHRINK_NOTE]);
     setViewBox(svg, width, v.height + 12 + used + 6);
   }
 

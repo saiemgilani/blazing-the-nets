@@ -140,3 +140,14 @@ test("zone outlines add the corner breaks at the arc height", () => {
   const y = (v.top - THREE_BREAK_Y) * v.scale;
   assert.ok(zoneLines(v).at(-1)?.d.includes(`,${y.toFixed(2)}`));
 });
+
+test("dark mode centres on a grey near the card surface; ends stay red and blue; light keeps RdBu", () => {
+  const [r, g, b] = rgb(diffColor(0, "dark"));
+  assert.ok(Math.max(r, g, b) < 70 && Math.max(r, g, b) - Math.min(r, g, b) < 6, `dark centre ${diffColor(0, "dark")}`);
+  const [hr, , hb] = rgb(diffColor(0.1, "dark"));
+  const [cr, , cb] = rgb(diffColor(-0.1, "dark"));
+  assert.ok(hr > hb + 60 && cb > cr + 60, "dark ends are red and blue");
+  assert.equal(diffColor(0.4, "dark"), diffColor(DIFF_DOMAIN, "dark"), "same ±15 domain, clamped");
+  assert.equal(diffColor(0.05), diffColor(0.05, "light"));
+  assert.notEqual(diffColor(0, "dark"), diffColor(0, "light"));
+});

@@ -18,6 +18,8 @@ export const VERSUS_MIN_ATTEMPTS = 5;
 const M = { top: 30, right: 10, left: 10 };
 const ROW = 18;
 const LABEL_W = 44;
+/** Room at each outer end for the bar's number. */
+const NUM_W = 34;
 
 export function versusViewBox(rows: number, width: number = DEFAULT_WIDTH) {
   return { width, height: M.top + rows * ROW + 50 };
@@ -36,8 +38,8 @@ export function renderVersus(svg: SVGSVGElement, data: VersusData, { width: W, a
   const half = mid - LABEL_W / 2 - M.left;
   const att = scaleLinear()
     .domain([0, max(rows, (r) => r.attempts) ?? 1])
-    .range([0, half]);
-  const pct = scaleLinear().domain([0, 1]).range([0, W - M.right - (mid + LABEL_W / 2)]).clamp(true);
+    .range([0, half - NUM_W]);
+  const pct = scaleLinear().domain([0, 1]).range([0, W - M.right - NUM_W - (mid + LABEL_W / 2)]).clamp(true);
   const bottom = M.top + rows.length * ROW;
 
   const head = root.append("g").style("font-size", `${FONT_PX}px`).style("fill", TOKENS.muted);
@@ -83,6 +85,20 @@ export function renderVersus(svg: SVGSVGElement, data: VersusData, { width: W, a
     left.transition().duration(ms).attr("x", (r) => mid - LABEL_W / 2 - att(r.attempts)).attr("width", (r) => att(r.attempts));
     right.transition().duration(ms).attr("width", (r) => pct(r.fgPct ?? 0));
   }
+  // The numbers at the bar ends: attempts on the left, FG% (with makes/attempts in the tooltip) on the right.
+  const nums = row.append("g").style("font-size", `${FONT_PX}px`).style("fill", TOKENS.fg).attr("class", "tabular-nums");
+  nums
+    .append("text")
+    .attr("x", (r) => mid - LABEL_W / 2 - att(r.attempts) - 3)
+    .attr("y", ROW / 2 + 4)
+    .attr("text-anchor", "end")
+    .text((r) => r.attempts);
+  nums
+    .filter((r) => r.attempts >= VERSUS_MIN_ATTEMPTS && r.fgPct !== null)
+    .append("text")
+    .attr("x", (r) => mid + LABEL_W / 2 + pct(r.fgPct ?? 0) + 3)
+    .attr("y", ROW / 2 + 4)
+    .text((r) => fmtPct(r.fgPct, 0));
 
   const tip = tooltip(root, W, bottom + 40);
   row

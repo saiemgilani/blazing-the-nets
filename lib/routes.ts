@@ -37,7 +37,12 @@ export function isInternalPath(pathname: string): boolean {
   return /^\/(home\/[^/]+|(scatter|leaders)\/[^/]+|players\/list\/.+|teams\/list\/.+|(players|teams)\/\d+\/[^/]+)(\/.*)?$/.test(pathname);
 }
 
-/** The one internal path served directly: a player's OG image, which the page's metadata links to. */
+/**
+ * The one internal path served directly: a player's OG image, which the page's metadata links to.
+ * Only the season values the proxy itself produces ("current" or an addressable year), so crafted
+ * URLs cannot each render and cache a fresh image.
+ */
 export function isOgImagePath(pathname: string): boolean {
-  return /^\/players\/\d+\/[^/]+\/opengraph-image$/.test(pathname);
+  const m = /^\/players\/\d{1,10}\/(current|\d{4})\/opengraph-image$/.exec(pathname);
+  return m !== null && (m[1] === "current" || isAddressableSeason(Number(m[1])));
 }

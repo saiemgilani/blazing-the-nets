@@ -147,6 +147,12 @@ test("links to the current season carry no ?season=, others do; defaults drop ou
 
 test("only the OG image is served straight from an internal path", () => {
   assert.ok(isOgImagePath("/players/1629008/current/opengraph-image"));
+  assert.ok(isOgImagePath("/players/1629008/2025/opengraph-image"));
+  assert.ok(isOgImagePath(`/players/1629008/${LAST_KNOWN_SEASON + 1}/opengraph-image`));
+  for (const season of ["foo", "2015", "9999", `${LAST_KNOWN_SEASON + 2}`, "02025", "current2"]) {
+    assert.ok(!isOgImagePath(`/players/1629008/${season}/opengraph-image`), `clamped: ${season}`);
+  }
+  assert.ok(!isOgImagePath("/players/12345678901/current/opengraph-image"), "ids are at most 10 digits, like the public route");
   assert.ok(!isOgImagePath("/players/1629008/current"));
   assert.ok(!isOgImagePath("/players/1629008/..%2F..%2Fabout"));
   assert.ok(isInternalPath("/players/1629008/..%2F..%2Fabout"), "crafted internal paths are internal (so they 404)");

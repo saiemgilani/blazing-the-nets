@@ -18,6 +18,9 @@ const cases = [
   ["/home/current", 404, null],
   ["/teams/list/current", 404, null],
   ["/players/1629008/current/opengraph-image", 200, null], // the one internal path metadata links to
+  ["/players/1629008/foo/opengraph-image", 404, null], // only "current" or an addressable year
+  ["/players/1629008/9999/opengraph-image", 404, null],
+  ["/players/9999999/current/opengraph-image", 404, null], // not a player: no generic image
   ["/scatter", 200, null],
   ["/leaders?season=2025", 200, null],
   ["/scatter/current", 404, null],

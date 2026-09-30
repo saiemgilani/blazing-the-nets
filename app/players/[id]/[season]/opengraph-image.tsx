@@ -1,4 +1,5 @@
 import { hexbin } from "d3-hexbin";
+import { notFound } from "next/navigation";
 import { ImageResponse } from "next/og";
 import { courtViewport } from "@/lib/charts/court.ts";
 import { layoutHexes } from "@/lib/charts/hexShotChart.ts";
@@ -19,24 +20,23 @@ export default async function Image({ params }: { params: Promise<{ id: string; 
   const [{ id, season: param }, seasons] = await Promise.all([params, listSeasons()]);
   const season = parseSeason(param, seasons);
   const page = Number.isSafeInteger(Number(id)) ? await loadPlayerPage(season, Number(id)) : null;
+  if (!page) notFound(); // no generic image for ids that are not players (each would be a new CDN object)
   const v = courtViewport(560);
   const shape = hexbin();
-  const marks = page ? layoutHexes(page.dashboard.hex.hexes, HEX_RADIUS, v, "dark").marks : [];
+  const { marks } = layoutHexes(page.dashboard.hex.hexes, HEX_RADIUS, v, "dark");
   return new ImageResponse(
     (
       <div style={{ display: "flex", width: "100%", height: "100%", background: "#0a0a0a", color: "#f5f5f5", padding: 48, gap: 40 }}>
         <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", flex: 1 }}>
           <div style={{ display: "flex", fontSize: 30, color: "#ff6a13", fontWeight: 700 }}>{SITE_NAME}</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ display: "flex", fontSize: 60, fontWeight: 700, lineHeight: 1.05 }}>{page?.player.player_name ?? "Shot charts"}</div>
+            <div style={{ display: "flex", fontSize: 60, fontWeight: 700, lineHeight: 1.05 }}>{page.player.player_name}</div>
             <div style={{ display: "flex", fontSize: 30, color: "#a3a3a3" }}>
-              {page ? `${page.teams.join(", ")} · ${seasonLabel(season)}` : "Brooklyn Nets and the league"}
+              {`${page.teams.join(", ")} · ${seasonLabel(season)}`}
             </div>
-            {page && (
-              <div style={{ display: "flex", fontSize: 32 }}>
-                {`${fmtInt(page.line.makes)}/${fmtInt(page.line.attempts)} FG · ${fmtPct(page.line.fgPct)} · ${fmtPct(page.line.efgPct)} eFG`}
-              </div>
-            )}
+            <div style={{ display: "flex", fontSize: 32 }}>
+              {`${fmtInt(page.line.makes)}/${fmtInt(page.line.attempts)} FG · ${fmtPct(page.line.fgPct)} · ${fmtPct(page.line.efgPct)} eFG`}
+            </div>
           </div>
           <div style={{ display: "flex", fontSize: 22, color: "#a3a3a3" }}>{`Hex colour vs league: ${DIFF_WORDS}`}</div>
         </div>

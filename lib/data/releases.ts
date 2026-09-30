@@ -1,4 +1,4 @@
-import { parquetReadObjects } from "hyparquet";
+import { asyncBufferFromUrl, parquetMetadataAsync, parquetReadObjects, type AsyncBuffer } from "hyparquet";
 import { compressors } from "hyparquet-compressors";
 import { z } from "zod";
 
@@ -7,6 +7,9 @@ export const RELEASE_REPO = "sportsdataverse/sportsdataverse-data";
 /** ISR window (6 h). The nightly hoopR-nba-stats-data producer refreshes the releases. */
 export const REVALIDATE_SECONDS = 21600;
 
+/** Decoded assets kept per release tag (so at most 4 seasons of shots are resident). */
+export const MAX_RESIDENT_PER_TAG = 4;
+
 /** The asset does not exist (HTTP 404). A failed fetch (403, 429, 5xx) is a plain Error: its answer is unknown. */
 export class AssetMissingError extends Error {}
 
@@ -14,55 +17,81 @@ export function releaseUrl(tag: string, asset: string): string {
   return `https://github.com/${RELEASE_REPO}/releases/download/${encodeURIComponent(tag)}/${encodeURIComponent(asset)}`;
 }
 
-const cache = new Map<string, { at: number; value: Promise<unknown> }>();
+type Entry = { at: number; value: Promise<unknown> };
+const groups = new Map<string, Map<string, Entry>>();
 
 /**
- * Per-process memo of an async load, kept for one ISR window. A rejected load is evicted so the
- * next call retries instead of serving the failure until the window closes.
+ * Per-process LRU memo of an async load: `MAX_RESIDENT_PER_TAG` entries per group, each kept for
+ * one ISR window. A rejected load is evicted as soon as it settles, so one failed download cannot
+ * poison the cache. Exported for tests.
  */
-function memo<T>(key: string, load: () => Promise<T>): Promise<T> {
+export function memo<T>(group: string, key: string, load: () => Promise<T>, now: number = Date.now()): Promise<T> {
+  let cache = groups.get(group);
+  if (!cache) groups.set(group, (cache = new Map()));
   const hit = cache.get(key);
-  if (hit && Date.now() - hit.at < REVALIDATE_SECONDS * 1000) return hit.value as Promise<T>;
+  cache.delete(key); // re-inserted below: Map order is the LRU order
+  if (hit && now - hit.at < REVALIDATE_SECONDS * 1000) {
+    cache.set(key, hit);
+    return hit.value as Promise<T>;
+  }
   const value = load();
-  cache.set(key, { at: Date.now(), value });
+  const entry = { at: now, value };
+  cache.set(key, entry);
+  for (const oldest of cache.keys()) {
+    if (cache.size <= MAX_RESIDENT_PER_TAG) break;
+    cache.delete(oldest);
+  }
   value.catch(() => {
-    if (cache.get(key)?.value === value) cache.delete(key);
+    if (cache.get(key) === entry) cache.delete(key);
   });
   return value;
 }
 
-export async function fetchAssetBytes(tag: string, asset: string): Promise<ArrayBuffer> {
-  // ponytail: Next's data cache skips bodies over 2 MB (every shots file), so for those the
-  // revalidate only sets the route's ISR window and the memo below is the real cache.
-  const res = await fetch(releaseUrl(tag, asset), { next: { revalidate: REVALIDATE_SECONDS } });
-  if (res.status === 404) throw new AssetMissingError(`${tag}/${asset}: not in the release`);
-  if (!res.ok) throw new Error(`${tag}/${asset}: HTTP ${res.status}`);
-  return res.arrayBuffer();
+const init = { next: { revalidate: REVALIDATE_SECONDS } } satisfies RequestInit;
+
+/**
+ * A byte-range view of a release asset: one HEAD for the size (404 -> AssetMissingError), then
+ * `Range` GETs for the footer and the column chunks actually read. The download URL redirects to
+ * GitHub's signed asset host, which honours ranges.
+ */
+export async function openAsset(tag: string, asset: string): Promise<AsyncBuffer> {
+  const url = releaseUrl(tag, asset);
+  const head = await fetch(url, { ...init, method: "HEAD" });
+  if (head.status === 404) throw new AssetMissingError(`${tag}/${asset}: not in the release`);
+  if (!head.ok) throw new Error(`${tag}/${asset}: HEAD ${head.status}`);
+  const byteLength = Number(head.headers.get("content-length"));
+  if (!(byteLength > 0)) throw new Error(`${tag}/${asset}: no content-length`);
+  return asyncBufferFromUrl({ url, byteLength, requestInit: init });
 }
 
-/** Decode parquet bytes into rows validated by `row`; only the schema's columns are read. */
-export async function parseParquet<S extends z.ZodObject>(bytes: ArrayBuffer, row: S): Promise<z.output<S>[]> {
-  const raw = await parquetReadObjects({ file: bytes, columns: Object.keys(row.shape), compressors });
+/**
+ * Decode parquet into rows validated by `row`; only the schema's columns are read. Every row group
+ * is read: the release files hold two mixed-team groups and the views need whole seasons.
+ */
+export async function parseParquet<S extends z.ZodObject>(file: AsyncBuffer, row: S): Promise<z.output<S>[]> {
+  const metadata = await parquetMetadataAsync(file, { initialFetchSize: 1 << 16 });
+  const raw = await parquetReadObjects({ file, metadata, columns: Object.keys(row.shape), compressors });
   return z.array(row).parse(raw);
 }
 
-/** Download a release asset once per ISR window and decode it into typed rows. */
-export function readParquet<S extends z.ZodObject>(tag: string, asset: string, row: S): Promise<z.output<S>[]> {
-  const key = `${tag}/${asset}#${Object.keys(row.shape).join(",")}`;
-  return memo(key, async () => parseParquet(await fetchAssetBytes(tag, asset), row));
-}
-
-const Release = z.object({ assets: z.array(z.object({ name: z.string() })) });
-
-/** Asset names in a release tag, via the GitHub API (60 req/h unauthenticated; set GITHUB_TOKEN to lift it). */
-export function listAssets(tag: string): Promise<string[]> {
-  return memo(`assets:${tag}`, async () => {
-    const headers: Record<string, string> = { accept: "application/vnd.github+json" };
-    if (process.env.GITHUB_TOKEN) headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
-    const url = `https://api.github.com/repos/${RELEASE_REPO}/releases/tags/${encodeURIComponent(tag)}`;
-    const res = await fetch(url, { headers, next: { revalidate: REVALIDATE_SECONDS } });
-    if (!res.ok) throw new Error(`GitHub API ${tag}: HTTP ${res.status}`);
-    return Release.parse(await res.json()).assets.map((a) => a.name);
+/**
+ * Typed rows of a release asset, memoised per process. With `optional`, a missing asset reads as
+ * no rows (and that answer is cached too); any other failure still throws.
+ */
+export function readParquet<S extends z.ZodObject>(
+  tag: string,
+  asset: string,
+  row: S,
+  { optional = false }: { optional?: boolean } = {},
+): Promise<z.output<S>[]> {
+  const key = `${asset}#${Object.keys(row.shape).join(",")}${optional ? "?" : ""}`;
+  return memo(tag, key, async () => {
+    try {
+      return await parseParquet(await openAsset(tag, asset), row);
+    } catch (e) {
+      if (optional && e instanceof AssetMissingError) return [];
+      throw e;
+    }
   });
 }
 

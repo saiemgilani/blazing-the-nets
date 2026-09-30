@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { listAssets, readParquet } from "./releases.ts";
+import { readParquet } from "./releases.ts";
 
 export const ROSTERS_TAG = "espn_nba_rosters";
 export const PLAYER_CORE_TAG = "espn_nba_player_core";
@@ -79,21 +79,11 @@ export async function readHeadshots(
   season: number,
   players: { person_id: number; player_name: string }[],
 ): Promise<Map<number, string>> {
-  const [coreAssets, rosterAssets, crosswalkAssets] = await Promise.all([
-    listAssets(PLAYER_CORE_TAG),
-    listAssets(ROSTERS_TAG),
-    listAssets(CROSSWALK_TAG),
+  const optional = { optional: true };
+  const [core, xw] = await Promise.all([
+    readParquet(PLAYER_CORE_TAG, `player_core_${season}.parquet`, EspnAthleteRow, optional),
+    readParquet(CROSSWALK_TAG, `nba_player_crosswalk_${season}.parquet`, CrosswalkRow, optional),
   ]);
-  const core = `player_core_${season}.parquet`;
-  const roster = `rosters_${season}.parquet`;
-  const crosswalk = `nba_player_crosswalk_${season}.parquet`;
-  const [athletes, xw] = await Promise.all([
-    coreAssets.includes(core)
-      ? readParquet(PLAYER_CORE_TAG, core, EspnAthleteRow)
-      : rosterAssets.includes(roster)
-        ? readParquet(ROSTERS_TAG, roster, EspnAthleteRow)
-        : Promise.resolve([]),
-    crosswalkAssets.includes(crosswalk) ? readParquet(CROSSWALK_TAG, crosswalk, CrosswalkRow) : Promise.resolve([]),
-  ]);
+  const athletes = core.length > 0 ? core : await readParquet(ROSTERS_TAG, `rosters_${season}.parquet`, EspnAthleteRow, optional);
   return bridgeHeadshots(players, athletes, xw);
 }

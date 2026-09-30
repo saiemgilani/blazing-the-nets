@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { fgPctByDistance, hexbinShots, statsByZone } from "../lib/data/aggregate.ts";
 import { readPlayers } from "../lib/data/players.ts";
-import { fetchAssetBytes, parseParquet } from "../lib/data/releases.ts";
+import { openAsset, parseParquet } from "../lib/data/releases.ts";
 import { readHeadshots } from "../lib/data/rosters.ts";
 import { listSeasons } from "../lib/data/seasons.ts";
 import { ShotRow, filterSeasonType, shotsAsset, SHOTS_TAG } from "../lib/data/shots.ts";
@@ -16,13 +16,29 @@ test("real release files: shots 2026 -> Nets -> one player", { skip }, async (t)
   assert.equal(seasons[0], 2016);
   assert.ok((seasons.at(-1) ?? 0) >= 2026);
 
-  let t0 = performance.now();
-  const bytes = await fetchAssetBytes(SHOTS_TAG, shotsAsset(2026));
-  const downloadMs = performance.now() - t0;
-  t0 = performance.now();
-  const all = await parseParquet(bytes, ShotRow);
-  t.diagnostic(`shots_2026.parquet ${bytes.byteLength} bytes, download ${downloadMs.toFixed(0)} ms, decode+validate ${(performance.now() - t0).toFixed(0)} ms, ${all.length} rows`);
+  // Count what the range reads actually transfer.
+  const realFetch = globalThis.fetch;
+  let requests = 0;
+  let transferred = 0;
+  globalThis.fetch = async (input, init) => {
+    const res = await realFetch(input, init);
+    requests += 1;
+    if (init?.method !== "HEAD") transferred += Number(res.headers.get("content-length") ?? 0);
+    return res;
+  };
+  const t0 = performance.now();
+  const { size, all } = await (async () => {
+    const file = await openAsset(SHOTS_TAG, shotsAsset(2026));
+    return { size: file.byteLength, all: await parseParquet(file, ShotRow) };
+  })().finally(() => {
+    globalThis.fetch = realFetch;
+  });
+  t.diagnostic(
+    `shots_2026.parquet ${size} bytes on the release; ${requests} requests transferred ${transferred} bytes; ` +
+      `range read + decode + validate ${(performance.now() - t0).toFixed(0)} ms, ${all.length} rows`,
+  );
   assert.ok(all.length > 200_000);
+  assert.ok(transferred < size, "column projection should read less than the whole file");
 
   const league = filterSeasonType(all, "regular");
   const nets = league.filter((s) => s.team_id === NETS_TEAM_ID);

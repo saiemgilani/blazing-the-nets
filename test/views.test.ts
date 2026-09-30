@@ -25,6 +25,9 @@ test("scatter metrics: defaults are PTS/g and eFG%; random pairs, medians, label
     smallHeadshot("https://a.espncdn.com/i/headshots/nba/players/full/4278104.png"),
     "https://a.espncdn.com/combiner/i?img=%2Fi%2Fheadshots%2Fnba%2Fplayers%2Ffull%2F4278104.png&w=96&h=70",
   );
+  const same = smallHeadshot("https://a.espncdn.com/i/headshots/nba/players/full/4278104.png");
+  assert.equal(smallHeadshot("https://a.espncdn.com/i/headshots/nba/players/full/4278104.png?w=350#x"), same, "query and hash dropped");
+  assert.equal(smallHeadshot("/i/headshots/nba/players/full/4278104.png"), same, "a relative href is already a path (and does not throw)");
 });
 
 const season = (id: number, attempts: number, makes: number, fg3a: number, fg3m: number, stats: PlayerSeason["stats"] = null): PlayerSeason => ({

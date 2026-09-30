@@ -76,6 +76,7 @@ export function randomPair(rand: () => number = Math.random): [ScatterMetric, Sc
 
 /** ESPN's resizing endpoint for the same headshot path: faces are drawn ~26 px wide, not 350. */
 export function smallHeadshot(href: string, width = 96): string {
-  const path = new URL(href).pathname;
+  // The path of an absolute href (a relative one is already a path): a string op, so it cannot throw.
+  const path = href.replace(/^[a-z][a-z\d+.-]*:\/\/[^/]+/i, "").split(/[?#]/)[0];
   return `https://a.espncdn.com/combiner/i?img=${encodeURIComponent(path)}&w=${width}&h=${Math.round((width * 254) / 350)}`;
 }

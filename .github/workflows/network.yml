@@ -1,0 +1,27 @@
+# The network tests against the real sportsdataverse-data release files, weekly. They are the only
+# tests that catch a producer change the offline fixtures cannot (a renamed season_type or
+# measure_type makes every season-stats field null while check stays green).
+name: network
+
+on:
+  schedule:
+    - cron: "0 11 * * 1" # Mondays 11:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  network:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run test
+        env:
+          BN_NETWORK_TESTS: 1

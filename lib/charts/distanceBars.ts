@@ -79,7 +79,7 @@ export function barLayout(data: DistanceBarsData, metric: BarMetric, width: numb
 export function renderDistanceBars(
   svg: SVGSVGElement,
   data: DistanceBarsData,
-  { metric, width: W, animate = true }: { metric: BarMetric; width: number; animate?: boolean },
+  { metric, width: W, subjectLabel = "Player", animate = true }: { metric: BarMetric; width: number; subjectLabel?: string; animate?: boolean },
 ): () => void {
   const root = select(svg).append("g");
   const { groups, yMax } = barLayout(data, metric, W);
@@ -131,7 +131,7 @@ export function renderDistanceBars(
       .attr("height", 10)
       .style("fill", who === "player" ? TOKENS.accent : TOKENS.muted)
       .style("fill-opacity", who === "player" ? 1 : 0.55);
-    legend.append("text").attr("x", i * 68 + 14).attr("y", 1).style("fill", TOKENS.muted).text(who === "player" ? "Player" : "League");
+    legend.append("text").attr("x", i * 68 + 14).attr("y", 1).style("fill", TOKENS.muted).text(who === "player" ? subjectLabel : "League");
   });
 
   const ms = animate ? motionMs(400) : 0;
@@ -162,7 +162,7 @@ export function renderDistanceBars(
     .on("pointerenter", (_, g) => {
       const line = (who: string, b: DistanceBin) =>
         metric === "share" ? `${who}: ${fmtPct(b.share)} of shots (${b.attempts})` : `${who}: ${fmtPct(b.fgPct)} (${b.makes}/${b.attempts})`;
-      tip.show(g.x + g.width / 2, M.top + 40, [`${g.label} ft`, line("Player", g.player), line("League", g.league)]);
+      tip.show(g.x + g.width / 2, M.top + 40, [`${g.label} ft`, line(subjectLabel, g.player), line("League", g.league)]);
     })
     .on("pointerleave", () => tip.hide());
 
@@ -174,10 +174,10 @@ export function renderDistanceBars(
 }
 
 /** A text version for assistive tech: the player's and the league's value in every bin. */
-export function describeBars(data: DistanceBarsData, metric: BarMetric): string {
+export function describeBars(data: DistanceBarsData, metric: BarMetric, subjectLabel = "Player"): string {
   const what = metric === "share" ? "share of shots" : "FG%";
   const { groups } = barLayout(data, metric);
-  return `${what} by distance, player vs league: ${groups
+  return `${what} by distance, ${subjectLabel.toLowerCase()} vs league: ${groups
     .map((g) => `${g.label} ft ${fmtPct(g.bars[0].value)} vs ${fmtPct(g.bars[1].value)}`)
     .join("; ")}.`;
 }

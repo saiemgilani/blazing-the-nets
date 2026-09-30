@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { parseSeason } from "../lib/data/seasons.ts";
+import { nextSeasonReady, parseSeason } from "../lib/data/seasons.ts";
 import { NETS_TEAM_ID } from "../lib/data/teams.ts";
 import { assemblePlayerPage, assembleTeamPage, playerRows, seasonData } from "../lib/pageData.ts";
-import { internalPath, isInternalPath } from "../lib/routes.ts";
+import { playerHref, seasonQuery, withParams } from "../lib/links.ts";
+import { internalPath, isInternalPath, isOgImagePath } from "../lib/routes.ts";
+import { LAST_KNOWN_SEASON } from "../lib/seasonRange.ts";
 import { fixtureGameLogs, fixtureShots } from "./helpers.ts";
 
 const shots = await fixtureShots();
@@ -27,6 +29,10 @@ test("public URLs rewrite onto the internal season routes", () => {
   assert.equal(internalPath("/players", q("team=all")), "/players/list/current/ALL");
   assert.equal(internalPath("/players", q("team=../x")), "/players/list/current/BKN");
   assert.equal(internalPath("/players/1629008", q("season=abc")), "/players/1629008/current");
+  // Out-of-range years cannot mint cache entries: they read as the current season.
+  assert.equal(internalPath("/players/1629008", q("season=9999")), "/players/1629008/current");
+  assert.equal(internalPath("/players/1629008", q("season=2015")), "/players/1629008/current");
+  assert.equal(internalPath("/players/1629008", q(`season=${LAST_KNOWN_SEASON + 1}`)), `/players/1629008/${LAST_KNOWN_SEASON + 1}`);
   assert.equal(internalPath("/teams/1610612751/", q("season=2020")), "/teams/1610612751/2020");
   assert.equal(internalPath("/teams", q("")), "/teams/list/current");
   assert.equal(internalPath("/about", q("")), null);
@@ -50,7 +56,11 @@ test("player page data for the fixture's busiest player", () => {
   assert.equal(page.line.attempts, mine.length);
   assert.equal(page.line.makes, mine.filter((s) => s.shot_result === "Made").length);
   assert.equal(page.line.fg3a, mine.filter((s) => s.shot_value === 3).length);
-  assert.ok(page.line.efgPct !== null && page.line.fgPct !== null && page.line.efgPct >= page.line.fgPct);
+  const fgm = mine.filter((s) => s.shot_result === "Made").length;
+  const threes = mine.filter((s) => s.shot_value === 3);
+  const fg3m = threes.filter((s) => s.shot_result === "Made").length;
+  assert.equal(page.line.efgPct, (fgm + 0.5 * fg3m) / mine.length, "eFG% = (FGM + 0.5 * 3PM) / FGA from the fixture's own counts");
+  assert.equal(page.line.fg3Pct, fg3m / threes.length);
   assert.deepEqual(page.teams, ["BKN"]);
   assert.equal(page.prev, null, "the busiest player has no previous teammate");
   assert.equal(page.next?.person_id, data.players[1].person_id);
@@ -89,4 +99,27 @@ test("team page data and table rows", () => {
   const rows = playerRows(page.roster);
   assert.equal(rows[0].attempts, page.roster[0].attempts);
   assert.ok(rows.every((r) => r.gp === null && !r.acrossTeams), "no stats rows in the fixture");
+});
+
+test("the next season becomes current only with regular-season shots and a stats file", () => {
+  assert.equal(nextSeasonReady([], true), false, "no shots file yet");
+  assert.equal(nextSeasonReady(["0012600001", "0012600002"], true), false, "preseason (001) only");
+  assert.equal(nextSeasonReady(["0012600001", "0022600001"], false), false, "shots present, stats missing");
+  assert.equal(nextSeasonReady(["0012600001", "0022600001"], true), true);
+});
+
+test("links to the current season carry no ?season=, others do; defaults drop out of the query", () => {
+  assert.equal(seasonQuery(2026, 2026), "");
+  assert.equal(playerHref(1629008, seasonQuery(2025, 2026)), "/players/1629008?season=2025");
+  const defaults = { season: "2026", team: "BKN" };
+  assert.equal(withParams("/players", { season: "2026", team: "BKN" }, defaults), "/players");
+  assert.equal(withParams("/players", { season: "2020", team: "LAL" }, defaults), "/players?season=2020&team=LAL");
+  assert.equal(withParams("/players", { season: "2026", team: "ALL" }, defaults), "/players?team=ALL");
+});
+
+test("only the OG image is served straight from an internal path", () => {
+  assert.ok(isOgImagePath("/players/1629008/current/opengraph-image"));
+  assert.ok(!isOgImagePath("/players/1629008/current"));
+  assert.ok(!isOgImagePath("/players/1629008/..%2F..%2Fabout"));
+  assert.ok(isInternalPath("/players/1629008/..%2F..%2Fabout"), "crafted internal paths are internal (so they 404)");
 });

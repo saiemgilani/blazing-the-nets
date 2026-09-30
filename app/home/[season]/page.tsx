@@ -7,19 +7,31 @@ import { readHeadshots } from "@/lib/data/rosters.ts";
 import { listSeasons, parseSeason, seasonLabel } from "@/lib/data/seasons.ts";
 import { NETS_TEAM_ID } from "@/lib/data/teams.ts";
 import { fmtDec, fmtInt, fmtPct } from "@/lib/format.ts";
+import { playerHref, seasonQuery, withParams } from "@/lib/links.ts";
 import { readSeasonData, seasonOptions, teamRoster } from "@/lib/pageData.ts";
 
 // Served at / (proxy.ts rewrites /?season= here).
 export const revalidate = 21600;
-export const metadata: Metadata = { alternates: { canonical: "/" } };
+type Params = Promise<{ season: string }>;
+
+async function resolve(params: Params) {
+  const [{ season: param }, seasons] = await Promise.all([params, listSeasons()]);
+  const season = parseSeason(param, seasons);
+  const current = seasons[seasons.length - 1];
+  return { season, seasons, current, q: seasonQuery(season, current) };
+}
+
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const { q } = await resolve(params);
+  return { alternates: { canonical: `/${q}` } };
+}
 
 export function generateStaticParams() {
   return [{ season: "current" }];
 }
 
-export default async function Home({ params }: { params: Promise<{ season: string }> }) {
-  const [{ season: param }, seasons] = await Promise.all([params, listSeasons()]);
-  const season = parseSeason(param, seasons);
+export default async function Home({ params }: { params: Params }) {
+  const { season, seasons, current, q } = await resolve(params);
   const data = await readSeasonData(season);
   const roster = teamRoster(data, NETS_TEAM_ID);
   const headshots = await readHeadshots(season, roster);
@@ -34,11 +46,11 @@ export default async function Home({ params }: { params: Promise<{ season: strin
           the rest of the league, from stats.nba.com play-by-play.
         </p>
         <div className="flex flex-wrap items-center gap-4">
-          <QuerySelect label="Season" name="season" value={String(season)} options={seasonOptions(seasons)} basePath="/" />
-          <Link href={`/players?season=${season}`} className="text-sm text-accent hover:underline">
+          <QuerySelect label="Season" name="season" value={String(season)} options={seasonOptions(seasons)} basePath="/" defaults={{ season: String(current) }} />
+          <Link href={withParams("/players", { season: String(season) }, { season: String(current) })} className="text-sm text-accent underline-offset-2 hover:underline">
             All players →
           </Link>
-          <Link href={`/teams?season=${season}`} className="text-sm text-accent hover:underline">
+          <Link href={withParams("/teams", { season: String(season) }, { season: String(current) })} className="text-sm text-accent underline-offset-2 hover:underline">
             All teams →
           </Link>
         </div>
@@ -54,10 +66,10 @@ export default async function Home({ params }: { params: Promise<{ season: strin
             return (
               <li key={p.person_id}>
                 <Link
-                  href={`/players/${p.person_id}?season=${season}`}
+                  href={playerHref(p.person_id, q)}
                   className="flex items-center gap-4 rounded-lg border border-line bg-surface p-3 hover:border-accent"
                 >
-                  <Headshot src={headshots.get(p.person_id) ?? null} name={p.player_name} size={88} />
+                  <Headshot src={headshots.get(p.person_id) ?? null} name={p.player_name} size={88} decorative />
                   <div className="min-w-0 text-sm">
                     <p className="truncate font-display text-base font-bold">{p.player_name}</p>
                     <p className="tabular-nums">

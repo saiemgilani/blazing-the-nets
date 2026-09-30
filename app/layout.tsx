@@ -26,6 +26,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body className="flex min-h-dvh flex-col antialiased">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-10 focus:rounded focus:bg-fg focus:px-3 focus:py-2 focus:text-bg"
+        >
+          Skip to content
+        </a>
         <header className="border-b border-line">
           <div className="mx-auto flex max-w-6xl flex-wrap items-baseline justify-between gap-x-6 gap-y-2 px-4 py-4">
             <Link href="/" className="font-display text-2xl font-bold tracking-tight">
@@ -40,7 +46,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </nav>
           </div>
         </header>
-        <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+        <main id="main" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+          {children}
+        </main>
         <footer className="border-t border-line">
           <p className="mx-auto max-w-6xl px-4 py-6 text-sm text-muted">
             Created by Saiem Gilani. Data:{" "}

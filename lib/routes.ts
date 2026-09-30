@@ -1,3 +1,5 @@
+import { isAddressableSeason } from "./seasonRange.ts";
+
 /**
  * Public URLs keep the season (and team filter) in the query string: /players/1629008?season=2025.
  * Reading searchParams would make every page dynamic, so proxy.ts rewrites the query into path
@@ -9,12 +11,14 @@
  *   /teams             -> /teams/list/<season>
  *   /teams/<id>        -> /teams/<id>/<season>
  *
- * <season> is the 4-digit param or "current" (pages resolve and validate it with parseSeason);
- * <team> is an upper-cased tricode or ALL, default BKN. Returns null for paths it does not own.
+ * <season> is a 4-digit year in the site's range (FIRST_SEASON..LAST_KNOWN_SEASON + 1), anything
+ * else is "current", so crafted URLs cannot mint new cache entries; pages resolve and validate it
+ * with parseSeason. <team> is an upper-cased tricode or ALL, default BKN. Returns null for paths
+ * it does not own.
  */
 export function internalPath(pathname: string, query: URLSearchParams): string | null {
   const s = query.get("season") ?? "";
-  const season = /^\d{4}$/.test(s) ? s : "current";
+  const season = /^\d{4}$/.test(s) && isAddressableSeason(Number(s)) ? s : "current";
   const t = (query.get("team") ?? "").toUpperCase();
   const team = /^[A-Z]{2,4}$/.test(t) ? t : "BKN";
   const path = pathname.replace(/\/$/, "") || "/";
@@ -25,7 +29,12 @@ export function internalPath(pathname: string, query: URLSearchParams): string |
   return m ? `/${m[1]}/${m[2]}/${season}` : null;
 }
 
-/** The internal routes themselves, reachable directly: the proxy marks them X-Robots-Tag: noindex. */
+/** The internal routes themselves. Direct requests for them 404 (only the proxy's rewrites reach them). */
 export function isInternalPath(pathname: string): boolean {
   return /^\/(home\/[^/]+|players\/list\/.+|teams\/list\/.+|(players|teams)\/\d+\/[^/]+)(\/.*)?$/.test(pathname);
+}
+
+/** The one internal path served directly: a player's OG image, which the page's metadata links to. */
+export function isOgImagePath(pathname: string): boolean {
+  return /^\/players\/\d+\/[^/]+\/opengraph-image$/.test(pathname);
 }

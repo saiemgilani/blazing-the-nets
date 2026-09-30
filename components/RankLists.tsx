@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { RANK_MIN_FG3A, RANK_MIN_FGA, type RankEntry, type RankMetric, type RankSummary } from "@/lib/data/ranks.ts";
 import { fmtInt, fmtPct } from "@/lib/format.ts";
+import { playerHref } from "@/lib/links.ts";
 
 const fmt = (metric: RankMetric, v: number) => (metric === "fga" ? fmtInt(v) : fmtPct(v));
 
@@ -13,10 +14,10 @@ const why: Record<RankMetric, string> = {
 };
 
 /** Where the player sits league-wide on five shooting numbers, with each list's top five. */
-export function RankLists({ ranks, personId, season }: { ranks: RankSummary[]; personId: number; season: number }) {
+export function RankLists({ ranks, personId, seasonQuery }: { ranks: RankSummary[]; personId: number; seasonQuery: string }) {
   const row = (r: RankEntry, metric: RankMetric) => (
     <li key={r.person_id} className={`flex justify-between gap-2 ${r.person_id === personId ? "font-bold text-accent" : ""}`}>
-      <Link href={`/players/${r.person_id}?season=${season}`} className="truncate hover:underline">
+      <Link href={playerHref(r.person_id, seasonQuery)} prefetch={false} className="truncate underline decoration-muted/60 underline-offset-2 hover:decoration-accent">
         {r.rank}. {r.name}
       </Link>
       <span className="tabular-nums">{fmt(metric, r.value)}</span>

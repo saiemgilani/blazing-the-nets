@@ -51,6 +51,7 @@ export default async function Image({ params }: { params: Promise<{ id: string; 
         </svg>
       </div>
     ),
-    size,
+    // The route renders on demand; let the CDN keep each image for the 6 h the data is fresh.
+    { ...size, headers: { "Cache-Control": "public, s-maxage=21600, stale-while-revalidate=86400" } },
   );
 }

@@ -1,9 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { internalPath, isInternalPath } from "./lib/routes.ts";
+import { internalPath, isInternalPath, isOgImagePath } from "./lib/routes.ts";
 
 /**
- * Rewrites ?season= / ?team= URLs onto the prerendered internal routes (see lib/routes.ts), and
- * marks direct hits on those internal routes noindex (the public URLs carry the canonical tags).
+ * Rewrites ?season= / ?team= URLs onto the prerendered internal routes (see lib/routes.ts). Direct
+ * requests for an internal route 404, so each page has one public URL and crafted paths cannot
+ * create cache entries; the OG image path, which metadata links to, is the one exception.
  */
 export function proxy(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
@@ -15,9 +16,10 @@ export function proxy(request: NextRequest) {
     url.searchParams.delete("team");
     return NextResponse.rewrite(url);
   }
-  const res = NextResponse.next();
-  if (isInternalPath(pathname)) res.headers.set("X-Robots-Tag", "noindex");
-  return res;
+  if (isInternalPath(pathname) && !isOgImagePath(pathname)) {
+    return new NextResponse("Not found", { status: 404, headers: { "content-type": "text/plain" } });
+  }
+  return NextResponse.next();
 }
 
 export const config = {

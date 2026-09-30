@@ -11,9 +11,13 @@ const cases = [
   ["/players/123", 404, null], // unknown player: a real 404, not a 200 not-found page
   ["/teams/999", 404, null],
   ["/players?team=ZZZ", 404, null],
-  ["/players/1629008/current", 200, "noindex"], // internal routes are reachable but noindex
-  ["/home/current", 200, "noindex"],
-  ["/teams/list/current", 200, "noindex"],
+  ["/players/1629008?season=9999", 200, null], // out-of-range season: the current one, no new cache entry
+  ["/players/1629008/current", 404, null], // internal routes are only reachable through the proxy's rewrites
+  ["/players/1629008/9999", 404, null],
+  ["/players/1629008/..%2F..%2Fabout", 404, null],
+  ["/home/current", 404, null],
+  ["/teams/list/current", 404, null],
+  ["/players/1629008/current/opengraph-image", 200, null], // the one internal path metadata links to
   ["/sitemap.xml", 200, null],
   ["/robots.txt", 200, null],
 ];

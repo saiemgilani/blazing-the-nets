@@ -3,14 +3,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Card } from "@/components/Card.tsx";
 import { VersusChart } from "@/components/charts/VersusChart.tsx";
-import { PlayerExplorer } from "@/components/PlayerExplorer.tsx";
-import { RankLists } from "@/components/RankLists.tsx";
 import { Headshot } from "@/components/Headshot.tsx";
+import { PlayerExplorer } from "@/components/PlayerExplorer.tsx";
 import { QuerySelect } from "@/components/QuerySelect.tsx";
+import { RankLists } from "@/components/RankLists.tsx";
 import { listSeasons, parseSeason, seasonLabel } from "@/lib/data/seasons.ts";
 import { NETS_TEAM_ID } from "@/lib/data/teams.ts";
 import { fmtDec, fmtInt, fmtPct } from "@/lib/format.ts";
-import { loadPlayerPage, readSeasonData, seasonOptions, teamRoster } from "@/lib/pageData.ts";
+import { playerHref, seasonQuery, teamHref } from "@/lib/links.ts";
+import { loadPlayerPage, readPlayerSeasons, readSeasonData, seasonOptions, teamRoster } from "@/lib/pageData.ts";
 
 // Served at /players/<id>?season= (proxy.ts). The current season's Nets are prerendered; everyone
 // else renders on first request and is cached for 6 h.
@@ -27,31 +28,36 @@ export async function generateStaticParams() {
 async function resolve(params: Params) {
   const [{ id, season: param }, seasons] = await Promise.all([params, listSeasons()]);
   const season = parseSeason(param, seasons);
+  const current = seasons[seasons.length - 1];
   const personId = Number(id);
   const page = Number.isSafeInteger(personId) ? await loadPlayerPage(season, personId) : null;
-  return { page, season, seasons, isCurrent: season === seasons[seasons.length - 1] };
+  return { page, season, seasons, current, q: seasonQuery(season, current) };
 }
 
-const publicPath = (id: number, season: number, isCurrent: boolean) => `/players/${id}${isCurrent ? "" : `?season=${season}`}`;
-
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const { page, season, isCurrent } = await resolve(params);
-  // notFound() here runs before the page streams, so an unknown id is a real 404 despite loading.tsx.
+  const { page, season, q } = await resolve(params);
+  // A real 404 comes from there being no loading.tsx above this route (a loading boundary flushes
+  // a 200 shell first); notFound() here just keeps the metadata from describing a missing player.
   if (!page) notFound();
   const { player, line } = page;
   const label = seasonLabel(season);
   return {
     title: `${player.player_name}, ${label}`,
     description: `${player.player_name} (${page.teams.join(", ")}) ${label}: ${fmtInt(line.makes)}/${fmtInt(line.attempts)} FG, ${fmtPct(line.fgPct)} FG%, ${fmtPct(line.efgPct)} eFG%. Hex shot chart, shooting signature and distance and side splits against the league.`,
-    alternates: { canonical: publicPath(player.person_id, season, isCurrent) },
+    alternates: { canonical: playerHref(player.person_id, q) },
   };
 }
 
 export default async function PlayerPage({ params }: { params: Params }) {
-  const { page, season, seasons } = await resolve(params);
+  const { page, season, seasons, current, q } = await resolve(params);
   if (!page) notFound();
   const { player, line, prev, next } = page;
   const stats = player.stats;
+  // Only seasons he took a regular-season shot in (others would 404); all of them if the index fails.
+  const hisSeasons = await readPlayerSeasons()
+    .then((index) => index.get(player.person_id) ?? [season])
+    .catch(() => seasons);
+  const options = seasonOptions(seasons.filter((s) => hisSeasons.includes(s) || s === season));
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-start gap-5">
@@ -59,13 +65,7 @@ export default async function PlayerPage({ params }: { params: Params }) {
         <div className="min-w-0 flex-1 space-y-2">
           <h1 className="font-display text-3xl font-bold">{player.player_name}</h1>
           <p className="text-muted">
-            {page.teams.map((t, i) => (
-              <span key={t}>
-                {i > 0 && ", "}
-                {t}
-              </span>
-            ))}{" "}
-            · {seasonLabel(season)} regular season
+            {page.teams.join(", ")} · {seasonLabel(season)} regular season
           </p>
           <p className="tabular-nums">
             {fmtInt(line.makes)}/{fmtInt(line.attempts)} FG · {fmtPct(line.fgPct)} FG% · {fmtPct(line.efgPct)} eFG% ·{" "}
@@ -78,15 +78,22 @@ export default async function PlayerPage({ params }: { params: Params }) {
             </p>
           )}
           <div className="flex flex-wrap items-center gap-4 pt-1">
-            <QuerySelect label="Season" name="season" value={String(season)} options={seasonOptions(seasons)} basePath={`/players/${player.person_id}`} />
-            <Link href={`/teams/${player.team_id}?season=${season}`} className="text-sm text-accent hover:underline">
+            <QuerySelect
+              label="Season"
+              name="season"
+              value={String(season)}
+              options={options}
+              basePath={`/players/${player.person_id}`}
+              defaults={{ season: String(current) }}
+            />
+            <Link href={teamHref(player.team_id, q)} className="text-sm text-accent underline-offset-2 hover:underline">
               {player.team_tricode} team page →
             </Link>
           </div>
         </div>
       </header>
 
-      <RankLists ranks={page.ranks} personId={player.person_id} season={season} />
+      <RankLists ranks={page.ranks} personId={player.person_id} seasonQuery={q} />
 
       <PlayerExplorer data={page.explorer} subject={`${player.player_name} ${seasonLabel(season)}`} />
 
@@ -99,16 +106,17 @@ export default async function PlayerPage({ params }: { params: Params }) {
         </Card>
       )}
 
+      {/* ponytail: prev/next walk his primary team's roster, not the list the reader came from. */}
       <nav aria-label={`${player.team_tricode} players`} className="flex justify-between gap-4 text-sm">
         {prev ? (
-          <Link href={`/players/${prev.person_id}?season=${season}`} className="text-accent hover:underline">
+          <Link href={playerHref(prev.person_id, q)} className="text-accent underline-offset-2 hover:underline">
             ← {prev.player_name}
           </Link>
         ) : (
           <span />
         )}
         {next && (
-          <Link href={`/players/${next.person_id}?season=${season}`} className="text-accent hover:underline">
+          <Link href={playerHref(next.person_id, q)} className="text-accent underline-offset-2 hover:underline">
             {next.player_name} →
           </Link>
         )}

@@ -9,10 +9,15 @@ export interface GameInfo {
   team_id: number;
   opponent_id: number;
   opponent: string;
-  /** "vs." in the matchup; neutral-site games list both sides with "@", so both count as away. */
-  home: boolean;
+  /**
+   * "home" when the matchup reads "vs.", "away" for "@", "neutral" when both of the game's rows use
+   * "@" (NBA Cup finals, international games): neither side is at home.
+   */
+  venue: Venue;
   win: boolean | null;
 }
+
+export type Venue = "home" | "away" | "neutral";
 
 export const gameKey = (gameId: string, teamId: number) => `${gameId}:${teamId}`;
 
@@ -23,6 +28,7 @@ export function teamGames(rows: GameLogRow[]): Map<string, GameInfo> {
   const out = new Map<string, GameInfo>();
   for (const [gameId, pair] of byGame) {
     if (pair.length !== 2) continue; // ponytail: a half-logged game has no opponent; it drops out of per-game views
+    const neutral = pair.every((r) => !r.matchup.includes(" vs. "));
     for (const [me, them] of [pair, [pair[1], pair[0]]]) {
       out.set(gameKey(gameId, me.team_id), {
         game_id: gameId,
@@ -30,7 +36,7 @@ export function teamGames(rows: GameLogRow[]): Map<string, GameInfo> {
         team_id: me.team_id,
         opponent_id: them.team_id,
         opponent: them.team_abbreviation,
-        home: me.matchup.includes(" vs. "),
+        venue: neutral ? "neutral" : me.matchup.includes(" vs. ") ? "home" : "away",
         win: me.wl === null ? null : me.wl === "W",
       });
     }

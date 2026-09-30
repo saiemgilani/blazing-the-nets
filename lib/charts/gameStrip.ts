@@ -81,7 +81,7 @@ export function renderGameStrip(svg: SVGSVGElement, data: GameStripData, opts: G
     .on("pointerenter", (_, c) => {
       const g = c.game;
       tip.show(c.x + CELL, c.y + CELL, [
-        `${fmtDate(g.date)} ${g.home ? "vs" : "@"} ${g.opponent}${g.win === null ? "" : g.win ? ", W" : ", L"}`,
+        `${fmtDate(g.date)} ${g.venue === "home" ? "vs" : g.venue === "away" ? "@" : "vs (neutral site)"} ${g.opponent}${g.win === null ? "" : g.win ? ", W" : ", L"}`,
         `${g.makes}/${g.attempts} FG, ${fmtPct(g.fgPct)}`,
         selected.has(g.game_id) ? "click to drop" : "click to add",
       ]);

@@ -49,11 +49,12 @@ export function PlayerExplorer({ data, subject }: { data: ExplorerData; subject:
   const dashboard = useMemo(() => buildDashboard(shots, data.league), [shots, data.league]);
   const rolling = useMemo(() => ({ points: view ? rollingLines(view, n) : [], seasonFgPct: data.seasonFgPct, n }), [view, n, data.seasonFgPct]);
   const line = shootingLine(shots);
+  const neutral = games ? games.filter((g) => g.venue === "neutral").length : 0;
 
   return (
     <div className="space-y-6">
       {games ? (
-        <Card title="Games">
+        <Card title="Games" id="games">
           <div className="mb-3 flex flex-wrap items-center gap-2" role="group" aria-label="Select games">
             {GAME_PRESETS.map((p) => (
               <button key={p} type="button" aria-pressed={activePreset === p} onClick={() => choose(p)} className={buttonClass(activePreset === p)}>
@@ -64,6 +65,11 @@ export function PlayerExplorer({ data, subject }: { data: ExplorerData; subject:
               <button type="button" onClick={() => setDateWindow(null)} className={buttonClass(false)}>
                 Clear dates
               </button>
+            )}
+            {neutral > 0 && (
+              <span className="text-sm text-muted">
+                {neutral} neutral-site game{neutral === 1 ? "" : "s"} (in neither Home nor Away)
+              </span>
             )}
           </div>
           <p className="mb-2 text-sm tabular-nums" aria-live="polite">
@@ -81,10 +87,12 @@ export function PlayerExplorer({ data, subject }: { data: ExplorerData; subject:
         </p>
       )}
 
-      <Dashboard data={dashboard} subject={subject} />
+      <div id="charts" className="scroll-mt-4">
+        <Dashboard data={dashboard} subject={subject} />
+      </div>
 
       {games && (
-        <Card title="Rolling shooting">
+        <Card title="Rolling shooting" id="rolling">
           <div className="mb-3 flex items-center gap-2 text-sm text-muted" role="group" aria-label="Rolling window">
             Window
             {WINDOWS.map((w) => (

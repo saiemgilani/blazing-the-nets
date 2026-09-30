@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Card } from "@/components/Card.tsx";
 import { VersusChart } from "@/components/charts/VersusChart.tsx";
 import { Headshot } from "@/components/Headshot.tsx";
+import { MobileCollapse } from "@/components/MobileCollapse.tsx";
 import { PlayerExplorer } from "@/components/PlayerExplorer.tsx";
 import { QuerySelect } from "@/components/QuerySelect.tsx";
 import { RankLists } from "@/components/RankLists.tsx";
@@ -93,16 +94,33 @@ export default async function PlayerPage({ params }: { params: Params }) {
         </div>
       </header>
 
+      <nav aria-label="On this page" className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        <span className="text-muted">On this page:</span>
+        {[
+          ["#ranks", "League ranks"],
+          ...(page.explorer.games ? [["#games", "Games"]] : []),
+          ["#charts", "Shot charts"],
+          ...(page.explorer.games ? [["#rolling", "Rolling shooting"]] : []),
+          ...(page.versus ? [["#versus", "Versus each opponent"]] : []),
+        ].map(([href, label]) => (
+          <a key={href} href={href} className="text-accent underline-offset-2 hover:underline">
+            {label}
+          </a>
+        ))}
+      </nav>
+
       <RankLists ranks={page.ranks} personId={player.person_id} seasonQuery={q} />
 
       <PlayerExplorer data={page.explorer} subject={`${player.player_name} ${seasonLabel(season)}`} />
 
       {page.versus && (
-        <Card title="Versus each opponent">
-          <VersusChart
-            data={{ rows: page.versus, leagueFgPct: page.explorer.league.fgPct }}
-            title={`${player.player_name} attempts and FG% against each opponent`}
-          />
+        <Card title="Versus each opponent" id="versus">
+          <MobileCollapse label={`Show ${page.versus.length} opponents`}>
+            <VersusChart
+              data={{ rows: page.versus, leagueFgPct: page.explorer.league.fgPct }}
+              title={`${player.player_name} attempts and FG% against each opponent`}
+            />
+          </MobileCollapse>
         </Card>
       )}
 

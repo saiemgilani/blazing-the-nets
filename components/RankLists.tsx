@@ -24,15 +24,20 @@ export function RankLists({ ranks, personId, seasonQuery }: { ranks: RankSummary
     </li>
   );
   return (
-    <section aria-label="League ranks" className="space-y-2">
+    <section id="ranks" aria-label="League ranks" className="scroll-mt-4 space-y-2">
       <h2 className="font-display text-lg font-bold">League ranks</h2>
       <p className="text-sm text-muted">
         Among players with {RANK_MIN_FGA}+ field-goal attempts this regular season; season stats where the release has them, else
-        play-by-play shots.
+        play-by-play shots. 3P% also needs {RANK_MIN_FG3A}+ three-point attempts; TS% needs a season-stats row (free throws are not
+        in the shot data).
       </p>
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <p className="text-sm text-muted sm:hidden" aria-hidden>
+        Swipe for all five →
+      </p>
+      <div className="relative">
+      <ul className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 lg:grid-cols-5">
         {ranks.map((s) => (
-          <li key={s.metric} className="rounded-lg border border-line bg-surface p-3 text-sm">
+          <li key={s.metric} className="min-w-[15rem] snap-start rounded-lg border border-line bg-surface p-3 text-sm sm:min-w-0">
             <p className="text-muted">{s.label}</p>
             {s.me ? (
               <p className="font-display text-xl font-bold tabular-nums">
@@ -56,6 +61,9 @@ export function RankLists({ ranks, personId, seasonQuery }: { ranks: RankSummary
           </li>
         ))}
       </ul>
+      {/* A fade at the right edge says there is more to scroll to on a phone. */}
+      <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-bg sm:hidden" />
+      </div>
     </section>
   );
 }

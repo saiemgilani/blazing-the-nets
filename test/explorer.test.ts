@@ -62,7 +62,18 @@ test("rank summaries: his row, N, and the top five", () => {
   assert.equal(rankSummaries(players, 99)[0].me, null);
 });
 
-test("selection presets split the season: home/away and wins/losses partition every game", () => {
+test("selection presets: home, away and neutral split the season; neutral is in neither preset", () => {
+  const mixed = [
+    { game_id: "a", venue: "home" as const, win: true },
+    { game_id: "b", venue: "away" as const, win: false },
+    { game_id: "c", venue: "neutral" as const, win: true },
+  ];
+  assert.deepEqual(presetGames(mixed, "home"), ["a"]);
+  assert.deepEqual(presetGames(mixed, "away"), ["b"]);
+  assert.deepEqual(presetGames(mixed, "wins"), ["a", "c"]);
+});
+
+test("selection presets on real games: home/away and wins/losses partition every game", () => {
   assert.equal(games.length, 24);
   const ids = (p: (typeof GAME_PRESETS)[number]) => new Set(presetGames(games, p));
   assert.equal(ids("all").size, 24);

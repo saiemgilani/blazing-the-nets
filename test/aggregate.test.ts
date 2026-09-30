@@ -107,7 +107,7 @@ test("hexbins keep every attempt and stay on the court", () => {
 
 const info = (game_id: string, date: string, extra: Partial<GameInfo> = {}): [string, GameInfo] => [
   gameKey(game_id, NETS),
-  { game_id, date, team_id: NETS, opponent_id: 1, opponent: "AAA", home: true, win: true, ...extra },
+  { game_id, date, team_id: NETS, opponent_id: 1, opponent: "AAA", venue: "home", win: true, ...extra },
 ];
 
 test("playerGames orders by date, not game_id, and throws on a game missing from the logs", () => {
@@ -139,10 +139,10 @@ test("the opponent map pairs each game's two rows (real game logs)", () => {
     assert.notEqual(g.opponent_id, NETS);
     const other = games.get(gameKey(g.game_id, g.opponent_id));
     assert.ok(other && other.opponent === "BKN" && other.opponent_id === NETS && other.date === g.date);
-    assert.ok(!(g.home && other.home), "at most one home side per game");
+    assert.ok(!(g.venue === "home" && other.venue === "home"), "at most one home side per game");
     if (g.win !== null && other.win !== null) assert.notEqual(g.win, other.win);
   }
-  assert.deepEqual([nets.filter((g) => g.home).length, nets.filter((g) => !g.home).length, nets.filter((g) => g.win).length], [13, 11, 6]);
+  assert.deepEqual([nets.filter((g) => g.venue === "home").length, nets.filter((g) => g.venue === "away").length, nets.filter((g) => g.win).length], [13, 11, 6]);
 });
 
 const pg = (game_id: string, attempts: number, makes: number, fg3m = 0, opponent = "AAA", opponent_id = 1): PlayerGame => ({
@@ -151,7 +151,7 @@ const pg = (game_id: string, attempts: number, makes: number, fg3m = 0, opponent
   team_id: NETS,
   opponent_id,
   opponent,
-  home: true,
+  venue: "home",
   win: true,
   ...lineOf({ attempts, makes, fg3a: fg3m, fg3m }),
 });
@@ -176,4 +176,15 @@ test("versusOpponents sums each opponent, most attempts first", () => {
     ["BOS", 1, 4, 1],
   ]);
   assert.equal(rows[0].fgPct, 0.5);
+});
+
+test("a game whose two rows both read @ is neutral for both sides", () => {
+  const row = (team_id: number, abbr: string, matchup: string, wl: "W" | "L") => ({ game_id: "0022500999", team_id, team_abbreviation: abbr, game_date: "2025-12-16", matchup, wl });
+  const neutral = teamGames([row(1610612751, "BKN", "BKN @ SAS", "W"), row(1610612759, "SAS", "SAS @ BKN", "L")]);
+  assert.deepEqual([...neutral.values()].map((g) => [g.opponent, g.venue, g.win]), [
+    ["SAS", "neutral", true],
+    ["BKN", "neutral", false],
+  ]);
+  const normal = teamGames([row(1610612751, "BKN", "BKN vs. SAS", "W"), row(1610612759, "SAS", "SAS @ BKN", "L")]);
+  assert.deepEqual([...normal.values()].map((g) => g.venue), ["home", "away"]);
 });

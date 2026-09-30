@@ -16,12 +16,13 @@ export const PRESET_LABELS: Record<GamePreset, string> = {
 };
 
 /** Game ids a preset selects. */
-export function presetGames(games: Pick<PlayerGame, "game_id" | "home" | "win">[], preset: GamePreset): string[] {
-  const keep: Record<GamePreset, (g: Pick<PlayerGame, "home" | "win">) => boolean> = {
+/** Home and Away leave out neutral-site games; the page says how many there are. */
+export function presetGames(games: Pick<PlayerGame, "game_id" | "venue" | "win">[], preset: GamePreset): string[] {
+  const keep: Record<GamePreset, (g: Pick<PlayerGame, "venue" | "win">) => boolean> = {
     all: () => true,
     none: () => false,
-    home: (g) => g.home,
-    away: (g) => !g.home,
+    home: (g) => g.venue === "home",
+    away: (g) => g.venue === "away",
     wins: (g) => g.win === true,
     losses: (g) => g.win === false,
   };

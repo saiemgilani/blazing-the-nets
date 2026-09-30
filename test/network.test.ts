@@ -110,6 +110,6 @@ test("real release files: shots 2026 -> Nets -> one player", { skip }, async (t)
   assert.equal(games.length, top.stats?.gp);
   assert.deepEqual(games.map((g) => g.date), games.map((g) => g.date).sort());
   const versus = versusOpponents(games);
-  t.diagnostic(`${top.player_name}: ${games.length} games, ${games.filter((g) => g.home).length} home, ${games.filter((g) => g.win).length} wins, ${versus.length} opponents, most ${versus[0].opponent} ${versus[0].attempts} FGA`);
+  t.diagnostic(`${top.player_name}: ${games.length} games, ${games.filter((g) => g.venue === "home").length} home, ${games.filter((g) => g.venue === "neutral").length} neutral, ${games.filter((g) => g.win).length} wins, ${versus.length} opponents, most ${versus[0].opponent} ${versus[0].attempts} FGA`);
   assert.equal(versus.reduce((a, r) => a + r.attempts, 0), mine.length);
 });

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFileSync } from "node:fs";
 import { AssetMissingError, openAsset, readColumns, timedFetch } from "../lib/data/releases.ts";
+import { readHeadshots } from "../lib/data/rosters.ts";
 import { fixtureShots } from "./helpers.ts";
 
 /** Swap global fetch for a scripted one for the length of `run`. */
@@ -99,4 +100,16 @@ test("readColumns: flat arrays in row order, the same values the validated rows 
   assert.equal(people.length, 2000);
   assert.deepEqual(people.map(Number), rows.map((r) => r.person_id));
   assert.deepEqual(games, rows.map((r) => r.game_id));
+});
+
+test("readHeadshots: a failed ESPN read (403/5xx) gives no headshots instead of failing the page", async () => {
+  let headshots: Map<number, string> | undefined;
+  const calls = await withFetch([() => new Response("busy", { status: 503 })], async () => {
+    headshots = await readHeadshots(1999, [{ person_id: 1, player_name: "A Player" }]);
+  });
+  assert.ok(calls >= 2, "the reads were attempted (and retried)");
+  assert.equal(headshots?.size, 0);
+  await withFetch([() => new Response("no", { status: 403 })], async () => {
+    assert.equal((await readHeadshots(1998, [])).size, 0);
+  });
 });

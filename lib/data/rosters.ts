@@ -81,19 +81,28 @@ export function bridgeHeadshots(
  * appeared, so it also covers traded and waived players (2026: 561/582 shooters vs 517/582 from
  * rosters); rosters is a current-state snapshot, kept as the fallback for a season player_core
  * does not have yet.
+ *
+ * Headshots are decoration: a failed read (403, 429, 5xx after the retry) logs and returns no
+ * headshots, like a failed game-log read, instead of failing a page whose data all loaded. Every
+ * caller goes through here, so this is the one guard.
  */
 export async function readHeadshots(
   season: number,
   players: { person_id: number; player_name: string }[],
 ): Promise<Map<number, string>> {
-  const optional = { optional: true };
-  const [core, xw] = await Promise.all([
-    readParquet(PLAYER_CORE_TAG, `player_core_${season}.parquet`, EspnAthleteRow, optional),
-    readParquet(CROSSWALK_TAG, `nba_player_crosswalk_${season}.parquet`, CrosswalkRow, optional),
-  ]);
-  const [athletes, league] = await Promise.all([
-    core.length > 0 ? core : readParquet(ROSTERS_TAG, `rosters_${season}.parquet`, EspnAthleteRow, optional),
-    readPlayers(season),
-  ]);
-  return bridgeHeadshots(players, athletes, xw, league.map((p) => p.player_name));
+  try {
+    const optional = { optional: true };
+    const [core, xw] = await Promise.all([
+      readParquet(PLAYER_CORE_TAG, `player_core_${season}.parquet`, EspnAthleteRow, optional),
+      readParquet(CROSSWALK_TAG, `nba_player_crosswalk_${season}.parquet`, CrosswalkRow, optional),
+    ]);
+    const [athletes, league] = await Promise.all([
+      core.length > 0 ? core : readParquet(ROSTERS_TAG, `rosters_${season}.parquet`, EspnAthleteRow, optional),
+      readPlayers(season),
+    ]);
+    return bridgeHeadshots(players, athletes, xw, league.map((p) => p.player_name));
+  } catch (e) {
+    console.warn(`[headshots ${season}] unavailable, showing initials: ${(e as Error).message}`);
+    return new Map();
+  }
 }

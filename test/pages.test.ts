@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { nextSeasonReady, parseSeason } from "../lib/data/seasons.ts";
-import { NETS_TEAM_ID } from "../lib/data/teams.ts";
+import { nextSeasonReady, parseSeason, probeNextSeason, type ShotGameRow } from "../lib/data/seasons.ts";
+import { NETS_TEAM_ID, TEAMS } from "../lib/data/teams.ts";
 import { assemblePlayerPage, assembleTeamPage, playerRows, seasonData } from "../lib/pageData.ts";
 import { playerHref, seasonQuery, withParams } from "../lib/links.ts";
 import { internalPath, isInternalPath, isOgImagePath } from "../lib/routes.ts";
@@ -109,11 +109,31 @@ test("team page data and table rows", () => {
   assert.equal(playerRows(data.players)[0].attempts, data.players[0].attempts);
 });
 
-test("the next season becomes current only with regular-season shots and a stats file", () => {
+const row = (game_id: string, team_id: number): ShotGameRow => ({ game_id, team_id });
+const everyTeam = TEAMS.map((t, i) => row(`00226${String(i + 1).padStart(5, "0")}`, t.team_id));
+
+test("the next season becomes current only when every team has a regular-season shot and stats exist", () => {
   assert.equal(nextSeasonReady([], true), false, "no shots file yet");
-  assert.equal(nextSeasonReady(["0012600001", "0012600002"], true), false, "preseason (001) only");
-  assert.equal(nextSeasonReady(["0012600001", "0022600001"], false), false, "shots present, stats missing");
-  assert.equal(nextSeasonReady(["0012600001", "0022600001"], true), true);
+  assert.equal(nextSeasonReady(TEAMS.map((t) => row("0012600001", t.team_id)), true), false, "preseason (001) only");
+  const openingNight = [row("0022600001", NETS_TEAM_ID), row("0022600001", 1610612738)];
+  assert.equal(nextSeasonReady(openingNight, true), false, "one game played: most teams (maybe the Nets) have no shots");
+  assert.equal(nextSeasonReady(everyTeam.slice(1), true), false, "29 of 30 teams");
+  assert.equal(nextSeasonReady(everyTeam, false), false, "shots present, stats missing");
+  assert.equal(nextSeasonReady(everyTeam, true), true);
+});
+
+test("the season probe wires the stats HEAD into the answer", async () => {
+  let heads = 0;
+  const reads = (rows: ShotGameRow[], status: number) => ({
+    shots: async () => rows,
+    statsStatus: async () => ((heads += 1), status),
+  });
+  assert.equal(await probeNextSeason(reads(everyTeam, 200)), true);
+  assert.equal(await probeNextSeason(reads(everyTeam, 404)), false, "a missing stats file keeps the season closed");
+  await assert.rejects(probeNextSeason(reads(everyTeam, 503)), /HEAD 503/, "an unknown answer is not a no");
+  heads = 0;
+  assert.equal(await probeNextSeason(reads(everyTeam.slice(0, 2), 200)), false);
+  assert.equal(heads, 0, "no stats request before every team has played");
 });
 
 test("links to the current season carry no ?season=, others do; defaults drop out of the query", () => {

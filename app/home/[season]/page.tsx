@@ -60,6 +60,9 @@ export default async function Home({ params }: { params: Params }) {
         <h2 className="mb-4 font-display text-xl font-bold">
           Brooklyn Nets, {label} <span className="text-base font-normal text-muted">regular season, by attempts</span>
         </h2>
+        {roster.length === 0 && (
+          <p className="text-muted">No Nets regular-season shots in {label} yet; the charts fill in after their first game.</p>
+        )}
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {roster.map((p) => {
             const line = lineOf(p);

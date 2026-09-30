@@ -4,7 +4,7 @@ import { scaleLinear } from "d3-scale";
 import { pointer, select } from "d3-selection";
 import { zoom, type ZoomTransform } from "d3-zoom";
 import { fmtDec, fmtPct, foldText } from "../format.ts";
-import { median, pointValue, SCATTER_INFO, smallHeadshot, surname, type ScatterMetric, type ScatterPoint } from "../scatterMetrics.ts";
+import { dotLabels, median, pointValue, SCATTER_INFO, smallHeadshot, type ScatterMetric, type ScatterPoint } from "../scatterMetrics.ts";
 import { DEFAULT_WIDTH } from "./court.ts";
 import { FONT_PX, setViewBox, tooltip, TOKENS, uniqueId } from "./theme.ts";
 
@@ -108,6 +108,7 @@ export function renderScatter(svg: SVGSVGElement, points: ScatterPoint[], opts: 
     .style("stroke-width", (d) => (d.p.nets ? 1 : 0.75))
     .style("opacity", (d) => (match(d.p) ? 1 : 0.1))
     .style("display", faces ? "none" : "inline");
+  const labelOf = dotLabels(visible.map((d) => d.p.name));
   const labels = plot
     .append("g")
     .selectAll("text")
@@ -118,7 +119,7 @@ export function renderScatter(svg: SVGSVGElement, points: ScatterPoint[], opts: 
     .style("stroke", TOKENS.bg)
     .style("stroke-width", 3)
     .style("paint-order", "stroke")
-    .text((d) => surname(d.p.name));
+    .text((d) => labelOf.get(d.p.name) ?? d.p.name);
   root
     .append("text")
     .attr("x", (M.left + W - M.right) / 2)

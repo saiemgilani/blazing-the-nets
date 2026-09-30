@@ -19,11 +19,6 @@ export const SCATTER_INFO: Record<ScatterMetric, { label: string; pct: boolean }
 
 export const SCATTER_DEFAULT = { x: "ptsPg", y: "efgPct" } as const satisfies Record<"x" | "y", ScatterMetric>;
 
-/** A metric name from a URL or a picker: whitelisted, else the fallback. */
-export function parseMetric(value: string | null | undefined, fallback: ScatterMetric): ScatterMetric {
-  return (SCATTER_METRICS as readonly string[]).includes(value ?? "") ? (value as ScatterMetric) : fallback;
-}
-
 export interface ScatterPoint {
   person_id: number;
   name: string;
@@ -46,6 +41,22 @@ export function surname(name: string): string {
   const parts = name.trim().split(/\s+/);
   while (parts.length > 1 && /^(jr|sr|ii|iii|iv|v)\.?$/i.test(parts[parts.length - 1])) parts.pop();
   return parts[parts.length - 1];
+}
+
+/**
+ * Dot labels: the surname, or first initial and surname when two or more of `names` share it
+ * (eleven plotted Williamses would otherwise all read "Williams").
+ */
+export function dotLabels(names: string[]): Map<string, string> {
+  const count = new Map<string, number>();
+  for (const n of names) count.set(surname(n), (count.get(surname(n)) ?? 0) + 1);
+  return new Map(
+    names.map((n) => {
+      const last = surname(n);
+      const first = n.trim().split(/\s+/)[0];
+      return [n, (count.get(last) ?? 0) > 1 && first && first !== last ? `${first[0]}. ${last}` : last];
+    }),
+  );
 }
 
 export function median(values: number[]): number | null {

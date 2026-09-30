@@ -5,12 +5,10 @@ import { lineOf, type PlayerGame } from "../lib/data/aggregate.ts";
 import { ACTIVE_DAYS, activeSince, leaderBoards, leaderboard, minAttempts, minThrees, topRows, windowLine, type PlayerGames } from "../lib/data/leaders.ts";
 import type { PlayerSeason } from "../lib/data/players.ts";
 import { scatterPoints, scatterValues } from "../lib/data/scatter.ts";
-import { median, parseMetric, pointValue, randomPair, SCATTER_DEFAULT, SCATTER_METRICS, smallHeadshot, surname } from "../lib/scatterMetrics.ts";
+import { dotLabels, median, pointValue, randomPair, SCATTER_DEFAULT, SCATTER_METRICS, smallHeadshot, surname } from "../lib/scatterMetrics.ts";
 import { hotkey, sortRows, tableReducer, type TableState } from "../lib/table.ts";
 
-test("scatter metrics: only whitelisted names parse; defaults are PTS/g and eFG%", () => {
-  assert.equal(parseMetric("tsPct", "efgPct"), "tsPct");
-  for (const bad of [null, undefined, "", "pts", "__proto__", "constructor", "TSPCT"]) assert.equal(parseMetric(bad, "efgPct"), "efgPct");
+test("scatter metrics: defaults are PTS/g and eFG%; random pairs, medians, labels", () => {
   assert.deepEqual(SCATTER_DEFAULT, { x: "ptsPg", y: "efgPct" });
   for (let i = 0; i < 50; i++) {
     const [a, b] = randomPair(() => (i * 0.137) % 1);
@@ -20,6 +18,8 @@ test("scatter metrics: only whitelisted names parse; defaults are PTS/g and eFG%
   assert.equal(median([3, 1, 2]), 2);
   assert.equal(median([4, 1, 2, 3]), 2.5);
   assert.equal(median([]), null);
+  const labels = dotLabels(["Jalen Williams", "Ziaire Williams", "Nic Claxton", "Michael Porter Jr.", "Kevin Porter Jr.", "Nene"]);
+  assert.deepEqual([...labels.values()], ["J. Williams", "Z. Williams", "Claxton", "M. Porter", "K. Porter", "Nene"], "an initial only where the surname is shared");
   assert.deepEqual(["Michael Porter Jr.", "Gary Payton II", "Marvin Bagley III", "Day'Ron Sharpe", "Nene", "Tim Hardaway Jr"].map(surname), ["Porter", "Payton", "Bagley", "Sharpe", "Nene", "Hardaway"]);
   assert.equal(
     smallHeadshot("https://a.espncdn.com/i/headshots/nba/players/full/4278104.png"),

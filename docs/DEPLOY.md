@@ -98,7 +98,8 @@ BASE_URL=https://<preview-or-production-url> node scripts/probe-routes.mjs   # e
 1. In **Settings → Domains**, add `blazingthenets.com` and `www.blazingthenets.com`.
 2. Make the apex the primary domain and let `www` redirect to it with a **308**, which keeps the
    path. Vercel's default for a new redirect is 307 (temporary); pick 308 in the domain's edit
-   dialog. That matches the old behaviour and `homepage` in `package.json`.
+   dialog. Like Firebase's old 301 it is permanent; unlike a 301 it also keeps the request method.
+   The apex is the canonical host, as `homepage` in `package.json` says.
 3. Vercel then shows the DNS records it expects for each. Use what that panel shows; the steps
    below give the defaults at the time of writing.
 

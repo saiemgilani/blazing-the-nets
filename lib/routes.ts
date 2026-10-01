@@ -1,4 +1,4 @@
-import { isAddressableSeason } from "./seasonRange.ts";
+import { isAddressableSeason, netsTricode } from "./seasonRange.ts";
 
 /**
  * Public URLs keep the season (and team filter) in the query string: /players/1629008?season=2025.
@@ -15,14 +15,15 @@ import { isAddressableSeason } from "./seasonRange.ts";
  *
  * <season> is a 4-digit year in the site's range (FIRST_SEASON..LAST_KNOWN_SEASON + 1), anything
  * else is "current", so crafted URLs cannot mint new cache entries; pages resolve and validate it
- * with parseSeason. <team> is an upper-cased tricode or ALL, default BKN. Returns null for paths
+ * with parseSeason. <team> is an upper-cased tricode or ALL, default the Nets (BKN, or NJN for a
+ * season before 2012-13; the current season is always a Brooklyn one). Returns null for paths
  * it does not own.
  */
 export function internalPath(pathname: string, query: URLSearchParams): string | null {
   const s = query.get("season") ?? "";
   const season = /^\d{4}$/.test(s) && isAddressableSeason(Number(s)) ? s : "current";
   const t = (query.get("team") ?? "").toUpperCase();
-  const team = /^[A-Z]{2,4}$/.test(t) ? t : "BKN";
+  const team = /^[A-Z]{2,4}$/.test(t) ? t : season === "current" ? "BKN" : netsTricode(Number(season));
   const path = pathname.replace(/\/$/, "") || "/";
   if (path === "/") return `/home/${season}`;
   if (path === "/players") return `/players/list/${season}/${team}`;

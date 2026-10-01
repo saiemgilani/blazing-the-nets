@@ -3,26 +3,33 @@ import { notFound } from "next/navigation";
 import { PlayerTable } from "@/components/PlayerTable.tsx";
 import { QuerySelect } from "@/components/QuerySelect.tsx";
 import { seasonLabel } from "@/lib/data/seasons.ts";
-import { teamsFromShots } from "@/lib/data/teams.ts";
+import { franchiseOf, teamsFromShots } from "@/lib/data/teams.ts";
 import { withParams } from "@/lib/links.ts";
 import { playerRows, readSeasonData, resolveSeason, seasonOptions, teamRoster } from "@/lib/pageData.ts";
+import { netsTricode } from "@/lib/seasonRange.ts";
 
-// Served at /players?season=&team= (proxy.ts). team is a tricode or ALL; default BKN.
+// Served at /players?season=&team= (proxy.ts). team is a tricode or ALL; default the season's Nets (BKN or NJN).
 export const revalidate = 21600;
 type Params = Promise<{ season: string; team: string }>;
 
+/**
+ * The season, its teams and the selected one. A tricode the season does not use but its franchise
+ * did in another season (NJN in 2020, SEA in 2010) selects that franchise, so switching seasons from
+ * a relocated team's list does not 404. Unknown tricodes -> notFound().
+ */
 async function resolve(params: Params) {
   const { season: param, team } = await params;
   const { season, seasons, current, q } = await resolveSeason(param);
-  return { team, season, seasons, q, defaults: { season: String(current), team: "BKN" } };
+  const data = await readSeasonData(season);
+  const teams = teamsFromShots(data.shots, season);
+  const selected = team === "ALL" ? null : (teams.find((t) => t.tricode === team) ?? teams.find((t) => t.team_id === franchiseOf(team)));
+  if (selected === undefined) notFound();
+  const defaults = { season: String(current), team: netsTricode(season) };
+  return { data, teams, selected, team: selected?.tricode ?? "ALL", season, seasons, q, defaults };
 }
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { team, season, defaults } = await resolve(params);
-  if (team !== "ALL") {
-    const data = await readSeasonData(season);
-    if (!teamsFromShots(data.shots).some((t) => t.tricode === team)) notFound();
-  }
   return { title: "Players", alternates: { canonical: withParams("/players", { season: String(season), team }, defaults) } };
 }
 
@@ -31,11 +38,7 @@ export function generateStaticParams() {
 }
 
 export default async function Players({ params }: { params: Params }) {
-  const { team, season, seasons, defaults, q } = await resolve(params);
-  const data = await readSeasonData(season);
-  const teams = teamsFromShots(data.shots);
-  const selected = team === "ALL" ? null : teams.find((t) => t.tricode === team);
-  if (team !== "ALL" && !selected) notFound();
+  const { data, teams, selected, team, season, seasons, defaults, q } = await resolve(params);
   const rows = playerRows(selected ? teamRoster(data, selected.team_id) : data.players);
 
   return (

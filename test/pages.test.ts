@@ -32,7 +32,12 @@ test("public URLs rewrite onto the internal season routes", () => {
   assert.equal(internalPath("/players/1629008", q("season=abc")), "/players/1629008/current");
   // Out-of-range years cannot mint cache entries: they read as the current season.
   assert.equal(internalPath("/players/1629008", q("season=9999")), "/players/1629008/current");
-  assert.equal(internalPath("/players/1629008", q("season=2015")), "/players/1629008/current");
+  assert.equal(internalPath("/players/1629008", q("season=1997")), "/players/1629008/current");
+  assert.equal(internalPath("/players/1629008", q("season=1998")), "/players/1629008/1998");
+  // With no team, the list is the season's Nets: NJN before 2012-13.
+  assert.equal(internalPath("/players", q("season=2003")), "/players/list/2003/NJN");
+  assert.equal(internalPath("/players", q("season=2013")), "/players/list/2013/BKN");
+  assert.equal(internalPath("/players", q("season=1997")), "/players/list/current/BKN");
   assert.equal(internalPath("/players/1629008", q(`season=${LAST_KNOWN_SEASON + 1}`)), `/players/1629008/${LAST_KNOWN_SEASON + 1}`);
   assert.equal(internalPath("/teams/1610612751/", q("season=2020")), "/teams/1610612751/2020");
   assert.equal(internalPath("/teams", q("")), "/teams/list/current");
@@ -149,7 +154,8 @@ test("only the OG image is served straight from an internal path", () => {
   assert.ok(isOgImagePath("/players/1629008/current/opengraph-image"));
   assert.ok(isOgImagePath("/players/1629008/2025/opengraph-image"));
   assert.ok(isOgImagePath(`/players/1629008/${LAST_KNOWN_SEASON + 1}/opengraph-image`));
-  for (const season of ["foo", "2015", "9999", `${LAST_KNOWN_SEASON + 2}`, "02025", "current2"]) {
+  assert.ok(isOgImagePath("/players/1629008/1998/opengraph-image"), "the first listed season");
+  for (const season of ["foo", "1997", "9999", `${LAST_KNOWN_SEASON + 2}`, "02025", "current2"]) {
     assert.ok(!isOgImagePath(`/players/1629008/${season}/opengraph-image`), `clamped: ${season}`);
   }
   assert.ok(!isOgImagePath("/players/12345678901/current/opengraph-image"), "ids are at most 10 digits, like the public route");
@@ -158,18 +164,18 @@ test("only the OG image is served straight from an internal path", () => {
   assert.ok(isInternalPath("/players/1629008/..%2F..%2Fabout"), "crafted internal paths are internal (so they 404)");
 });
 
-test("the season index reads at most two files at once, and keeps season order", async () => {
-  assert.equal(SEASON_INDEX_CONCURRENCY, 2);
+test("the season index reads at most four files at once, and keeps season order", async () => {
+  assert.equal(SEASON_INDEX_CONCURRENCY, 4);
   let inFlight = 0;
   let peak = 0;
-  const seasons = [2016, 2017, 2018, 2019, 2020, 2021, 2022];
+  const seasons = [1998, 1999, 2016, 2017, 2018, 2019, 2020, 2021, 2022];
   const out = await mapLimit(seasons, SEASON_INDEX_CONCURRENCY, async (season) => {
     peak = Math.max(peak, ++inFlight);
     await new Promise((resolve) => setTimeout(resolve, (2023 - season) * 2)); // later seasons finish first
     inFlight -= 1;
     return season * 10;
   });
-  assert.equal(peak, 2);
+  assert.equal(peak, 4);
   assert.deepEqual(out, seasons.map((s) => s * 10));
   assert.deepEqual(await mapLimit([], 2, async () => 1), []);
 });

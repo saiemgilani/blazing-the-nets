@@ -5,7 +5,7 @@ import { QuerySelect } from "@/components/QuerySelect.tsx";
 import { lineOf } from "@/lib/data/aggregate.ts";
 import { readHeadshots } from "@/lib/data/rosters.ts";
 import { seasonLabel } from "@/lib/data/seasons.ts";
-import { NETS_TEAM_ID } from "@/lib/data/teams.ts";
+import { NETS_TEAM_ID, teamName } from "@/lib/data/teams.ts";
 import { fmtDec, fmtInt, fmtPct } from "@/lib/format.ts";
 import { playerHref, withParams } from "@/lib/links.ts";
 import { readSeasonData, resolveSeason, seasonOptions, teamRoster } from "@/lib/pageData.ts";
@@ -35,7 +35,8 @@ export default async function Home({ params }: { params: Params }) {
       <section className="space-y-3">
         <h1 className="font-display text-3xl font-bold">Where the Nets shoot, and how often it goes in.</h1>
         <p className="max-w-2xl text-muted">
-          Hex shot charts, shooting signatures and distance and side splits for every Brooklyn Nets player, compared with
+          Hex shot charts, shooting signatures and distance and side splits for every Nets player (Brooklyn since 2012-13,
+          New Jersey before), compared with
           the rest of the league, from stats.nba.com play-by-play.
         </p>
         <div className="flex flex-wrap items-center gap-4">
@@ -51,7 +52,7 @@ export default async function Home({ params }: { params: Params }) {
 
       <section>
         <h2 className="mb-4 font-display text-xl font-bold">
-          Brooklyn Nets, {label} <span className="text-base font-normal text-muted">regular season, by attempts</span>
+          {teamName(NETS_TEAM_ID, season)}, {label} <span className="text-base font-normal text-muted">regular season, by attempts</span>
         </h2>
         {roster.length === 0 && (
           <p className="text-muted">No Nets regular-season shots in {label} yet; the charts fill in after their first game.</p>

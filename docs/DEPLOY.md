@@ -6,7 +6,7 @@ is still open.
 
 ## Current state (checked 2026-09-30, after the cutover)
 
-- **The live domain.** blazingthenets.com serves this repository's `master` from the Vercel
+- **The live domain.** blazingthenets.com serves this repository's `main` from the Vercel
   project. `BASE_URL=https://blazingthenets.com node scripts/probe-routes.mjs` passes 24/24.
   Canonical URLs, the sitemap (618 URLs) and `robots.txt` all use `https://blazingthenets.com`.
 - **DNS.** Namecheap BasicDNS (`dns1/dns2.registrar-servers.com`), as seen by public resolvers:
@@ -17,7 +17,7 @@ is still open.
   and query. `http://` answers 308 to `https://`. The apex sends
   `Strict-Transport-Security: max-age=63072000`.
 - **The Vercel project.** `blazing-the-nets` in team `saiemgilanis-projects` (created March 2022),
-  Git-connected to `saiemgilani/blazing-the-nets`, production branch `master`. Domains:
+  Git-connected to `saiemgilani/blazing-the-nets`, production branch `main` (the default branch was renamed from `master` on 2026-09-30). Domains:
   `blazingthenets.com` (primary), `www.blazingthenets.com` (308 to the apex) and
   `blazing-the-nets.vercel.app`.
 - **Firebase.** The 2021 build is still published at blazing-the-nets.web.app and
@@ -67,7 +67,7 @@ Also check **Settings → Functions**:
 
 ### 2. Verify a preview (done 2026-09-30)
 
-Every push to a branch other than `master` builds a preview. Open the preview from the Vercel
+Every push to a branch other than `main` builds a preview. Open the preview from the Vercel
 dashboard and check each of these:
 
 - `/` shows the Nets roster for the current season.
@@ -85,9 +85,9 @@ list as a script:
 BASE_URL=https://<preview-or-production-url> node scripts/probe-routes.mjs   # exit 0 = all as expected
 ```
 
-### 3. Merge to master: the production deploy on the vercel.app domain (done 2026-09-30)
+### 3. Merge to the default branch: the production deploy on the vercel.app domain (done 2026-09-30)
 
-1. Merge the rebuild PR into `master` (PR #1, merge commit `65024877`). Vercel builds production
+1. Merge the rebuild PR into `master`, as the default branch was then named (PR #1, merge commit `65024877`). Vercel builds production
    and serves it at <https://blazing-the-nets.vercel.app>.
 2. The custom domain still points at Firebase at this point, so the public site does not change.
 3. Run the probe against `https://blazing-the-nets.vercel.app` and click through the site.
@@ -159,7 +159,7 @@ cutover was 2026-09-30, so not before 2026-10-01, ideally 2026-10-07). Then:
   Firebase is still serving its last build, so the old site returns once the TTL runs out. The
   Vercel project needs no change.
 - **After step 7.** Firebase must be redeployed first:
-  1. Check out the last 2021 commit of `master` (before the merge).
+  1. Check out the last 2021 commit of the default branch (`65024877^1`, the parent of the rebuild merge).
   2. Build it with Node 14 (`npm install && npm run build`).
   3. Run `firebase deploy --only hosting --project blazing-the-nets`.
   4. Re-add the custom domain in Firebase, then restore the DNS as above.

@@ -98,7 +98,7 @@ season-stats file exists; until then the previous season stays current.
 
 ## Deploy
 
-The site deploys to Vercel through its Git integration: pushes to `master` go to production,
+The site deploys to Vercel through its Git integration: pushes to `main` go to production,
 other branches get preview URLs, and there is no deploy step in CI. New data needs no deploy,
 because pages revalidate every 6 hours. blazingthenets.com moved from Firebase to Vercel on
 2026-09-30; the record of that cutover, its rollback and the open Firebase retirement step are in

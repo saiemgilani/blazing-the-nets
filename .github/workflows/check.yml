@@ -7,7 +7,7 @@ name: check
 on:
   pull_request:
   push:
-    branches: [master]
+    branches: [main]
 
 concurrency:
   group: check-${{ github.ref }}

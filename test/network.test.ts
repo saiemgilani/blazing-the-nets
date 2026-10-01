@@ -73,8 +73,11 @@ test("real release files: shots 2026 -> Nets -> one player", { skip }, async (t)
   const neutral = [...teamGames(logs).values()].filter((g) => g.venue === "neutral");
   assert.deepEqual([...new Set(neutral.map((g) => g.game_id))].sort(), ["0022500147", "0022500578", "0022500602", "0022501229", "0022501230"], "the five 2025-26 neutral-site games");
   const dates = gameDateMap(logs);
-  assert.ok(new Set(all.map((s) => s.game_id)).size <= dates.size);
-  assert.ok(all.every((s) => dates.has(s.game_id)), "every shot game has a date");
+  // The shots file also carries play-in and NBA Cup final games (7 in 2025-26) that the regular-season
+  // game logs do not; pages read regular-season shots only, so that is the set that must have dates.
+  const regular = all.filter((s) => s.game_id.startsWith("002"));
+  assert.ok(new Set(regular.map((s) => s.game_id)).size <= dates.size);
+  assert.ok(regular.every((s) => dates.has(s.game_id)), "every regular-season shot game has a date");
 
   const teams = await readTeams(2026);
   assert.equal(teams.length, 30);

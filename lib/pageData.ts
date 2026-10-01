@@ -11,7 +11,7 @@ import { AssetMissingError, memo, openAsset, readColumns, readParquet } from "./
 import { readHeadshots } from "./data/rosters.ts";
 import { listSeasons, parseSeason, seasonLabel } from "./data/seasons.ts";
 import { readGameLogs, readShots, SHOTS_TAG, shotsAsset, toLite, type GameLogRow, type Shot, type ShotLite } from "./data/shots.ts";
-import { NETS_TEAM_ID, teamById, teamsFromShots, type Team } from "./data/teams.ts";
+import { NETS_TEAM_ID, teamsFromShots, type Team } from "./data/teams.ts";
 import { seasonQuery } from "./links.ts";
 
 /**
@@ -61,8 +61,12 @@ async function seasonShooters(season: number): Promise<Set<number>> {
   return ids;
 }
 
-/** Files the season index reads at once: all eleven peaked near 400 MB, one at a time took 5 s cold. */
-export const SEASON_INDEX_CONCURRENCY = 2;
+/**
+ * Files the season index reads at once. Over the 29 seasons from 1997-98, 2 at a time took 6-7.7 s
+ * cold and 4 took 3.6-4.1 s with the process under 350 MB (measured locally 2026-10-01; the
+ * pre-2016 files are about 3 MB). Eleven at once peaked near 400 MB.
+ */
+export const SEASON_INDEX_CONCURRENCY = 4;
 
 /** `fn` over `items` with at most `limit` calls in flight; results in input order. */
 export async function mapLimit<T, R>(items: readonly T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
@@ -272,8 +276,8 @@ export function assembleTeamPage(
   roster: PlayerSeason[] = teamRoster(data, teamId),
 ): TeamPageData | null {
   const shots = data.shots.filter((s) => s.team_id === teamId);
-  const team = teamsFromShots(shots)[0] ?? teamById(teamId);
-  if (shots.length === 0 || !team) return null;
+  const team = teamsFromShots(shots, data.season)[0];
+  if (!team) return null;
   return { season: data.season, team, line: shootingLine(shots), roster: rosterRows(shots, roster, headshots), dashboard: buildDashboard(shots, data.league) };
 }
 

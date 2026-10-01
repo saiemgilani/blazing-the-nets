@@ -4,7 +4,7 @@
 [![data updated](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsportsdataverse%2F.github%2Fmain%2Fstatus%2Fbadges%2FhoopR-nba-stats-data%2Fupdated.json)](https://sportsdataverse.org/status)
 [![data through](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsportsdataverse%2F.github%2Fmain%2Fstatus%2Fbadges%2FhoopR-nba-stats-data%2Fthrough.json)](https://sportsdataverse.org/status)
 
-Brooklyn Nets shooting dashboards, from 2015-16 onward: hex shot charts, shooting signatures,
+Brooklyn Nets shooting dashboards, from 1997-98 onward: hex shot charts, shooting signatures,
 distance and side splits against the league, per-game filters, a league scatter and rolling
 leaderboards. Built with Next.js 16 and pure d3 v7 (the individual d3 modules, no wrapper library).
 Live at [blazingthenets.com](https://blazingthenets.com). Every number is read at request time from
@@ -20,13 +20,15 @@ nightly. Data freshness: [sportsdataverse.org/status](https://sportsdataverse.or
 - **Player dashboard** (`/players/<id>`): league ranks, a game selector (presets, single games, a date window), six shot charts against the league, a rolling 5/10/20-game line and FG% against each opponent.
 - **Team dashboard** (`/teams/<id>`): the team's six shot charts against the league and a sortable, keyboard-driven roster table.
 - **Players** (`/players?team=`): every shooter for a team, or the whole league with `team=all`.
-- **Teams** (`/teams`): all 30 teams with attempts, FG% and eFG%.
+- **Teams** (`/teams`): every team of the season (29 before 2004-05) with attempts, FG% and eFG%.
 - **Scatter** (`/scatter`): every player with 100+ FGA on two chosen metrics, with median crosshairs, zoom and headshot faces.
 - **Leaders** (`/leaders`): the best current 5, 10 and 20-game windows for FG%, eFG%, 3P% and most improved.
 - **About** (`/about`): sources, methods and credits.
 
-Every view takes `?season=<endYear>` (for example `?season=2025` for 2024-25); without it the
-current season is shown.
+Every view takes `?season=<endYear>` (for example `?season=2025` for 2024-25, `?season=2003` for
+2002-03); without it the current season is shown. Teams carry the name and tricode of that season:
+the Nets are the New Jersey Nets (`NJN`) through 2011-12 and the Brooklyn Nets (`BKN`) from
+2012-13, and `/players` with no `team` lists that season's Nets.
 
 ## Inspiration and attribution
 
@@ -76,7 +78,24 @@ crosswalk first, then by a normalised full name that is unique in that season's 
 crosswalk is incomplete (149 of its 544 rows for 2025-26 are unmatched), so today the name match
 does most of the work; 561 of 582 shooters in 2025-26 get a headshot.
 
-**Season rollover.** The site lists 2015-16 through the last known season. The next season
+**Seasons offered.** 1997-98 (`FIRST_SEASON` in `lib/seasonRange.ts`) through the last known
+season. The release has shots back to 1996-97, and every file from 1997-98 was checked against what
+the site reads (2026-10-01): the same columns and dtypes, the same legacy frame, and attempts equal
+to the published FGA for every shooter. Per-season caveats:
+
+- **1996-97 and earlier are not offered.** In 1996-97 whole games have no shot locations (the shots
+  sit at the hoop), some shots have no team, and the three-point line was 22 ft all round, which the
+  drawn court does not show.
+- **1997-98 to 2009-10: layups, dunks and tips sit on the hoop.** About 80% of them are recorded at
+  exactly (0, 0) rather than where they were taken, so the rim is one dense hex instead of a small
+  cluster. They are still within 4 ft, so zones, distance bins and restricted-area numbers are
+  right. A few jump and hook shots also sit at (0, 0) with no real location: 0.4% of attempts in
+  1997-98, 0.2% or less after.
+- **Headshots** start in 2001-02 (`player_core`) and are sparse until about 2009-10; players
+  without one show initials.
+- **Lockout seasons** 1998-99 and 2011-12 have 50 and 66 games per team.
+
+**Season rollover.** The site lists 1997-98 through the last known season. The next season
 becomes current only when its shots file has a regular-season shot for all 30 teams and its
 season-stats file exists; until then the previous season stays current.
 

@@ -18,7 +18,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/leaders",
     "/about",
     ...data.players.map((p) => `/players/${p.person_id}`),
-    ...teamsFromShots(data.shots).map((t) => `/teams/${t.team_id}`),
+    ...teamsFromShots(data.shots, data.season).map((t) => `/teams/${t.team_id}`),
   ];
   return paths.map((p) => ({ url: `${SITE_URL}${p}`, changeFrequency: "daily" }));
 }

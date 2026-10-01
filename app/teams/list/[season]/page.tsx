@@ -24,7 +24,7 @@ export default async function Teams({ params }: { params: Params }) {
   const { season, seasons, current, q } = await resolveSeason((await params).season);
   const data = await readSeasonData(season);
   const lines = teamLines(data.shots);
-  const teams = teamsFromShots(data.shots);
+  const teams = teamsFromShots(data.shots, season);
   return (
     <div className="space-y-6">
       <header className="space-y-3">

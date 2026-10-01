@@ -5,7 +5,8 @@ import { memo, releaseUrl, REVALIDATE_SECONDS } from "../lib/data/releases.ts";
 import { bridgeHeadshots, normalizeName } from "../lib/data/rosters.ts";
 import { FIRST_SEASON, LAST_KNOWN_SEASON, seasonLabel, siteSeasons } from "../lib/data/seasons.ts";
 import { filterSeasonType } from "../lib/data/shots.ts";
-import { NETS_TEAM_ID, TEAMS, teamById, teamsFromShots } from "../lib/data/teams.ts";
+import { franchiseOf, NETS_TEAM_ID, TEAMS, teamById, teamName, teamsFromShots } from "../lib/data/teams.ts";
+import { FIRST_BROOKLYN_SEASON, isAddressableSeason, netsTricode } from "../lib/seasonRange.ts";
 import { fixtureShots, shot } from "./helpers.ts";
 
 const shots = await fixtureShots();
@@ -17,7 +18,10 @@ test("release asset URLs point at sportsdataverse-data downloads", () => {
   );
 });
 
-test("the site lists 2016 to the last known season, plus next season once published", () => {
+test("the site lists 1997-98 to the last known season, plus next season once published", () => {
+  // The floor is measured (lib/seasonRange.ts): 1996-97 has games without shot locations.
+  assert.equal(FIRST_SEASON, 1998);
+  assert.ok(!isAddressableSeason(1997) && isAddressableSeason(1998) && isAddressableSeason(LAST_KNOWN_SEASON + 1));
   const known = siteSeasons(false);
   assert.equal(known[0], FIRST_SEASON);
   assert.equal(known.at(-1), LAST_KNOWN_SEASON);
@@ -51,7 +55,29 @@ test("the static team map has 30 franchises and the Nets are 1610612751 / BKN", 
   assert.equal(new Set(TEAMS.map((t) => t.espn_id)).size, 30);
   assert.equal(NETS_TEAM_ID, 1610612751);
   assert.equal(teamById(NETS_TEAM_ID)?.tricode, "BKN");
-  assert.deepEqual(teamsFromShots(shots).map((t) => [t.team_id, t.tricode, t.name]), [[NETS_TEAM_ID, "BKN", "Brooklyn Nets"]]);
+  assert.deepEqual(teamsFromShots(shots, 2026).map((t) => [t.team_id, t.tricode, t.name]), [[NETS_TEAM_ID, "BKN", "Brooklyn Nets"]]);
+});
+
+test("the Nets are New Jersey (NJN) through 2011-12 and Brooklyn (BKN) from 2012-13", () => {
+  assert.equal(FIRST_BROOKLYN_SEASON, 2013);
+  assert.deepEqual([1998, 2003, 2012, 2013, 2026].map(netsTricode), ["NJN", "NJN", "NJN", "BKN", "BKN"]);
+  assert.equal(teamName(NETS_TEAM_ID, 2003), "New Jersey Nets");
+  assert.equal(teamName(NETS_TEAM_ID, 2012), "New Jersey Nets");
+  assert.equal(teamName(NETS_TEAM_ID, 2013), "Brooklyn Nets");
+  // The release spells the season's tricode; the name follows the season, not the tricode.
+  const njn = shots.slice(0, 3).map((s) => ({ ...s, team_tricode: "NJN", game_id: "0020200001" }));
+  assert.deepEqual(teamsFromShots(njn, 2003).map((t) => [t.team_id, t.tricode, t.name]), [[NETS_TEAM_ID, "NJN", "New Jersey Nets"]]);
+  // Other renames in the listed range, and the one franchise per id.
+  assert.equal(teamName(1610612760, 2008), "Seattle SuperSonics");
+  assert.equal(teamName(1610612760, 2009), "Oklahoma City Thunder");
+  assert.equal(teamName(1610612763, 2001), "Vancouver Grizzlies");
+  assert.equal(teamName(1610612766, 2002), "Charlotte Hornets");
+  assert.equal(teamName(1610612766, 2010), "Charlotte Bobcats");
+  assert.equal(teamName(1610612766, 2015), "Charlotte Hornets");
+  assert.equal(teamName(1610612740, 2007), "New Orleans/Oklahoma City Hornets");
+  assert.equal(teamName(1610612740, 2013), "New Orleans Hornets");
+  assert.equal(teamName(1610612740, 2014), "New Orleans Pelicans");
+  assert.deepEqual(["NJN", "BKN", "SEA", "VAN", "CHH", "NOK", "NOH", "ZZZ"].map(franchiseOf), [NETS_TEAM_ID, NETS_TEAM_ID, 1610612760, 1610612763, 1610612766, 1610612740, 1610612740, undefined]);
 });
 
 test("season type follows the game_id prefix", () => {

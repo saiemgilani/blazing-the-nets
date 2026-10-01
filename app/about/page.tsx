@@ -20,6 +20,12 @@ export default function About() {
         Colours compare a player with the league at the same spot: red is above the league rate, blue is below.
       </p>
       <p>
+        Seasons go back to 1997-98, when the franchise was the New Jersey Nets (Brooklyn from 2012-13). Before 2010-11
+        the play-by-play records most layups, dunks and tip-ins at the centre of the hoop rather than where they were
+        taken, so in those seasons the rim is one dense hex; zone and distance numbers are not affected. 1996-97 and
+        earlier are left out because whole games have no shot locations.
+      </p>
+      <p>
         The views borrow ideas from Peter Beshai&apos;s{" "}
         <a href="https://buckets.peterbeshai.com" className="text-accent underline">Buckets</a>,{" "}
         <a href="https://scattershot.peterbeshai.com" className="text-accent underline">Scattershot</a> and{" "}

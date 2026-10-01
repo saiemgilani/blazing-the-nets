@@ -25,6 +25,17 @@ const cases = [
   ["/leaders?season=2025", 200, null],
   ["/scatter/current", 404, null],
   ["/leaders/2026", 404, null],
+  // Seasons from 1997-98 (FIRST_SEASON) render on demand; 1996-97 is out of range.
+  ["/?season=2003", 200, null],
+  ["/players?season=2003", 200, null], // no team: that season's Nets (NJN)
+  ["/players?season=2003&team=BKN", 200, null], // another season's tricode selects the franchise
+  ["/players?season=2010&team=SEA", 200, null],
+  ["/players/467?season=2003", 200, null], // Jason Kidd, 2002-03 New Jersey Nets
+  ["/teams/1610612751?season=1998", 200, null],
+  ["/teams?season=1998", 200, null],
+  ["/scatter?season=2008", 200, null],
+  ["/leaders?season=2013", 200, null],
+  ["/players/467/2003", 404, null],
   ["/sitemap.xml", 200, null],
   ["/robots.txt", 200, null],
 ];

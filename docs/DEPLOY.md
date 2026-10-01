@@ -58,10 +58,10 @@ Also check **Settings → Functions**:
 - **Fluid compute is on** (switched on 2026-09-30 through the project API, `resourceConfig.fluid`;
   it applies from the next deployment). On Hobby, Fluid compute gives functions a 300 s maximum
   duration and 2 GB of memory. Without it the Hobby default is 10 s (60 s at most).
-- **Why it matters.** A cold player page builds the season-picker index (about 3.6 s measured
-  locally, two release files at a time, alongside the page data). A season page reads a whole
-  season of shots (a few seconds and a few hundred MB). That is well inside 300 s and 2 GB, and
-  too close to a 10 s limit.
+- **Why it matters.** A cold player page builds the season-picker index (one shots file per
+  season since 1997-98, four at a time: 3.6-4.1 s measured locally, alongside the page data). A
+  season page reads a whole season of shots (a few seconds and a few hundred MB). That is well
+  inside 300 s and 2 GB, and too close to a 10 s limit.
 - **Image optimisation is not used.** Headshots are `unoptimized` (served straight from ESPN's
   CDN), so the Hobby image-optimisation quota does not apply.
 

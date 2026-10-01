@@ -1,28 +1,30 @@
-# Deploy: moving blazingthenets.com from Firebase to Vercel
+# Deploy: blazingthenets.com on Vercel
 
-A runbook for the owner. Run the steps in order. The old site stays up until the new one is
-confirmed serving on the real domain, and every step up to step 7 can be undone by putting back
-the DNS records.
+blazingthenets.com moved from Firebase Hosting to Vercel on 2026-09-30. Steps 1 to 6 below are
+done and are kept as the record of how it was done and how to undo it. Step 7, retiring Firebase,
+is still open.
 
-## Current state (checked 2026-09-30)
+## Current state (checked 2026-09-30, after the cutover)
 
-- **The live domain.** blazingthenets.com serves the 2021 Create React App build from Firebase
-  Hosting (project `blazing-the-nets`, also at blazing-the-nets.web.app).
-- **DNS.** The domain uses Namecheap BasicDNS (`dns1/dns2.registrar-servers.com`), with a default
-  TTL of 3601 s.
-  - The apex has two A records, `151.101.1.195` and `151.101.65.195` (Fastly, Firebase's CDN).
-  - `www` resolves to the same two addresses, and Firebase answers it with a 301 to the apex.
-  - The apex sends `Strict-Transport-Security: max-age=31556926`.
-- **The Vercel project.** It already exists and is connected to this repo:
-  - name `blazing-the-nets`, team `saiemgilanis-projects`, created March 2022;
-  - Git-connected to `saiemgilani/blazing-the-nets`, production branch `master`;
-  - its only domain is `blazing-the-nets.vercel.app`, which returns 404 today because no
-    production build has succeeded yet.
-- **The Firebase deploy on master.** `master` still carries the 2021 workflows
-  (`.github/workflows/firebase-hosting-merge.yml` and friends), which build the CRA app and deploy
-  it to Firebase on every push to `master`. The rebuild branch deletes them. After the merge,
-  pushes to `master` deploy to Vercel only, and Firebase keeps serving its last build until the
-  DNS moves.
+- **The live domain.** blazingthenets.com serves this repository's `master` from the Vercel
+  project. `BASE_URL=https://blazingthenets.com node scripts/probe-routes.mjs` passes 24/24.
+  Canonical URLs, the sitemap (618 URLs) and `robots.txt` all use `https://blazingthenets.com`.
+- **DNS.** Namecheap BasicDNS (`dns1/dns2.registrar-servers.com`), as seen by public resolvers:
+  - apex: A `216.198.79.1` (TTL 1800 s), no AAAA;
+  - `www`: CNAME to the project-specific `02a6d1287bc6f295.vercel-dns-017.com.`;
+  - Vercel reports both domains as correctly configured, and the certificate is issued.
+- **Redirects.** `www.blazingthenets.com` answers 308 (permanent) to the apex and keeps the path
+  and query. `http://` answers 308 to `https://`. The apex sends
+  `Strict-Transport-Security: max-age=63072000`.
+- **The Vercel project.** `blazing-the-nets` in team `saiemgilanis-projects` (created March 2022),
+  Git-connected to `saiemgilani/blazing-the-nets`, production branch `master`. Domains:
+  `blazingthenets.com` (primary), `www.blazingthenets.com` (308 to the apex) and
+  `blazing-the-nets.vercel.app`.
+- **Firebase.** The 2021 build is still published at blazing-the-nets.web.app and
+  blazing-the-nets.firebaseapp.com. No DNS points at it. Retiring it is step 7.
+- **Before the cutover** (for rollback): the apex had A records `151.101.1.195` and
+  `151.101.65.195` (Fastly, Firebase's CDN), `www` resolved to the same two addresses and Firebase
+  answered it with a 301 to the apex, and the TTL was 3601 s.
 
 ## Nightly data needs no deploy
 
@@ -63,11 +65,10 @@ Also check **Settings → Functions**:
 - **Image optimisation is not used.** Headshots are `unoptimized` (served straight from ESPN's
   CDN), so the Hobby image-optimisation quota does not apply.
 
-### 2. Verify a preview
+### 2. Verify a preview (done 2026-09-30)
 
-Every push to `rebuild/next16-d3` builds a preview. The last one checked is
-<https://blazing-the-nets-lkvckj1e0-saiemgilanis-projects.vercel.app>. Open the preview from the
-Vercel dashboard and check each of these:
+Every push to a branch other than `master` builds a preview. Open the preview from the Vercel
+dashboard and check each of these:
 
 - `/` shows the Nets roster for the current season.
 - `/players/1629008` shows a player dashboard.
@@ -84,29 +85,33 @@ list as a script:
 BASE_URL=https://<preview-or-production-url> node scripts/probe-routes.mjs   # exit 0 = all as expected
 ```
 
-### 3. Merge to master: the production deploy on the vercel.app domain
+### 3. Merge to master: the production deploy on the vercel.app domain (done 2026-09-30)
 
-1. Merge the rebuild PR into `master`. Vercel builds production and serves it at
-   <https://blazing-the-nets.vercel.app>.
-2. The custom domain still points at Firebase, so the public site does not change yet.
+1. Merge the rebuild PR into `master` (PR #1, merge commit `65024877`). Vercel builds production
+   and serves it at <https://blazing-the-nets.vercel.app>.
+2. The custom domain still points at Firebase at this point, so the public site does not change.
 3. Run the probe against `https://blazing-the-nets.vercel.app` and click through the site.
 4. Fix anything here, before the domain moves.
 
-### 4. Add the domains in Vercel
+### 4. Add the domains in Vercel (done 2026-09-30)
 
 1. In **Settings → Domains**, add `blazingthenets.com` and `www.blazingthenets.com`.
-2. Make the apex the primary domain and let `www` redirect to it. That matches today's behaviour
-   and `homepage` in `package.json`.
+2. Make the apex the primary domain and let `www` redirect to it with a **308**, which keeps the
+   path. Vercel's default for a new redirect is 307 (temporary); pick 308 in the domain's edit
+   dialog. Like Firebase's old 301 it is permanent; unlike a 301 it also keeps the request method.
+   The apex is the canonical host, as `homepage` in `package.json` says.
 3. Vercel then shows the DNS records it expects for each. Use what that panel shows; the steps
-   below give the current defaults.
+   below give the defaults at the time of writing.
 
-### 5. Change DNS at Namecheap (Domain List → Manage → Advanced DNS)
+### 5. Change DNS at Namecheap (done 2026-09-30; Domain List → Manage → Advanced DNS)
 
 1. **Lower the TTL first.** A day ahead, set the TTL of the existing apex and `www` records to the
    minimum (1 min or 5 min), so the switch and any rollback spread quickly.
 2. **Record the current values** before you change anything (they are listed above), for rollback.
 3. **Apex.** Delete the two A records `151.101.1.195` and `151.101.65.195`. Add an A record for
-   host `@` with value `76.76.21.21` (or what the Vercel panel shows).
+   host `@` with what the Vercel panel shows. On 2026-09-30 the panel recommended
+   `216.198.79.1` and `64.29.17.1`; the older `76.76.21.21` also works. The cutover used
+   `216.198.79.1`.
 4. **www.** Delete its A records and add a CNAME for host `www` with value `cname.vercel-dns.com.`
    (or the project-specific value the panel shows).
 5. **AAAA.** Remove any AAAA records that point at Firebase or Fastly. Vercel needs none.
@@ -115,12 +120,12 @@ BASE_URL=https://<preview-or-production-url> node scripts/probe-routes.mjs   # e
 7. **Leave the rest alone.** Keep unrelated records (MX, SPF/TXT for mail and so on). Any Firebase
    verification TXT record can stay until step 7.
 
-### 6. Verify the new site is serving
+### 6. Verify the new site is serving (done 2026-09-30, probe 24/24)
 
 1. **DNS.** Query the authoritative server so no cache gets in the way:
 
    ```sh
-   nslookup blazingthenets.com dns1.registrar-servers.com       # expect 76.76.21.21
+   nslookup blazingthenets.com dns1.registrar-servers.com       # expect 216.198.79.1
    nslookup -type=CNAME www.blazingthenets.com dns1.registrar-servers.com
    dig +short blazingthenets.com A @1.1.1.1                     # a public resolver, once its cache expires
    ```
@@ -133,9 +138,10 @@ BASE_URL=https://<preview-or-production-url> node scripts/probe-routes.mjs   # e
 4. **Probe.** Run `BASE_URL=https://blazingthenets.com node scripts/probe-routes.mjs`.
 5. **Share preview.** Share a player URL and confirm the preview image renders.
 
-### 7. Only then retire Firebase
+### 7. Only then retire Firebase (open)
 
-Wait until step 6 passes from more than one network, for at least a day and ideally a week. Then:
+Wait until step 6 passes from more than one network, for at least a day and ideally a week (the
+cutover was 2026-09-30, so not before 2026-10-01, ideally 2026-10-07). Then:
 
 - **Remove the custom domain in Firebase.** Firebase console → Hosting → the custom domain →
   Remove.
@@ -148,7 +154,8 @@ Wait until step 6 passes from more than one network, for at least a day and idea
 ### Rollback
 
 - **Before step 7.** At Namecheap, put back the apex A records `151.101.1.195` and
-  `151.101.65.195` and the matching `www` A records, and delete the Vercel A and CNAME records.
+  `151.101.65.195` and the matching `www` A records, and delete the Vercel A record
+  (`216.198.79.1`) and the `www` CNAME.
   Firebase is still serving its last build, so the old site returns once the TTL runs out. The
   Vercel project needs no change.
 - **After step 7.** Firebase must be redeployed first:
@@ -180,7 +187,3 @@ Wait until step 6 passes from more than one network, for at least a day and idea
   and return a 504. Keep Fluid compute on (step 1) rather than raising `maxDuration` per route.
 - **Preview protection.** Scripted checks against preview URLs get 401 or a login page when
   Deployment Protection is on. It does not affect the production domain.
-- **Pushing to master too early.** Until the rebuild branch is merged, `master` still has the
-  Firebase workflow. A push to `master` from anywhere else would redeploy the 2021 app to
-  Firebase and also start a Vercel production build of that commit, which fails on the new
-  settings and leaves production as it was. Merge the rebuild branch first.

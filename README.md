@@ -7,8 +7,8 @@
 Brooklyn Nets shooting dashboards, from 2015-16 onward: hex shot charts, shooting signatures,
 distance and side splits against the league, per-game filters, a league scatter and rolling
 leaderboards. Built with Next.js 16 and pure d3 v7 (the individual d3 modules, no wrapper library).
-Every number is read at request time from public
-[sportsdataverse-data](https://github.com/sportsdataverse/sportsdataverse-data) GitHub release
+Live at [blazingthenets.com](https://blazingthenets.com). Every number is read at request time from
+public [sportsdataverse-data](https://github.com/sportsdataverse/sportsdataverse-data) GitHub release
 parquet (`nba_stats_shots`, `nba_stats_player_season_stats`, `nba_stats_player_game_logs`,
 `espn_nba_player_core` and `espn_nba_rosters`), which the
 [hoopR-nba-stats-data](https://github.com/sportsdataverse/hoopR-nba-stats-data) producer refreshes
@@ -100,5 +100,6 @@ season-stats file exists; until then the previous season stays current.
 
 The site deploys to Vercel through its Git integration: pushes to `master` go to production,
 other branches get preview URLs, and there is no deploy step in CI. New data needs no deploy,
-because pages revalidate every 6 hours. The Firebase-to-Vercel cutover for blazingthenets.com is
-a runbook in [docs/DEPLOY.md](docs/DEPLOY.md).
+because pages revalidate every 6 hours. blazingthenets.com moved from Firebase to Vercel on
+2026-09-30; the record of that cutover, its rollback and the open Firebase retirement step are in
+[docs/DEPLOY.md](docs/DEPLOY.md).

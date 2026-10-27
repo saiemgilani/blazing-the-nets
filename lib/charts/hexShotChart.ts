@@ -269,6 +269,11 @@ export function renderHexShotChart(svg: SVGSVGElement, data: HexShotChartData, {
 
   if (mode === "compare" && compare) {
     hexes = drawCompare(root, svg, compare, v, width, theme, animate ? motionMs(500) : 0);
+  } else if (mode === "compare") {
+    // Nothing to compare yet (none chosen, loading, failed or a side empty): an empty court, not
+    // the raw chart under a Compare label. The component says why above it.
+    drawCourt(root, v);
+    setViewBox(svg, width, v.height);
   } else if (mode === "zones") {
     drawZones(root, data, v, theme, tooltip(root, v.width, v.height));
   } else {
@@ -370,8 +375,8 @@ export function describeCompare(c: CompareChartData): string {
   let totalA = 0;
   let totalB = 0;
   for (const h of c.hexes) {
-    by.a.set(h.zone, (by.a.get(h.zone) ?? 0) + h.shareA);
-    by.b.set(h.zone, (by.b.get(h.zone) ?? 0) + h.shareB);
+    if (h.a.zone) by.a.set(h.a.zone, (by.a.get(h.a.zone) ?? 0) + h.shareA);
+    if (h.b.zone) by.b.set(h.b.zone, (by.b.get(h.b.zone) ?? 0) + h.shareB);
     totalA += h.a.attempts;
     totalB += h.b.attempts;
   }

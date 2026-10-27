@@ -63,11 +63,13 @@ export function HexShotChart({ data, title, compare, card }: { data: HexShotChar
   // An image ClipboardItem: Chromium, Safari and Firefox 127+. False on the server and in the hydrating render.
   const canCopy = useSyncExternalStore(noop, () => typeof ClipboardItem !== "undefined" && !!navigator.clipboard?.write, () => false);
 
+  // Nothing to export in Compare until both sides are drawn.
+  const canExport = mode !== "compare" || compareData !== null;
   const exportAs = async (format: "png" | "svg" | "copy") => {
-    if (!card) return;
+    if (!card || !canExport) return;
     setExportStatus("Building…");
     try {
-      const filters = [card.filters, compareData ? `Compare: ${compareData.nameA} vs ${compareData.nameB}, by shot share` : `View: ${LABELS[mode === "compare" ? "raw" : mode]}`].join(" · ");
+      const filters = [card.filters, compareData ? `Compare: ${compareData.nameA} vs ${compareData.nameB}, by shot share` : `View: ${LABELS[mode]}`].join(" · ");
       const built = buildCard({ ...card, filters }, keyNumbers(data), (svg, w) => renderHexShotChart(svg, data, { width: w, mode, compare: compareData, animate: false }));
       const name = `blazing-the-nets-${slug(card.name)}-${slug(card.subtitle)}${compareData ? "-compare" : mode === "zones" ? "-zones" : ""}`;
       if (format === "copy") {
@@ -105,14 +107,14 @@ export function HexShotChart({ data, title, compare, card }: { data: HexShotChar
         {card && (
           <div role="group" aria-label="Export the shot chart" className="flex items-center gap-1 text-xs text-muted">
             Export
-            <button type="button" onClick={() => exportAs("png")} className={toggleClass(false, true)}>
+            <button type="button" disabled={!canExport} onClick={() => exportAs("png")} className={`${toggleClass(false, true)} disabled:opacity-40`}>
               PNG
             </button>
-            <button type="button" onClick={() => exportAs("svg")} className={toggleClass(false, true)}>
+            <button type="button" disabled={!canExport} onClick={() => exportAs("svg")} className={`${toggleClass(false, true)} disabled:opacity-40`}>
               SVG
             </button>
             {canCopy && (
-              <button type="button" onClick={() => exportAs("copy")} className={toggleClass(false, true)}>
+              <button type="button" disabled={!canExport} onClick={() => exportAs("copy")} className={`${toggleClass(false, true)} disabled:opacity-40`}>
                 Copy
               </button>
             )}

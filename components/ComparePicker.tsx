@@ -18,7 +18,8 @@ const requests = new Map<string, Promise<unknown>>();
 function getJson<T>(url: string): Promise<T> {
   let p = requests.get(url);
   if (!p) {
-    p = fetch(url).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${r.status}`))));
+    // A stalled request fails after 20 s (the server-side release reads use the same limit) instead of hanging.
+    p = fetch(url, { signal: AbortSignal.timeout(20_000) }).then((r) => (r.ok ? r.json() : Promise.reject(new Error(`${r.status}`))));
     p.catch(() => requests.delete(url)); // let a later pick retry
     requests.set(url, p);
   }
@@ -52,18 +53,26 @@ export function useCompareSlot({
   view: PlayerGame[] | null;
 }): CompareSlot {
   const param = useQueryParam("compare");
-  const compare = parseCompare(param);
+  // Memoised on the string: a fresh object each render would recompute the shares and redraw the chart.
+  const compare = useMemo(() => parseCompare(param), [param]);
   const active = useQueryParam("hex") === "compare";
-  const [players, setPlayers] = useState<Shooter[] | null>(null);
+  // Keyed by season and player, so the list never outlives the page it was loaded for; null = failed.
+  const listKey = `${season}:${personId}`;
+  const [list, setList] = useState<{ key: string; players: Shooter[] | null } | null>(null);
+  const players = list?.key === listKey ? list.players : undefined;
   const [fetched, setFetched] = useState<{ url: string; side: Side | null } | null>(null);
 
   useEffect(() => {
-    if (!active || players) return;
+    if (!active || players !== undefined) return;
+    let live = true;
     getJson<{ players: Shooter[] }>(`/api/shots?season=${season}`).then(
-      (r) => setPlayers(r.players.filter((p) => p.id !== personId)),
-      () => setPlayers([]),
+      (r) => live && setList({ key: listKey, players: r.players.filter((p) => p.id !== personId) }),
+      () => live && setList({ key: listKey, players: null }),
     );
-  }, [active, players, season, personId]);
+    return () => {
+      live = false;
+    };
+  }, [active, players, season, personId, listKey]);
 
   const url =
     compare?.kind === "player" ? `/api/shots?season=${season}&player=${compare.id}` : compare?.kind === "season" ? `/api/shots?season=${compare.season}&player=${personId}` : null;
@@ -85,6 +94,7 @@ export function useCompareSlot({
       if (!view) return "Home vs away needs the game logs, which this season does not have for him.";
       const home = new Set(view.filter((g) => g.venue === "home").map((g) => g.game_id));
       const away = new Set(view.filter((g) => g.venue === "away").map((g) => g.game_id));
+      if (!home.size || !away.size) return `The selected games have no ${home.size ? "away" : "home"} games; select some to compare home and away.`;
       return {
         a: { name: "home games", shots: shots.filter((s) => home.has(s.game_id)) },
         b: { name: "away games", shots: shots.filter((s) => away.has(s.game_id)) },
@@ -109,7 +119,7 @@ export function useCompareSlot({
     : typeof sides === "string"
       ? sides
       : sides && !data
-        ? "One side has no shots in the selected games."
+        ? "One side has no shots in the selected games; select more games."
         : null;
 
   const otherSeasons = seasons.filter((o) => o.value !== String(season));
@@ -134,7 +144,8 @@ export function useCompareSlot({
           </optgroup>
         )}
         <optgroup label="Another player, same season">
-          {compare?.kind === "player" && !players?.some((p) => p.id === compare.id) && <option value={value}>{players ? "(not a shooter this season)" : "Loading players…"}</option>}
+          {compare?.kind === "player" && !players?.some((p) => p.id === compare.id) && <option value={value}>{players ? "(not a shooter this season)" : players === null ? "Could not load the players" : "Loading players…"}</option>}
+          {players === null && <option disabled>Could not load the players (reload the page to retry)</option>}
           {(players ?? []).map((p) => (
             <option key={p.id} value={`player:${p.id}`}>
               {p.name} ({p.team}, {fmtInt(p.fga)} FGA)

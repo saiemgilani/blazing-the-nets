@@ -240,3 +240,13 @@ test("compareShares: each side's shares sum to 1, A == B gives all-zero diffs, t
   assert.equal(mid?.low, true, "1 + 1 attempts: under the floor on both sides");
   assert.equal(compareShares([], [], 15).length, 0);
 });
+
+test("compareShares keeps each side's zone where a hex straddles a zone edge", () => {
+  // Same 1.5 ft hex at the top of the arc: A's shot is a long two, B's a three.
+  const [h] = compareShares([shot(0, 233, 2, true)], [shot(0, 236, 3, false), shot(0, 236, 3, true)], 15);
+  assert.equal(h.a.zone, "mid_range");
+  assert.equal(h.b.zone, "above_break_3");
+  assert.equal(h.zone, "above_break_3", "the busier side names the hex");
+  const [only] = compareShares([shot(0, 0, 2, true)], [], 15);
+  assert.equal(only.b.zone, null);
+});

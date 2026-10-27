@@ -36,6 +36,15 @@ const cases = [
   ["/scatter?season=2008", 200, null],
   ["/leaders?season=2013", 200, null],
   ["/players/467/2003", 404, null],
+  // The compare view's other side: listed seasons and real shooters only.
+  ["/api/shots?season=2026", 200, null],
+  ["/api/shots?season=2026&player=1629008", 200, null],
+  ["/api/shots?season=2003&player=467", 200, null],
+  ["/api/shots?season=1990", 404, null],
+  ["/api/shots?season=2026&player=123", 404, null],
+  ["/api/shots?season=2026&player=abc", 404, null],
+  // Chart options in the query string render the same page (read in the browser).
+  ["/players/1629008?hex=compare&compare=split:home-away&games=away&roll=20", 200, null],
   ["/sitemap.xml", 200, null],
   ["/robots.txt", 200, null],
 ];

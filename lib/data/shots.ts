@@ -23,12 +23,25 @@ export const ShotRow = z.object({
   sub_type: z.string(),
   shot_result: z.enum(["Made", "Missed"]),
   shot_value: int64,
-  shot_distance: int64,
+  // Null on a few rows of some past seasons : 159 rows across 1997-98 to 2008-09 (2026-10-27), all with x/y; withDistance fills it.
+  shot_distance: int64.nullable(),
   x_legacy: int64,
   y_legacy: int64,
 });
 
-export type Shot = z.output<typeof ShotRow>;
+export type ShotFileRow = z.output<typeof ShotRow>;
+export type Shot = Omit<ShotFileRow, "shot_distance"> & { shot_distance: number };
+
+/**
+ * Fill a missing shot_distance from the coordinates the way the release rounds it,
+ * round(hypot(x, y) / 10) feet, so every attempt still counts toward FGA. On the 2025-26 fixture
+ * that reproduces every release distance except the 0 the release gives some corner threes.
+ * In place: these are fresh rows from parseParquet.
+ */
+export function withDistance(rows: ShotFileRow[]): Shot[] {
+  for (const r of rows) if (r.shot_distance === null) r.shot_distance = Math.round(Math.hypot(r.x_legacy, r.y_legacy) / 10);
+  return rows as Shot[];
+}
 
 /**
  * The fields the aggregations read; what the player page ships to the browser for re-filtering.
@@ -53,7 +66,7 @@ export function filterSeasonType(shots: Shot[], seasonType: SeasonType): Shot[] 
 }
 
 export async function readShots(season: number, seasonType: SeasonType = "regular"): Promise<Shot[]> {
-  return filterSeasonType(await readParquet(SHOTS_TAG, shotsAsset(season), ShotRow), seasonType);
+  return filterSeasonType(withDistance(await readParquet(SHOTS_TAG, shotsAsset(season), ShotRow)), seasonType);
 }
 
 export const GAME_LOGS_TAG = "nba_stats_player_game_logs";

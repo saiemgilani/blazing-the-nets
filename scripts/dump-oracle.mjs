@@ -4,7 +4,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseParquet, readParquet } from "../lib/data/releases.ts";
-import { GameLogRow, ShotRow } from "../lib/data/shots.ts";
+import { GameLogRow, ShotRow, withDistance } from "../lib/data/shots.ts";
 import { PLAYER_STATS_TAG, PlayerStatsRow, seasonPlayers } from "../lib/data/players.ts";
 import { HEX_RADIUS, leagueContext } from "../lib/dashboard.ts";
 import { playerGames } from "../lib/data/aggregate.ts";
@@ -16,7 +16,7 @@ if (!out) throw new Error("usage: dump-oracle.mjs <out-dir>");
 mkdirSync(out, { recursive: true });
 
 const bytes = (name) => new Uint8Array(readFileSync(new URL(`../test/fixtures/${name}`, import.meta.url))).buffer;
-const shots = await parseParquet(bytes("shots_2026_bkn_2000.parquet"), ShotRow);
+const shots = withDistance(await parseParquet(bytes("shots_2026_bkn_2000.parquet"), ShotRow));
 const logs = await parseParquet(bytes("game_logs_2026_bkn.parquet"), GameLogRow);
 const people = new Set(shots.map((s) => s.person_id));
 // Real release rows for the fixture's players only (regular season, all measure/per_mode combos).

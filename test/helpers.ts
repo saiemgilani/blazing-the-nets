@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { parseParquet } from "../lib/data/releases.ts";
-import { GameLogRow, ShotRow, type Shot } from "../lib/data/shots.ts";
+import { GameLogRow, ShotRow, withDistance, type Shot } from "../lib/data/shots.ts";
 
 /**
  * First 2 000 Nets rows, in file order, of the real `nba_stats_shots/shots_2026.parquet`
@@ -10,7 +10,7 @@ import { GameLogRow, ShotRow, type Shot } from "../lib/data/shots.ts";
  */
 export async function fixtureShots(): Promise<Shot[]> {
   const bytes = new Uint8Array(readFileSync(new URL("./fixtures/shots_2026_bkn_2000.parquet", import.meta.url)));
-  return parseParquet(bytes.buffer, ShotRow);
+  return withDistance(await parseParquet(bytes.buffer, ShotRow));
 }
 
 /**

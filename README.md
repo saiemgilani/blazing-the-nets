@@ -17,8 +17,8 @@ nightly. Data freshness: [sportsdataverse.org/status](https://sportsdataverse.or
 ## Views
 
 - **Home** (`/`): the Nets roster for a season, by attempts, each card with FGA, FG%, eFG%, games and minutes.
-- **Player dashboard** (`/players/<id>`): league ranks, a game selector (presets, single games, a date window), six shot charts against the league, a rolling 5/10/20-game line and FG% against each opponent.
-- **Team dashboard** (`/teams/<id>`): the team's six shot charts against the league and a sortable, keyboard-driven roster table.
+- **Player dashboard** (`/players/<id>`): league ranks, a game selector (presets, single games, a date window), six shot charts against the league, a rolling 5/10/20-game line and FG% against each opponent. The hex chart has a **Compare** view: home vs away games, another of his seasons, or another player in the same season, binned on one hex grid and coloured by the difference in shot share (not volume), with hexes under 5 attempts on both sides drawn pale. **Export** saves the chart as a card (PNG at 2x or SVG, or copies the PNG where the browser allows) with the headshot, FGA / FG% / eFG%, the legend, the games and compare in force, and the data source.
+- **Team dashboard** (`/teams/<id>`): the team's six shot charts against the league (the hex chart exports as a card too) and a sortable, keyboard-driven roster table.
 - **Players** (`/players?team=`): every shooter for a team, or the whole league with `team=all`.
 - **Teams** (`/teams`): every team of the season (29 before 2004-05) with attempts, FG% and eFG%.
 - **Scatter** (`/scatter`): every player with 100+ FGA on two chosen metrics, with median crosshairs, zoom and headshot faces.
@@ -30,6 +30,13 @@ Every view takes `?season=<endYear>` (for example `?season=2025` for 2024-25, `?
 the Nets are the New Jersey Nets (`NJN`) through 2011-12 and the Brooklyn Nets (`BKN`) from
 2012-13, and `/players` with no `team` lists that season's Nets.
 
+Every chart option is in the URL too, so any view is a link and a reload reproduces it: `hex=zones|compare`,
+`compare=split:home-away|season:<endYear>|player:<id>`, `games=home|away|wins|losses|none` (or a
+list of game ids), `from=` / `to=` (a date window), `roll=5|20`, the scatter's `x=`, `y=` and
+`faces=1`, and the leaders' `last=5|20` and `board=fgPct|fg3Pct|improved`. Defaults are left out.
+Switching the shot chart's view adds a history entry; other tweaks replace the current one. The
+compare view reads the other side from `/api/shots?season=&player=` (cached for 6 hours).
+
 ## Inspiration and attribution
 
 - The shot-chart views take their cue from the original 2021 Blazing the Nets by the same author.
@@ -37,6 +44,8 @@ the Nets are the New Jersey Nets (`NJN`) through 2011-12 and the Brooklyn Nets (
 - `/scatter` is modelled on [Scattershot](https://scattershot.peterbeshai.com/) by Peter Beshai.
 - `/leaders` is modelled on [Shotline](https://shotline.peterbeshai.com/) by Peter Beshai.
 - The team roster table is modelled on [databallr](https://databallr.com/).
+- The compare view and the export card follow the compare-split and export pattern of
+  [Gridiron Matrix](https://huggingface.co/spaces/rj7002/gridironmatrix), an NFL Next Gen Stats explorer.
 
 This site is not affiliated with, or endorsed by, any of those projects, the NBA or the Brooklyn
 Nets. No code, copy or brand assets from them are used. Player headshots are loaded from ESPN CDN

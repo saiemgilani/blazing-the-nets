@@ -164,6 +164,60 @@ export function hexesVsLeague(player: ShotLite[], league: LeagueHexIndex, minLea
   });
 }
 
+/** A hex with fewer attempts than this on both sides is drawn pale in the compare view. */
+export const COMPARE_FLOOR = 5;
+
+/** One side of a compare hex: its attempts there and the zone most of them fall in (null: none). */
+export interface CompareSide extends Split {
+  zone: Zone | null;
+}
+
+/** One hex of an A-vs-B comparison: each side's attempts and its share of that side's shots. */
+export interface CompareHex {
+  x: number;
+  y: number;
+  /** The busier side's zone (a hex on a zone edge can hold A's twos and B's threes). */
+  zone: Zone;
+  a: CompareSide;
+  b: CompareSide;
+  shareA: number;
+  shareB: number;
+  /** shareA - shareB: where A takes more of its shots than B does (positive) or fewer. */
+  diff: number;
+  /** Under the attempt floor on both sides: too few shots to read the difference. */
+  low: boolean;
+}
+
+/**
+ * Two sets of shots on one hex grid (the same radius gives the same centres), each hex coloured by
+ * the difference in shot share, not volume, so a 300-attempt season compares with a 1 500-attempt
+ * one. Shares are of each side's on-court attempts, so each side's shares sum to 1.
+ */
+export function compareShares(a: ShotLite[], b: ShotLite[], radiusTenths: number, floor = COMPARE_FLOOR): CompareHex[] {
+  const empty: CompareSide = { ...split(0, 0), zone: null };
+  const merged = new Map<string, { x: number; y: number; zone: Zone; a: CompareSide; b: CompareSide }>();
+  for (const [side, shots] of [["a", a], ["b", b]] as const) {
+    for (const h of hexbinShots(shots, radiusTenths)) {
+      const key = `${h.x},${h.y}`;
+      let m = merged.get(key);
+      if (!m) merged.set(key, (m = { x: h.x, y: h.y, zone: h.zone, a: empty, b: empty }));
+      m[side] = { ...split(h.attempts, h.makes), zone: h.zone };
+      if (side === "b" && h.attempts > m.a.attempts) m.zone = h.zone;
+    }
+  }
+  let totalA = 0;
+  let totalB = 0;
+  for (const m of merged.values()) {
+    totalA += m.a.attempts;
+    totalB += m.b.attempts;
+  }
+  return [...merged.values()].map((m) => {
+    const shareA = totalA ? m.a.attempts / totalA : 0;
+    const shareB = totalB ? m.b.attempts / totalB : 0;
+    return { ...m, shareA, shareB, diff: shareA - shareB, low: m.a.attempts < floor && m.b.attempts < floor };
+  });
+}
+
 export interface DistanceBin extends Split {
   /**
    * First foot in the bin. The release's shot_distance is ROUNDED feet, so a 1-ft bin is centred

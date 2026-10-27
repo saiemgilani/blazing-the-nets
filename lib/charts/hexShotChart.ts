@@ -3,11 +3,28 @@ import { Delaunay } from "d3-delaunay";
 import { hexbin } from "d3-hexbin";
 import { scaleSqrt, type ScalePower } from "d3-scale";
 import { pointer, select, type Selection } from "d3-selection";
-import { shrunkDiff, type HexVsLeague, type Split, type Zone } from "../data/aggregate.ts";
+import { shrunkDiff, ZONES, type CompareHex, type HexVsLeague, type Split, type Zone } from "../data/aggregate.ts";
 import { toSvg, toSvgLength, zoneAreas, type Viewport } from "../data/court.ts";
 import { courtViewport, DEFAULT_WIDTH, drawCourt } from "./court.ts";
 import { fmtPct, fmtPts } from "../format.ts";
-import { chartTheme, diffColor, drawDiffLegend, drawNotes, FONT_PX, motionMs, setViewBox, SHRINK_NOTE, tooltip, TOKENS, type ChartTheme, type G } from "./theme.ts";
+import type { HexMode } from "../viewParams.ts";
+import {
+  chartTheme,
+  COMPARE_NOTE,
+  DIFF_DOMAIN,
+  diffColor,
+  drawDiffLegend,
+  drawNotes,
+  FONT_PX,
+  motionMs,
+  setViewBox,
+  SHARE_DOMAIN,
+  SHRINK_NOTE,
+  tooltip,
+  TOKENS,
+  type ChartTheme,
+  type G,
+} from "./theme.ts";
 
 export interface ZoneComparison {
   player: Split;
@@ -23,11 +40,21 @@ export interface HexShotChartData {
   zones: Record<Zone, ZoneComparison>;
 }
 
-export type HexMode = "raw" | "zones";
+export type { HexMode };
+
+/** Two sides on one hex grid (`compareShares`), with the names the legend and tooltips use. */
+export interface CompareChartData {
+  hexes: CompareHex[];
+  radius: number;
+  nameA: string;
+  nameB: string;
+}
 
 export interface HexShotChartOptions {
   width: number;
   mode: HexMode;
+  /** The compare view's data; without it "compare" draws the raw view. */
+  compare?: CompareChartData | null;
   /** Grow the hexes in (first draw only; redraws on resize or theme change are instant). */
   animate?: boolean;
 }
@@ -135,20 +162,125 @@ function drawZones(root: G, data: HexShotChartData, v: Viewport, theme: ChartThe
   }
 }
 
-export function renderHexShotChart(svg: SVGSVGElement, data: HexShotChartData, { width, mode, animate = true }: HexShotChartOptions): () => void {
+/** A compare hex's colour: A's share minus B's on the FG% scale's colours, saturating at SHARE_DOMAIN. */
+export const shareColor = (diff: number, theme: ChartTheme) => diffColor((diff / SHARE_DOMAIN) * DIFF_DOMAIN, theme);
+
+export interface CompareMark {
+  hex: CompareHex;
+  cx: number;
+  cy: number;
+  r: number;
+}
+
+/** Size is the two sides' mean share (sqrt, capped at the 95th percentile), so a hex either side uses shows. */
+export function layoutCompare(c: CompareChartData, v: Viewport): { marks: CompareMark[]; cap: number; size: ScalePower<number, number> } {
+  const mean = (h: CompareHex) => (h.shareA + h.shareB) / 2;
+  const cap = Math.max(1e-3, quantile(c.hexes, 0.95, mean) ?? 1e-3);
+  const size = scaleSqrt().domain([0, cap]).range([0, toSvgLength(c.radius, v)]).clamp(true);
+  const marks = c.hexes
+    .filter((h) => h.y <= v.top)
+    .map((hex) => ({ hex, ...toSvgPoint(hex, v), r: size(mean(hex)) }))
+    .sort((a, b) => mean(a.hex) - mean(b.hex));
+  return { marks, cap, size };
+}
+
+const toSvgPoint = (h: { x: number; y: number }, v: Viewport) => {
+  const p = toSvg(h, v);
+  return { cx: p.x, cy: p.y };
+};
+
+function drawCompare(root: G, svg: SVGSVGElement, c: CompareChartData, v: Viewport, width: number, theme: ChartTheme, ms: number) {
+  const shape = hexbin();
+  drawCourt(root, v);
+  const { marks, cap, size } = layoutCompare(c, v);
+  const hexes = root
+    .append("g")
+    .selectAll<SVGPathElement, CompareMark>("path")
+    .data(marks)
+    .join("path")
+    .attr("transform", (m) => `translate(${m.cx},${m.cy})`)
+    .attr("d", (m) => shape.hexagon(ms ? 0 : m.r))
+    .style("fill", (m) => shareColor(m.hex.diff, theme))
+    .style("fill-opacity", (m) => (m.hex.low ? 0.3 : 1))
+    .style("stroke", TOKENS.muted)
+    .style("stroke-opacity", (m) => (m.hex.low ? 0.4 : 1))
+    .style("stroke-width", 0.85);
+  if (ms) hexes.transition().duration(ms).attr("d", (m) => shape.hexagon(m.r));
+
+  const focus = root.append("path").style("fill", "none").style("stroke", TOKENS.fg).style("stroke-width", 1.5).style("display", "none");
+  const tip = tooltip(root, v.width, v.height);
+  const delaunay = Delaunay.from(marks, (m) => m.cx, (m) => m.cy);
+  const side = (name: string, s: Split, share: number) => `${name}: ${s.attempts} FGA, ${fmtPct(share)} of shots`;
+  root
+    .append("rect")
+    .attr("width", v.width)
+    .attr("height", v.height)
+    .style("fill", "transparent")
+    .on("pointermove", (event: PointerEvent) => {
+      const [px, py] = pointer(event, root.node());
+      const m = marks.length ? marks[delaunay.find(px, py)] : undefined;
+      if (!m || Math.hypot(m.cx - px, m.cy - py) > 18) {
+        focus.style("display", "none");
+        tip.hide();
+        return;
+      }
+      const h = m.hex;
+      focus.style("display", null).attr("transform", `translate(${m.cx},${m.cy})`).attr("d", shape.hexagon(Math.max(m.r, 4)));
+      tip.show(m.cx, m.cy, [
+        ZONE_LABELS[h.zone],
+        side(c.nameA, h.a, h.shareA),
+        side(c.nameB, h.b, h.shareB),
+        `Share difference ${fmtPts(h.diff)} pts${h.low ? " (few attempts)" : ""}`,
+      ]);
+    })
+    .on("pointerleave", () => {
+      focus.style("display", "none");
+      tip.hide();
+    });
+
+  const legend = root.append("g").attr("transform", `translate(12,${v.height + 12})`);
+  const key: [string, string] = [`Shot share, ${c.nameA} minus ${c.nameB} (points)`, `red: larger share for ${c.nameA} · blue: larger share for ${c.nameB}`];
+  const used = drawDiffLegend(legend, 0, 0, width - 24, theme, [COMPARE_NOTE], key, SHARE_DOMAIN);
+  const steps = [cap / 4, cap / 2, cap];
+  const sizes = legend.append("g").attr("transform", `translate(0,${used + 8})`);
+  steps.forEach((n, i) => {
+    const x = 12 + i * 34;
+    sizes.append("path").attr("transform", `translate(${x},10)`).attr("d", shape.hexagon(size(n))).style("fill", TOKENS.muted);
+    sizes
+      .append("text")
+      .attr("x", x)
+      .attr("y", 36)
+      .attr("text-anchor", "middle")
+      .style("font-size", `${FONT_PX}px`)
+      .style("fill", TOKENS.muted)
+      .text(`${fmtPct(n, 1)}${i === steps.length - 1 ? "+" : ""}`);
+  });
+  drawNotes(sizes, 118, 4, width - 24 - 118, ["hex size: mean share of the two sides' shots"]);
+  setViewBox(svg, width, v.height + 12 + used + 8 + 42);
+  return hexes;
+}
+
+export function renderHexShotChart(svg: SVGSVGElement, data: HexShotChartData, { width, mode, compare, animate = true }: HexShotChartOptions): () => void {
   const v = courtViewport(width);
   const theme = chartTheme(svg);
   const root = select(svg).append("g");
   const shape = hexbin();
-  let hexes: ReturnType<typeof root.selectAll<SVGPathElement, HexMark>> | null = null;
+  let hexes: { interrupt(): unknown } | null = null;
 
-  if (mode === "zones") {
+  if (mode === "compare" && compare) {
+    hexes = drawCompare(root, svg, compare, v, width, theme, animate ? motionMs(500) : 0);
+  } else if (mode === "compare") {
+    // Nothing to compare yet (none chosen, loading, failed or a side empty): an empty court, not
+    // the raw chart under a Compare label. The component says why above it.
+    drawCourt(root, v);
+    setViewBox(svg, width, v.height);
+  } else if (mode === "zones") {
     drawZones(root, data, v, theme, tooltip(root, v.width, v.height));
   } else {
     drawCourt(root, v);
     const { marks, cap, size } = layoutHexes(data.hexes, data.radius, v, theme);
     const ms = animate ? motionMs(500) : 0;
-    hexes = root
+    const marksSel = root
       .append("g")
       .selectAll<SVGPathElement, HexMark>("path")
       .data(marks)
@@ -159,7 +291,8 @@ export function renderHexShotChart(svg: SVGSVGElement, data: HexShotChartData, {
       // A full-strength outline keeps average (near-background) hexes visible: size carries meaning.
       .style("stroke", TOKENS.muted)
       .style("stroke-width", 0.85);
-    if (ms) hexes.transition().duration(ms).attr("d", (m) => shape.hexagon(m.r));
+    if (ms) marksSel.transition().duration(ms).attr("d", (m) => shape.hexagon(m.r));
+    hexes = marksSel;
 
     // Hover: nearest hex centre (Delaunay), within 18 px.
     const focus = root.append("path").style("fill", "none").style("stroke", TOKENS.fg).style("stroke-width", 1.5).style("display", "none");
@@ -234,4 +367,19 @@ export function describeHex(data: HexShotChartData): string {
   });
   const attempts = data.hexes.reduce((a, h) => a + h.attempts, 0);
   return `${attempts} attempts in ${data.hexes.length} hexes. By zone: ${zones.join("; ")}.`;
+}
+
+/** The compare view in words: each side's attempts and its share of shots by zone. */
+export function describeCompare(c: CompareChartData): string {
+  const by = { a: new Map<Zone, number>(), b: new Map<Zone, number>() };
+  let totalA = 0;
+  let totalB = 0;
+  for (const h of c.hexes) {
+    if (h.a.zone) by.a.set(h.a.zone, (by.a.get(h.a.zone) ?? 0) + h.shareA);
+    if (h.b.zone) by.b.set(h.b.zone, (by.b.get(h.b.zone) ?? 0) + h.shareB);
+    totalA += h.a.attempts;
+    totalB += h.b.attempts;
+  }
+  const zones = ZONES.map((z) => `${ZONE_LABELS[z]} ${fmtPct(by.a.get(z) ?? 0)} vs ${fmtPct(by.b.get(z) ?? 0)}`);
+  return `Shot share, ${c.nameA} (${totalA} attempts) against ${c.nameB} (${totalB} attempts), by zone: ${zones.join("; ")}.`;
 }

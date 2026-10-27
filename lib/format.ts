@@ -19,3 +19,11 @@ export const fmtDate = (isoDate: string) =>
 
 /** Case- and accent-folded text for search boxes: "Dëmin" matches "demin". */
 export const foldText = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+/** "Mikal Bridges" -> "MB" (at most three letters), where a headshot is missing. */
+export const initials = (name: string) =>
+  name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 3);

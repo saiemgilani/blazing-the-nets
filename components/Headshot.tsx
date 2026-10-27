@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { initials } from "@/lib/format.ts";
 
 /**
  * ESPN headshot (350x254), or the player's initials when the release has none or the image fails
@@ -13,18 +14,13 @@ export function Headshot({ src, name, size = 96, decorative = false }: { src: st
   const [failed, setFailed] = useState(false);
   const h = Math.round((size * 254) / 350);
   if (!src || failed) {
-    const initials = name
-      .split(" ")
-      .map((w) => w[0])
-      .join("")
-      .slice(0, 3);
     return (
       <div
         aria-hidden
         style={{ width: size, height: h }}
         className="flex shrink-0 items-center justify-center rounded bg-line font-display text-lg text-muted"
       >
-        {initials}
+        {initials(name)}
       </div>
     );
   }

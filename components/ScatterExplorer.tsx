@@ -4,12 +4,18 @@ import { useState } from "react";
 import { ScatterChart } from "./charts/ScatterChart.tsx";
 import { randomPair, SCATTER_DEFAULT, SCATTER_INFO, SCATTER_METRICS, type ScatterMetric, type ScatterPoint } from "@/lib/scatterMetrics.ts";
 import { toggleClass } from "@/lib/ui.ts";
+import { setQuery, useQueryParam } from "@/lib/urlState.ts";
+import { oneOf, unlessDefault } from "@/lib/viewParams.ts";
 
 /** Axis pickers, Random, dots/faces, a name filter and a zoom reset around the league scatter. */
 export function ScatterExplorer({ points, subject }: { points: ScatterPoint[]; subject: string }) {
-  const [x, setX] = useState<ScatterMetric>(SCATTER_DEFAULT.x);
-  const [y, setY] = useState<ScatterMetric>(SCATTER_DEFAULT.y);
-  const [faces, setFaces] = useState(false);
+  // Axes and marks live in the URL (lib/viewParams.ts): x=, y=, faces=1.
+  const x = oneOf(SCATTER_METRICS, useQueryParam("x"), SCATTER_DEFAULT.x);
+  const y = oneOf(SCATTER_METRICS, useQueryParam("y"), SCATTER_DEFAULT.y);
+  const faces = useQueryParam("faces") === "1";
+  const setX = (m: ScatterMetric) => setQuery({ x: unlessDefault<ScatterMetric>(m, SCATTER_DEFAULT.x) });
+  const setY = (m: ScatterMetric) => setQuery({ y: unlessDefault<ScatterMetric>(m, SCATTER_DEFAULT.y) });
+  const setFaces = (on: boolean) => setQuery({ faces: on ? "1" : null });
   const [filter, setFilter] = useState("");
   const [resetKey, setResetKey] = useState(0);
   const picker = (label: string, value: ScatterMetric, set: (m: ScatterMetric) => void) => (
@@ -34,8 +40,7 @@ export function ScatterExplorer({ points, subject }: { points: ScatterPoint[]; s
           className={toggleClass(false)}
           onClick={() => {
             const [a, b] = randomPair();
-            setX(a);
-            setY(b);
+            setQuery({ x: unlessDefault<ScatterMetric>(a, SCATTER_DEFAULT.x), y: unlessDefault<ScatterMetric>(b, SCATTER_DEFAULT.y) });
           }}
         >
           Random

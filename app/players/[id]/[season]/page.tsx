@@ -7,7 +7,7 @@ import { QuerySelect } from "@/components/QuerySelect.tsx";
 import { RankLists } from "@/components/RankLists.tsx";
 import { listSeasons, seasonLabel } from "@/lib/data/seasons.ts";
 import { NETS_TEAM_ID } from "@/lib/data/teams.ts";
-import { fmtDec, fmtInt, fmtPct } from "@/lib/format.ts";
+import { fmtDec, fmtInt, fmtPct, initials } from "@/lib/format.ts";
 import { playerHref, teamHref } from "@/lib/links.ts";
 import { loadPlayerPage, readPlayerSeasons, readSeasonData, resolveSeason, seasonOptions, teamRoster } from "@/lib/pageData.ts";
 
@@ -109,7 +109,22 @@ export default async function PlayerPage({ params }: { params: Params }) {
 
       <RankLists ranks={page.ranks} personId={player.person_id} seasonQuery={q} />
 
-      <PlayerExplorer data={page.explorer} subject={`${player.player_name} ${seasonLabel(season)}`} />
+      <PlayerExplorer
+        data={page.explorer}
+        subject={`${player.player_name} ${seasonLabel(season)}`}
+        who={{
+          personId: player.person_id,
+          season,
+          name: player.player_name,
+          seasons: options,
+          card: {
+            name: player.player_name,
+            subtitle: `${page.teams.join(", ")} · ${seasonLabel(season)} regular season`,
+            headshot: page.headshot,
+            mark: initials(player.player_name),
+          },
+        }}
+      />
 
       {/* ponytail: prev/next walk his primary team's roster, not the list the reader came from. */}
       <nav aria-label={`${player.team_tricode} players`} className="flex justify-between gap-4 text-sm">

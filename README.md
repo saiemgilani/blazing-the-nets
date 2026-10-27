@@ -100,6 +100,9 @@ to the published FGA for every shooter. Per-season caveats:
   cluster. They are still within 4 ft, so zones, distance bins and restricted-area numbers are
   right. A few jump and hook shots also sit at (0, 0) with no real location: 0.4% of attempts in
   1997-98, 0.2% or less after.
+- **1997-98 to 2008-09: a few shots have no `shot_distance`** (159 across those 12 seasons, as
+  of 2026-10-27). They all have coordinates, so the site fills the distance in as
+  `round(hypot(x, y) / 10)` ft, the release's own rounding, and every attempt still counts.
 - **Headshots** start in 2001-02 (`player_core`) and are sparse until about 2009-10; players
   without one show initials.
 - **Lockout seasons** 1998-99 and 2011-12 have 50 and 66 games per team.

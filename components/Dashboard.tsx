@@ -1,16 +1,32 @@
 import { DistanceBars } from "./charts/DistanceBars.tsx";
-import { HexShotChart } from "./charts/HexShotChart.tsx";
+import { HexShotChart, type CompareSlot } from "./charts/HexShotChart.tsx";
 import { ShootingSignature } from "./charts/ShootingSignature.tsx";
 import { SideChart } from "./charts/SideChart.tsx";
 import { Card } from "./Card.tsx";
+import type { CardMeta } from "@/lib/charts/exportCard.ts";
 import type { DashboardData } from "@/lib/dashboard.ts";
 
-/** The six charts in the 2021 arrangement: shot chart + signature, the distance pair, the side pair. */
-export function Dashboard({ data, subject, subjectLabel = "Player" }: { data: DashboardData; subject: string; subjectLabel?: "Player" | "Team" }) {
+/**
+ * The six charts in the 2021 arrangement: shot chart + signature, the distance pair, the side pair.
+ * `card` turns on the shot chart's export; `compare` adds its compare view.
+ */
+export function Dashboard({
+  data,
+  subject,
+  subjectLabel = "Player",
+  card,
+  compare,
+}: {
+  data: DashboardData;
+  subject: string;
+  subjectLabel?: "Player" | "Team";
+  card?: CardMeta;
+  compare?: CompareSlot;
+}) {
   return (
     <div className="grid gap-6 md:grid-cols-2">
       <Card title="Shot chart">
-        <HexShotChart data={data.hex} title={`${subject} shot chart`} />
+        <HexShotChart data={data.hex} title={`${subject} shot chart`} card={card} compare={compare} />
       </Card>
       <Card title="Shooting signature">
         <ShootingSignature data={data.signature} title={`${subject} FG% by distance vs league`} />

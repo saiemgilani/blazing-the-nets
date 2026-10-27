@@ -1,57 +1,75 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { GameStrip } from "./charts/GameStrip.tsx";
 import { RollingChart } from "./charts/RollingChart.tsx";
 import { Timeline } from "./charts/Timeline.tsx";
 import { VersusChart } from "./charts/VersusChart.tsx";
 import { Card } from "./Card.tsx";
+import { useCompareSlot } from "./ComparePicker.tsx";
 import { Dashboard } from "./Dashboard.tsx";
 import { MobileCollapse } from "./MobileCollapse.tsx";
+import type { CardMeta } from "@/lib/charts/exportCard.ts";
 import { buildDashboard } from "@/lib/dashboard.ts";
 import { rollingLines, shootingLine } from "@/lib/data/aggregate.ts";
 import { fmtDate, fmtInt, fmtPct } from "@/lib/format.ts";
 import type { ExplorerData } from "@/lib/pageData.ts";
 import { toggleClass } from "@/lib/ui.ts";
-import {
-  GAME_PRESETS,
-  PRESET_LABELS,
-  presetGames,
-  selectedView,
-  withTypedDate,
-  type DateWindow,
-  type GamePreset,
-} from "@/lib/selection.ts";
+import { GAME_PRESETS, PRESET_LABELS, presetGames, selectedView, withTypedDate, type DateWindow, type GamePreset } from "@/lib/selection.ts";
+import { setQuery, useQueryParam } from "@/lib/urlState.ts";
+import { gamesParam, oneOf, parseGames, parseWindow, unlessDefault } from "@/lib/viewParams.ts";
 
 const WINDOWS = [5, 10, 20] as const;
 
 const NO_GAMES = "No games selected: choose games above (a preset, single games or a date window) to draw this.";
 
+/** Who the page is about, for the compare picker and the export card. */
+export interface ExplorerSubject {
+  personId: number;
+  season: number;
+  name: string;
+  /** His listed seasons, newest first. */
+  seasons: { value: string; label: string }[];
+  card: Omit<CardMeta, "filters">;
+}
+
+const setWindow = (w: DateWindow) => setQuery({ from: w?.[0] ?? null, to: w?.[1] ?? null });
+
 /**
  * The player's season, filterable by game: preset and per-game selection, a date window (brushed or
  * typed), then every chart below rebuilt from the selected games: the six shot charts, the rolling
- * N-game line and the versus-opponent bars. All state is client-side; the server sends the shots,
- * the games and the league context once.
+ * N-game line and the versus-opponent bars. The server sends the shots, the games and the league
+ * context once; the selection, the window and every chart option live in the URL (lib/viewParams.ts).
  */
-export function PlayerExplorer({ data, subject }: { data: ExplorerData; subject: string }) {
+export function PlayerExplorer({ data, subject, who }: { data: ExplorerData; subject: string; who: ExplorerSubject }) {
   const games = data.games;
-  const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set(games?.map((g) => g.game_id) ?? []));
-  const [dateWindow, setDateWindow] = useState<DateWindow>(null);
-  const [n, setN] = useState<(typeof WINDOWS)[number]>(10);
+  const first = games?.[0]?.date ?? "";
+  const last = games?.[games.length - 1]?.date ?? "";
+  const gamesValue = useQueryParam("games");
+  const selected = useMemo(() => parseGames(gamesValue, games ?? []), [gamesValue, games]);
+  const fromValue = useQueryParam("from");
+  const toValue = useQueryParam("to");
+  const dateWindow = useMemo(() => parseWindow(fromValue, toValue, first, last), [fromValue, toValue, first, last]);
+  const n = oneOf(WINDOWS, useQueryParam("roll"), 10);
   // What each date field shows while it has focus: Chromium reports every half-typed value
   // (0002-..., 0020-...), so the field keeps its own text and only a complete in-season date moves
   // the window; on blur it shows the window again.
   const [drafts, setDrafts] = useState<[string | null, string | null]>([null, null]);
 
+  const setSelected = useCallback((next: ReadonlySet<string>) => games && setQuery({ games: gamesParam(next, games) }), [games]);
+  // Stable for the strip's effect; reads the latest selection through the ref.
+  const latest = useRef(selected);
+  useEffect(() => {
+    latest.current = selected;
+  }, [selected]);
   const toggle = useCallback(
-    (gameId: string) =>
-      setSelected((prev) => {
-        const next = new Set(prev);
-        if (next.has(gameId)) next.delete(gameId);
-        else next.add(gameId);
-        return next;
-      }),
-    [],
+    (gameId: string) => {
+      const next = new Set(latest.current);
+      if (next.has(gameId)) next.delete(gameId);
+      else next.add(gameId);
+      setSelected(next);
+    },
+    [setSelected],
   );
   const choose = (preset: GamePreset) => games && setSelected(new Set(presetGames(games, preset)));
   const activePreset = games
@@ -67,10 +85,11 @@ export function PlayerExplorer({ data, subject }: { data: ExplorerData; subject:
   const line = shootingLine(shots);
   const neutral = games ? games.filter((g) => g.venue === "neutral").length : 0;
   const empty = view !== null && view.length === 0;
-  const first = games?.[0]?.date ?? "";
-  const last = games?.[games.length - 1]?.date ?? "";
   const windowText = dateWindow ? `${fmtDate(dateWindow[0])} to ${fmtDate(dateWindow[1])}` : null;
-  const caption = `${games && view ? `${view.length} of ${games.length} games${windowText ? `, ${windowText}` : ""}` : "Every game"}; league lines: full regular season.`;
+  const gamesText = games && view ? `${view.length} of ${games.length} games${windowText ? `, ${windowText}` : ""}` : "Every game";
+  const caption = `${gamesText}; league lines: full regular season.`;
+  const compare = useCompareSlot({ ...who, subject, shots, view });
+  const card = useMemo(() => ({ ...who.card, filters: `Games: ${gamesText}` }), [who.card, gamesText]);
   const dateField = (label: string, end: 0 | 1) => (
     <label className="inline-flex items-center gap-1.5 text-sm text-muted">
       {label}
@@ -82,7 +101,8 @@ export function PlayerExplorer({ data, subject }: { data: ExplorerData; subject:
         onChange={(e) => {
           const value = e.target.value;
           setDrafts((d) => (end === 0 ? [value, d[1]] : [d[0], value]));
-          setDateWindow((w) => withTypedDate(w, end, value, first, last));
+          const next = withTypedDate(dateWindow, end, value, first, last);
+          if (next !== dateWindow) setWindow(next);
         }}
         onBlur={() => setDrafts((d) => (end === 0 ? [null, d[1]] : [d[0], null]))}
         className="rounded border border-line bg-surface px-1.5 py-0.5 text-fg"
@@ -118,13 +138,13 @@ export function PlayerExplorer({ data, subject }: { data: ExplorerData; subject:
               {dateField("From", 0)}
               {dateField("To", 1)}
               {dateWindow && (
-                <button type="button" onClick={() => setDateWindow(null)} className={toggleClass(false)}>
+                <button type="button" onClick={() => setWindow(null)} className={toggleClass(false)}>
                   Clear dates
                 </button>
               )}
             </div>
           </div>
-          <Timeline games={games} window={dateWindow} onBrush={setDateWindow} title={`${subject} game timeline (attempts per game)`} />
+          <Timeline games={games} window={dateWindow} onBrush={setWindow} title={`${subject} game timeline (attempts per game)`} />
         </Card>
       ) : (
         <p className="rounded-lg border border-line bg-surface p-4 text-sm text-muted">
@@ -134,7 +154,7 @@ export function PlayerExplorer({ data, subject }: { data: ExplorerData; subject:
 
       <div id="charts" className="scroll-mt-4 space-y-3">
         <p className="text-sm text-muted tabular-nums">{caption}</p>
-        {empty ? <p className="rounded-lg border border-line bg-surface p-4 text-sm">{NO_GAMES}</p> : <Dashboard data={dashboard} subject={subject} />}
+        {empty ? <p className="rounded-lg border border-line bg-surface p-4 text-sm">{NO_GAMES}</p> : <Dashboard data={dashboard} subject={subject} card={card} compare={compare} />}
       </div>
 
       {games && (
@@ -142,7 +162,7 @@ export function PlayerExplorer({ data, subject }: { data: ExplorerData; subject:
           <div className="mb-3 flex items-center gap-2 text-sm text-muted" role="group" aria-label="Rolling window">
             Window
             {WINDOWS.map((w) => (
-              <button key={w} type="button" aria-pressed={n === w} onClick={() => setN(w)} className={toggleClass(n === w)}>
+              <button key={w} type="button" aria-pressed={n === w} onClick={() => setQuery({ roll: unlessDefault(w, 10) })} className={toggleClass(n === w)}>
                 {w} games
               </button>
             ))}

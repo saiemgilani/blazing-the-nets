@@ -2,7 +2,7 @@ import { scaleDiverging, scaleLinear } from "d3-scale";
 import { interpolateRdBu } from "d3-scale-chromatic";
 import type { Selection } from "d3-selection";
 import "d3-transition";
-import { LEAGUE_PRIOR_ATTEMPTS } from "../data/aggregate.ts";
+import { COMPARE_FLOOR, LEAGUE_PRIOR_ATTEMPTS } from "../data/aggregate.ts";
 import { fmtPts } from "../format.ts";
 
 export type G = Selection<SVGGElement, unknown, null, undefined>;
@@ -30,6 +30,12 @@ export const DIFF_DOMAIN = 0.15;
 
 /** How hex, zone and signature colours are damped for small samples. */
 export const SHRINK_NOTE = `colour shrunk toward the league rate (${LEAGUE_PRIOR_ATTEMPTS}-attempt prior)`;
+
+/** Shot share A minus B saturates at +/-2 points (a 1.5 ft hex rarely holds more than 2% of a player's shots off the rim). */
+export const SHARE_DOMAIN = 0.02;
+
+/** How the compare view marks thin hexes. */
+export const COMPARE_NOTE = `pale: under ${COMPARE_FLOOR} attempts on both sides`;
 
 /** The colour key in words; every diff legend prints it. */
 export const DIFF_WORDS = "red: above league · blue: below";
@@ -108,7 +114,8 @@ export function drawNotes(g: G, x: number, y: number, maxWidth: number, notes: s
 
 /**
  * Horizontal FG%-vs-league legend: gradient bar, -15 / 0 / +15 ticks, the key in words and any
- * extra notes. Returns the height used.
+ * extra notes. Returns the height used. `tickDomain` relabels the ends for a scale that saturates
+ * elsewhere (the compare view's shot share).
  */
 export function drawDiffLegend(
   g: G,
@@ -118,6 +125,7 @@ export function drawDiffLegend(
   theme: ChartTheme,
   notes: string[] = [],
   key: [caption: string, words: string] = ["FG% vs league (points)", DIFF_WORDS],
+  tickDomain = DIFF_DOMAIN,
 ): number {
   const width = Math.min(maxWidth, 240);
   const id = uniqueId("bn-diff");
@@ -137,7 +145,7 @@ export function drawDiffLegend(
     .attr("text-anchor", (d) => (d < 0 ? "start" : d > 0 ? "end" : "middle"))
     .style("font-size", `${FONT_PX}px`)
     .style("fill", TOKENS.muted)
-    .text((d) => (d === 0 ? "0" : fmtPts(d)));
+    .text((d) => (d === 0 ? "0" : fmtPts((d / DIFF_DOMAIN) * tickDomain)));
   const used = 8 + FONT_PX + 6;
   return used + drawNotes(g, x, y + used, maxWidth, [...key, ...notes]);
 }

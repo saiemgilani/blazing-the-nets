@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   ZONES,
+  compareShares,
   fgPctByDistance,
   hexbinShots,
   lineOf,
@@ -215,4 +216,27 @@ test("the real 2025-26 neutral-site games (both rows '@') are neutral for both t
       [1610612753, "MEM", false],
     ],
   );
+});
+
+test("compareShares: each side's shares sum to 1, A == B gives all-zero diffs, the floor flags thin hexes", () => {
+  const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
+  const firstHalf = shots.slice(0, 1000);
+  const secondHalf = shots.slice(1000);
+  const hexes = compareShares(firstHalf, secondHalf, 15);
+  assert.ok(Math.abs(sum(hexes.map((h) => h.shareA)) - 1) < 1e-9, "A shares sum to 1");
+  assert.ok(Math.abs(sum(hexes.map((h) => h.shareB)) - 1) < 1e-9, "B shares sum to 1");
+  assert.ok(hexes.some((h) => h.diff > 0) && hexes.some((h) => h.diff < 0), "two real halves differ somewhere");
+  assert.equal(sum(hexes.map((h) => h.a.attempts)), hexbinShots(firstHalf, 15).reduce((a, h) => a + h.attempts, 0));
+
+  const same = compareShares(shots, shots, 15);
+  assert.equal(same.length, hexbinShots(shots, 15).length, "one row per shared centre");
+  assert.ok(same.every((h) => h.diff === 0), "A == B: every diff 0");
+
+  const thin = compareShares([shot(0, 0, 2, true), shot(0, 0, 2, false), shot(0, 200, 2, true)], [shot(0, 200, 2, false)], 15, 2);
+  const rim = thin.find((h) => h.x === 0 && h.y === 0);
+  const mid = thin.find((h) => h.y > 150);
+  assert.equal(rim?.low, false, "2 A attempts reach a floor of 2");
+  assert.equal(rim?.shareB, 0, "a hex only A shot from has no B share");
+  assert.equal(mid?.low, true, "1 + 1 attempts: under the floor on both sides");
+  assert.equal(compareShares([], [], 15).length, 0);
 });

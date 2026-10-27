@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { ACTIVE_DAYS, LEADER_LABELS, LEADER_METRICS, LEADER_WINDOWS, minAttempts, minThrees, type Boards, type LeaderMetric, type LeaderRow, type LeaderWindow } from "@/lib/data/leaders.ts";
 import { fmtDate, fmtInt, fmtPct, fmtPts } from "@/lib/format.ts";
 import { playerHref } from "@/lib/links.ts";
 import { toggleClass } from "@/lib/ui.ts";
+import { setQuery, useQueryParam } from "@/lib/urlState.ts";
+import { oneOf, unlessDefault } from "@/lib/viewParams.ts";
 
 /** Nets rows shown below the top 15; the rest sit in a <details>. */
 const NETS_SHOWN = 5;
@@ -15,8 +16,11 @@ const W = { rank: "w-12", team: "w-16", value: "w-24", window: "w-24", season: "
 
 /** Rolling-window leaderboards: pick the window and the board; the Nets are highlighted. */
 export function Leaderboards({ boards, netsTeamId, seasonQuery }: { boards: Boards; netsTeamId: number; seasonQuery: string }) {
-  const [n, setN] = useState<LeaderWindow>(10);
-  const [metric, setMetric] = useState<LeaderMetric>("efgPct");
+  // Window and board live in the URL (lib/viewParams.ts): last=, board=.
+  const n = oneOf(LEADER_WINDOWS, useQueryParam("last"), 10);
+  const metric = oneOf(LEADER_METRICS, useQueryParam("board"), "efgPct");
+  const setN = (w: LeaderWindow) => setQuery({ last: unlessDefault<LeaderWindow>(w, 10) });
+  const setMetric = (m: LeaderMetric) => setQuery({ board: unlessDefault<LeaderMetric>(m, "efgPct") });
   const board = boards[n][metric];
   const value = (r: LeaderRow) => (metric === "improved" ? `${fmtPts(r.value)} pts` : fmtPct(r.value));
   const detail = (r: LeaderRow) =>

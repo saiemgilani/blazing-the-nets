@@ -67,7 +67,12 @@ export default async function TeamPage({ params }: { params: Params }) {
           />
         </div>
       </header>
-      <Dashboard data={page.dashboard} subject={`${team.name} ${seasonLabel(season)}`} subjectLabel="Team" />
+      <Dashboard
+        data={page.dashboard}
+        subject={`${team.name} ${seasonLabel(season)}`}
+        subjectLabel="Team"
+        card={{ name: team.name, subtitle: `${team.tricode} · ${seasonLabel(season)} regular season`, headshot: null, mark: team.tricode, markColor: team.color, filters: "Games: every game" }}
+      />
       <Card title="Roster by attempts">
         <RosterTable rows={page.roster} seasonQuery={q} />
       </Card>

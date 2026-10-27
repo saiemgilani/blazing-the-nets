@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { parquetMetadataAsync } from "hyparquet";
+import { z } from "zod";
 import { fgPctByDistance, hexbinShots, lineOf, onCourt, playerGames, statsByZone, versusOpponents } from "../lib/data/aggregate.ts";
 import { THREE_BREAK_Y } from "../lib/data/court.ts";
 import { teamGames } from "../lib/data/games.ts";
@@ -8,7 +9,7 @@ import { readPlayers } from "../lib/data/players.ts";
 import { int64, openAsset, parseParquet } from "../lib/data/releases.ts";
 import { readHeadshots } from "../lib/data/rosters.ts";
 import { FIRST_SEASON, listSeasons } from "../lib/data/seasons.ts";
-import { ShotRow, filterSeasonType, gameDateMap, readGameLogs, shotsAsset, SHOTS_TAG } from "../lib/data/shots.ts";
+import { ShotRow, filterSeasonType, withDistance, gameDateMap, readGameLogs, shotsAsset, SHOTS_TAG } from "../lib/data/shots.ts";
 import { NETS_TEAM_ID, readTeams } from "../lib/data/teams.ts";
 
 const skip = process.env.BN_NETWORK_TESTS === "1" ? false : "set BN_NETWORK_TESTS=1 to read the real release files";
@@ -32,7 +33,7 @@ test("real release files: shots 2026 -> Nets -> one player", { skip }, async (t)
   const t0 = performance.now();
   const { size, all } = await (async () => {
     const file = await openAsset(SHOTS_TAG, shotsAsset(2026));
-    return { size: file.byteLength, all: await parseParquet(file, ShotRow) };
+    return { size: file.byteLength, all: withDistance(await parseParquet(file, ShotRow)) };
   })().finally(() => {
     globalThis.fetch = realFetch;
   });
@@ -127,9 +128,10 @@ test("real release files: the oldest listed season has the columns, dtypes and f
   const metadata = await parquetMetadataAsync(file, { initialFetchSize: 1 << 16 });
   const types = new Map(metadata.schema.slice(1).map((c) => [c.name, c.type]));
   for (const [name, schema] of Object.entries(ShotRow.shape)) {
-    assert.equal(types.get(name), schema === int64 ? "INT64" : "BYTE_ARRAY", `${name} in shots_${season}`);
+    const inner = schema instanceof z.ZodNullable ? schema.unwrap() : schema;
+    assert.equal(types.get(name), inner === int64 ? "INT64" : "BYTE_ARRAY", `${name} in shots_${season}`);
   }
-  const shots = filterSeasonType(await parseParquet(file, ShotRow), "regular");
+  const shots = filterSeasonType(withDistance(await parseParquet(file, ShotRow)), "regular");
   const n = shots.length;
   const share = (f: (s: (typeof shots)[number]) => boolean) => shots.filter(f).length / n;
 

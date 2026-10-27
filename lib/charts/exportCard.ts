@@ -33,7 +33,7 @@ const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 
 async function dataUrl(src: string): Promise<string | null> {
   try {
-    const res = await fetch(src, { mode: "cors" });
+    const res = await fetch(src, { mode: "cors", signal: AbortSignal.timeout(20_000) });
     if (!res.ok) return null;
     const blob = await res.blob();
     return await new Promise((resolve) => {

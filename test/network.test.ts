@@ -131,7 +131,11 @@ test("real release files: the oldest listed season has the columns, dtypes and f
     const inner = schema instanceof z.ZodNullable ? schema.unwrap() : schema;
     assert.equal(types.get(name), inner === int64 ? "INT64" : "BYTE_ARRAY", `${name} in shots_${season}`);
   }
-  const shots = filterSeasonType(withDistance(await parseParquet(file, ShotRow)), "regular");
+  const parsed = await parseParquet(file, ShotRow);
+  const missing = parsed.filter((s) => s.shot_distance === null).length;
+  t.diagnostic(`shots_${season}: ${missing} rows with no shot_distance, filled from x/y`);
+  const shots = filterSeasonType(withDistance(parsed), "regular");
+  assert.ok(shots.every((s) => Number.isInteger(s.shot_distance)), "every shot has a distance after withDistance");
   const n = shots.length;
   const share = (f: (s: (typeof shots)[number]) => boolean) => shots.filter(f).length / n;
 
